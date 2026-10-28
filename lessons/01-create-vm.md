@@ -29,6 +29,8 @@ The script creates the key pair **inside your Oracle Cloud Shell**, so you don't
 - `~/.ssh/free-ai-lab` → **private key** (the secret). Stays in your Cloud Shell; you download one copy to your laptop.
 - `~/.ssh/free-ai-lab.pub` → **public key**. Put on the VM automatically.
 
+The key type is **RSA 4096**: Oracle Cloud Shell runs in a strict security mode (FIPS) that doesn't allow the newer ED25519 type.
+
 Your Cloud Shell storage is private to your Oracle account. Oracle's own Console works the same way with its "Generate a key pair for me" button. Treat the downloaded file like a house key: **never share it, never upload it, never commit it to GitHub.**
 
 ---

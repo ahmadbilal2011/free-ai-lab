@@ -73,12 +73,15 @@ KEY="${SSH_PUBLIC_KEY:-}"
 KEY_PATH=""   # set only when this script manages the key
 if [ -z "$KEY" ]; then
   KEY_PATH="$HOME/.ssh/${NAME}"
-  if [ -f "$KEY_PATH" ]; then
+  if [ -f "$KEY_PATH" ] && [ -f "$KEY_PATH.pub" ]; then
     echo "Using existing Cloud Shell key: $KEY_PATH"
   else
     mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
-    ssh-keygen -q -t ed25519 -N "" -C "$NAME" -f "$KEY_PATH" || die "Could not create an SSH key."
-    echo "Created SSH key pair in Cloud Shell: $KEY_PATH (private) and $KEY_PATH.pub (public)"
+    rm -f "$KEY_PATH" "$KEY_PATH.pub"   # clear any half-made key from an earlier failed run
+    # Oracle Cloud Shell runs in FIPS mode, which forbids ED25519, so we use RSA 4096
+    ssh-keygen -q -t rsa -b 4096 -N "" -C "$NAME" -f "$KEY_PATH" </dev/null \
+      || die "Could not create an SSH key."
+    echo "Created SSH key pair (RSA 4096) in Cloud Shell: $KEY_PATH (private) and $KEY_PATH.pub (public)"
   fi
   KEY=$(cat "$KEY_PATH.pub")
 fi

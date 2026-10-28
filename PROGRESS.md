@@ -12,4 +12,5 @@ Newest entries at the top.
 - Wrote [Lesson 01 — Create the Oracle VM](lessons/01-create-vm.md)
 - Added [`scripts/create-free-vm.sh`](scripts/create-free-vm.sh): one Cloud Shell command creates the whole Always Free VM (with limit checks and capacity retries)
 - Simplified the script: no key needed up front — it creates the SSH key in Cloud Shell, user `ubuntu` logs in from Cloud Shell, and the key is downloaded for Windows
+- First real run failed: `ED25519 keys are not allowed in FIPS mode`. Oracle Cloud Shell is FIPS-hardened, so the script now creates an **RSA 4096** key instead
 - **Next:** run the one-line command from Lesson 01, then log in from Cloud Shell and Windows
