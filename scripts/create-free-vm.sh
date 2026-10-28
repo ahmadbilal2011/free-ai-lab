@@ -6,13 +6,15 @@
 #   - VCN "free-ai-lab-vcn" (10.0.0.0/16) + internet gateway + public subnet
 #     (Oracle's default security list allows only SSH port 22 + ICMP)
 #   - VM "free-ai-lab": Ubuntu 24.04 aarch64, VM.Standard.A1.Flex,
-#     2 OCPU / 12 GB RAM, 100 GB boot volume, public IPv4, your SSH key
+#     2 OCPU / 12 GB RAM, 100 GB boot volume, public IPv4, user "ubuntu"
+#   - An SSH key pair in Cloud Shell (~/.ssh/free-ai-lab), unless you bring your own
 #
 # Safe to re-run: it reuses existing network pieces and stops if the VM exists.
 # It refuses to run if it would go above the Always Free limits.
 #
 # Usage (in Oracle Cloud Shell):
-#   SSH_PUBLIC_KEY="ssh-ed25519 AAAA... free-ai-lab" bash create-free-vm.sh
+#   bash create-free-vm.sh                                   # easiest: key is created for you
+#   SSH_PUBLIC_KEY="ssh-ed25519 AAAA..." bash create-free-vm.sh   # advanced: use your own key
 # =============================================================================
 set -uo pipefail
 
@@ -42,6 +44,25 @@ die()  { echo -e "${c_err}[x] $*${c_off}" >&2; exit 1; }
 # run an oci query; print the result, or nothing if empty/null
 q()    { oci "$@" --raw-output 2>/dev/null | grep -v '^null$' || true; }
 
+show_connect_help() {
+  local ip="$1"
+  echo
+  if [ -n "$KEY_PATH" ]; then
+    echo "1) Connect right now from this Cloud Shell:"
+    echo "     ssh -i ~/.ssh/${NAME} ubuntu@${ip}"
+    echo
+    echo "2) To connect from your Windows laptop, download the private key:"
+    echo "     Cloud Shell menu (gear/settings icon, top right) -> Download"
+    echo "     File path:  ${KEY_PATH}"
+    echo "   Then follow Lesson 01, Part D (Windows) to move it and fix its permissions."
+  else
+    echo "Connect from Windows PowerShell with your own key:"
+    echo "     ssh -i \$HOME\\.ssh\\oci_free_ai_lab ubuntu@${ip}"
+  fi
+  echo
+  echo "Reminder: never commit the IP address or the private key to GitHub."
+}
+
 # ---------- 0. pre-flight checks ----------
 step "Checking environment"
 command -v oci >/dev/null || die "The 'oci' CLI was not found. Run this inside Oracle Cloud Shell."
@@ -49,7 +70,18 @@ command -v oci >/dev/null || die "The 'oci' CLI was not found. Run this inside O
 COMPARTMENT="$OCI_TENANCY"   # root compartment, simplest for beginners
 
 KEY="${SSH_PUBLIC_KEY:-}"
-[ -n "$KEY" ] || die "SSH_PUBLIC_KEY is empty. Paste your PUBLIC key (the line starting with ssh-ed25519)."
+KEY_PATH=""   # set only when this script manages the key
+if [ -z "$KEY" ]; then
+  KEY_PATH="$HOME/.ssh/${NAME}"
+  if [ -f "$KEY_PATH" ]; then
+    echo "Using existing Cloud Shell key: $KEY_PATH"
+  else
+    mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+    ssh-keygen -q -t ed25519 -N "" -C "$NAME" -f "$KEY_PATH" || die "Could not create an SSH key."
+    echo "Created SSH key pair in Cloud Shell: $KEY_PATH (private) and $KEY_PATH.pub (public)"
+  fi
+  KEY=$(cat "$KEY_PATH.pub")
+fi
 echo "$KEY" | grep -q "PRIVATE" && die "That looks like a PRIVATE key. Never paste it anywhere. Use the .pub file."
 echo "$KEY" | grep -Eq '^(ssh-ed25519|ssh-rsa|ecdsa-sha2-[a-z0-9-]+) [A-Za-z0-9+/=]+' \
   || die "SSH_PUBLIC_KEY doesn't look like a public key. It must start with ssh-ed25519."
@@ -72,7 +104,8 @@ if [ -n "$EXISTING" ]; then
   IP=$(q compute instance list-vnics --instance-id "$EXISTING" --query 'data[0]."public-ip"')
   echo "VM already exists: $EXISTING"
   echo "Public IP: ${IP:-<none>}"
-  echo "Nothing to do. Connect with:  ssh -i \$HOME\\.ssh\\oci_free_ai_lab ubuntu@${IP:-<SERVER_IP>}"
+  echo "Nothing to do."
+  show_connect_help "${IP:-<SERVER_IP>}"
   exit 0
 fi
 
@@ -204,9 +237,6 @@ step "Done! Your Always Free VM is RUNNING"
 echo "Name:      $NAME"
 echo "Shape:     $SHAPE  (${OCPUS} OCPU / ${MEMORY_GB} GB RAM)"
 echo "Disk:      ${BOOT_GB} GB"
+echo "Username:  ubuntu"
 echo "Public IP: ${IP:-<check the Console>}"
-echo
-echo "From Windows PowerShell, connect with:"
-echo "  ssh -i \$HOME\\.ssh\\oci_free_ai_lab ubuntu@${IP:-<SERVER_IP>}"
-echo
-echo "Reminder: do NOT commit this IP address to GitHub."
+show_connect_help "${IP:-<SERVER_IP>}"
