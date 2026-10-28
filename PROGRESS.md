@@ -8,4 +8,6 @@ Newest entries at the top.
 - Planned the stack: Oracle Always Free VM + Docker + Ollama + Open WebUI + Tailscale + Vikunja
 - Learned that Oracle halved Always Free Ampere A1 to **2 OCPU / 12 GB** in 2026 — the whole lab is designed to fit inside that
 - Completed [Lesson 00 — Core concepts](lessons/00-concepts.md)
-- **Next:** Lesson 01 — create the Oracle VM
+- Confirmed: account is **Always Free**, laptop is **Windows**
+- Wrote [Lesson 01 — Create the Oracle VM](lessons/01-create-vm.md)
+- **Next:** follow Lesson 01 (SSH key → instance → first login)

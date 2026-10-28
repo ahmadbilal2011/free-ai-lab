@@ -37,7 +37,7 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
 | # | Lesson | Status |
 |---|---|---|
 | 00 | [Core concepts before we start](lessons/00-concepts.md) | ✅ Done |
-| 01 | Create the Oracle VM safely (stay inside free limits) | ⏳ Next |
+| 01 | [Create the Oracle VM safely](lessons/01-create-vm.md) | ⏳ In progress |
 | 02 | Secure SSH access, updates and firewall | ⬜ |
 | 03 | Install and understand Docker | ⬜ |
 | 04 | Run my own AI: Ollama + Open WebUI | ⬜ |
