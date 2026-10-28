@@ -1,0 +1,13 @@
+# Never commit secrets
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.env
+*.env
+secrets/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
