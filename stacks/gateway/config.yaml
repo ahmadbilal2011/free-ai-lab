@@ -1,0 +1,64 @@
+# LiteLLM gateway config (Lesson 07)
+#
+# Apps (Open WebUI now, n8n and agents later) ask for a MODEL NAME like "smart".
+# LiteLLM decides which provider answers, and falls back automatically when
+# a free tier says "429 Too Many Requests" or a provider is down.
+#
+#   smart   -> Groq 70B  -> NVIDIA 70B -> OpenRouter free 70B -> local 3B
+#   fast    -> Groq 8B   -> NVIDIA 70B -> local 3B          (titles, quick chores)
+#   private -> local 3B only                                (never leaves the server)
+#
+# Provider model names change over time. If a test in the install script
+# fails with "model not found", update the name here (use 06-test-api-key.sh
+# to list current names), then:  docker compose restart litellm
+#
+# Keys are NOT in this file. They come from .env (os.environ/...), never committed.
+
+model_list:
+  # ---------- primary: Groq ----------
+  - model_name: smart
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+
+  - model_name: fast
+    litellm_params:
+      model: groq/llama-3.1-8b-instant
+      api_key: os.environ/GROQ_API_KEY
+
+  # ---------- backup: NVIDIA Build (OpenAI-compatible) ----------
+  - model_name: smart-nvidia
+    litellm_params:
+      model: openai/meta/llama-3.3-70b-instruct
+      api_base: https://integrate.api.nvidia.com/v1
+      api_key: os.environ/NVIDIA_API_KEY
+
+  # ---------- third: OpenRouter free model ----------
+  - model_name: smart-openrouter
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  # ---------- last resort and private: local Ollama ----------
+  - model_name: private
+    litellm_params:
+      model: ollama_chat/llama3.2:3b
+      api_base: http://ollama:11434
+
+router_settings:
+  # Ordered fallbacks: if the first fails, try the next, and so on.
+  fallbacks:
+    - smart: ["smart-nvidia", "smart-openrouter", "private"]
+    - fast: ["smart-nvidia", "private"]
+    - smart-nvidia: ["smart-openrouter", "private"]
+    - smart-openrouter: ["private"]
+  num_retries: 1        # retry the same provider once before falling back
+  timeout: 90           # seconds; the local model can be slow
+  allowed_fails: 1      # after 1 failure in a minute, rest that provider...
+  cooldown_time: 60     # ...for 60 seconds
+
+litellm_settings:
+  drop_params: true     # ignore settings a provider doesn't support instead of failing
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY   # apps must send this key to use the gateway

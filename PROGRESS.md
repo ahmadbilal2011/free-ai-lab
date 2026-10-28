@@ -29,4 +29,6 @@ Newest entries at the top.
 - Expanded the course into a full path to my own **Jarvis**: LiteLLM gateway, n8n, Telegram bot, agents/harnesses, RAG, images, video, social posting, voice, security review — see [docs/roadmap.md](docs/roadmap.md)
 - Wrote [Lesson 06 — Free cloud AI](lessons/06-free-cloud-ai.md) and [`scripts/06-test-api-key.sh`](scripts/06-test-api-key.sh) (tests a key hidden, never saves it)
 - Cerebras asked for a **credit card** at signup → dropped. While checking alternatives, found that **GitHub Models was retired** (30 July 2026) → removed too. Replaced with **NVIDIA Build** and **OpenRouter** (no card)
-- **Next:** create Groq + NVIDIA/OpenRouter keys and add them to Open WebUI
+- ✅ Added the cloud provider keys to Open WebUI — **Lesson 06 complete**
+- Wrote [Lesson 07 — LiteLLM gateway](lessons/07-litellm-gateway.md), [`scripts/07-install-gateway.sh`](scripts/07-install-gateway.sh) and the [`gateway` stack](stacks/gateway/): aliases `smart` / `fast` / `private`, ordered fallback, keys in one private `.env`
+- **Next:** install the gateway, connect Open WebUI to `http://litellm:4000/v1`, delete the old direct connections
