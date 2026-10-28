@@ -25,4 +25,7 @@ Newest entries at the top.
 - Wrote [Lesson 05 — Tailscale](lessons/05-tailscale.md) and [`scripts/05-install-tailscale.sh`](scripts/05-install-tailscale.sh): private HTTPS with `tailscale serve` (not Funnel)
 - ✅ Tailscale works: Open WebUI opens on my private `https://…ts.net` address — **Lesson 05 working on laptop**
 - First chat: the 3B model answered, but wrongly tried a `create_calendar_event` **tool** for "Can you hear me?". Lesson: small models misuse tools; turned tools and background tasks (title/tags/follow-ups) off — added to Lesson 04
-- **Next:** retest in a new chat, install the AI on my phone, then Lesson 06
+- Local 3B model works but is slow on 2 CPU cores. **Decision: hybrid AI** — free cloud APIs (Groq, Cerebras, …) for speed, local model as private fallback
+- Expanded the course into a full path to my own **Jarvis**: LiteLLM gateway, n8n, Telegram bot, agents/harnesses, RAG, images, video, social posting, voice, security review — see [docs/roadmap.md](docs/roadmap.md)
+- Wrote [Lesson 06 — Free cloud AI](lessons/06-free-cloud-ai.md) and [`scripts/06-test-api-key.sh`](scripts/06-test-api-key.sh) (tests a key hidden, never saves it)
+- **Next:** create Groq + Cerebras keys and add them to Open WebUI

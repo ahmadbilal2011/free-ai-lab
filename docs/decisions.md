@@ -47,3 +47,7 @@ Oracle advises against UFW on its Ubuntu images (it can conflict with the built-
 ## 2026-10-28 — Reach Open WebUI through Tailscale, not a public port
 
 The SSH tunnel was awkward (PC only, window must stay open) and failed on first try. Making port 3000 public would expose the login page to the whole internet over plain HTTP. **Decision:** use Tailscale right after Lesson 04: `tailscale serve` gives tailnet-only HTTPS on `*.ts.net`, works on phone and PC, and opens no inbound port. We never use `tailscale funnel` (public). The SSH tunnel remains documented as a fallback.
+
+## 2026-10-28 — Hybrid AI: free cloud APIs + local fallback
+
+The local 3B model is slow on 2 CPU cores. **Decision:** add free cloud API providers (Groq, Cerebras first; GitHub Models, OpenRouter, Gemini optional) to Open WebUI, and keep Ollama as a private, unlimited fallback. **Privacy rule:** personal data only goes to providers that don't train on prompts. Gemini's free tier trains on data in KSA, so it's for general questions only. Lesson 07 adds LiteLLM for automatic fallback between providers.

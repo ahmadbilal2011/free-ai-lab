@@ -4,10 +4,15 @@ My personal, **zero-cost** AI lab on Oracle Cloud Always Free, built step by ste
 
 ## Goal
 
-- Run my own private AI assistant using only open-source software
-- Manage my daily tasks with a self-hosted task manager
-- Reach both from anywhere — PC browser or phone — without paying anything
-- Document every step here so I (and others) can learn and repeat it
+Build **one free, private system** — reachable from my phone and PC — that grows step by step into my own AI assistant ("Jarvis"):
+
+- Chat with fast free cloud AI models, with a private local model as backup
+- Manage my daily tasks and automate my day (n8n)
+- Agents that can act for me, with my approval
+- Code, images, video and social media posting, all from the same system
+- Everything open source or free tier, documented here so others can repeat it
+
+Full plan: **[docs/roadmap.md](docs/roadmap.md)**
 
 ## The stack
 
@@ -35,18 +40,58 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
 
 ## Lessons
 
+**Part 1 — Foundation**
+
 | # | Lesson | Status |
 |---|---|---|
 | 00 | [Core concepts before we start](lessons/00-concepts.md) | ✅ Done |
 | 01 | [Create the Oracle VM safely](lessons/01-create-vm.md) | ✅ Done |
 | 02 | [Secure SSH access, updates and firewall](lessons/02-secure-server.md) | ✅ Done |
 | 03 | [Install and understand Docker](lessons/03-docker.md) | ✅ Done |
-| 04 | [Run my own AI: Ollama + Open WebUI](lessons/04-ai.md) | ✅ Installed |
-| 05 | [Access from anywhere with Tailscale (PC + mobile)](lessons/05-tailscale.md) | ⏳ Next |
-| 06 | Daily task management with Vikunja | ⬜ |
-| 07 | Backups, monitoring and keeping it alive | ⬜ |
+| 04 | [Run my own AI: Ollama + Open WebUI](lessons/04-ai.md) | ✅ Done |
+| 05 | [Access from anywhere with Tailscale (PC + mobile)](lessons/05-tailscale.md) | ✅ Done |
 
-### Phase 2 — Kubernetes track (optional, after Phase 1)
+**Part 2 — Smart AI for free**
+
+| # | Lesson | Status |
+|---|---|---|
+| 06 | [Free cloud AI via API keys (Groq, Cerebras, …)](lessons/06-free-cloud-ai.md) | ⏳ Next |
+| 07 | LiteLLM gateway: one endpoint, automatic fallback | ⬜ |
+| 08 | Backups and monitoring | ⬜ |
+
+**Part 3 — Daily life and automation**
+
+| # | Lesson | Status |
+|---|---|---|
+| 09 | Vikunja task manager | ⬜ |
+| 10 | n8n basics: workflows, triggers, credentials | ⬜ |
+| 11 | Telegram bot + n8n: talk to my AI, daily briefing | ⬜ |
+
+**Part 4 — Agents**
+
+| # | Lesson | Status |
+|---|---|---|
+| 12 | AI agents and tools (n8n AI Agent, MCP) | ⬜ |
+| 13 | Agent harnesses and coding agents with free APIs | ⬜ |
+| 14 | Memory and knowledge (RAG) | ⬜ |
+
+**Part 5 — Creative and social**
+
+| # | Lesson | Status |
+|---|---|---|
+| 15 | Free image generation | ⬜ |
+| 16 | Video generation: what's honestly possible for free | ⬜ |
+| 17 | Social media posting with approval | ⬜ |
+
+**Part 6 — Jarvis**
+
+| # | Lesson | Status |
+|---|---|---|
+| 18 | Voice: speech-to-text and text-to-speech | ⬜ |
+| 19 | Jarvis: tie everything together | ⬜ |
+| 20 | Security review: prompt injection, key scopes, approval gates | ⬜ |
+
+### Phase 2 — Kubernetes track (optional, after Part 6)
 
 Move the same apps from Docker Compose to Kubernetes, on the same free VM.
 
