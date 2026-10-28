@@ -59,3 +59,7 @@ Cerebras now asks for a credit card at signup, which breaks our $0 / no-card rul
 ## 2026-10-28 — Never hard-code provider model names; discover and test them
 
 The first gateway config used model names from memory. A live diagnosis showed **all of them** had gone: Groq no longer had `llama-3.3-70b-versatile` / `llama-3.1-8b-instant`, NVIDIA's `meta/llama-3.3-70b-instruct` reached end of life on 26 Aug 2026, and OpenRouter's Llama 3.3 70B stopped being free. **Decision:** the installer runs `07-pick-models.py`, which lists each provider's *current* models, ranks them by preference, tests candidates with a tiny request, and generates the config. Apps only ever use our aliases (`smart`, `fast`, `private`), so provider churn never reaches them.
+
+## 2026-10-28 — Backups: restic to Oracle Object Storage, healthchecks.io alerts
+
+Off-server, encrypted, tested, automatic and watched. restic encrypts before upload and deduplicates; Oracle Always Free gives 20 GB of Object Storage via an S3-compatible API. AI models are excluded (re-downloadable). Open WebUI is paused a few seconds so its SQLite file is copied consistently. A healthchecks.io dead man's switch (heartbeat every 5 min + nightly backup ping) emails us when the server or a backup stops, which an on-server monitor can't do. To stay clear of Oracle's A1 idle-reclaim rule, the private model stays loaded (real memory use > 20%) rather than running fake load.

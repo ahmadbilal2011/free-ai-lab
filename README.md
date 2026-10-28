@@ -23,6 +23,7 @@ My phone / PC
 Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── Docker ........ runs every app in its own isolated container
   ├── autoheal ...... restarts any app that freezes
+  ├── restic ........ encrypted nightly backups → Oracle Object Storage (+ healthchecks.io alerts)
   ├── LiteLLM ....... AI gateway: Groq → NVIDIA → OpenRouter → local, automatic fallback
   ├── Ollama ........ engine that runs open-source AI models on the CPU (private fallback)
   ├── Open WebUI .... ChatGPT-style web interface (installable on phone)
@@ -39,6 +40,8 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
 | LiteLLM | AI gateway with fallback | Free, open source |
 | Groq / NVIDIA Build / OpenRouter | Cloud AI models | Free tiers, no credit card |
 | Tailscale | Private remote access | Free personal plan |
+| restic + Oracle Object Storage | Encrypted backups | Free, open source + Always Free 20 GB |
+| healthchecks.io | Email alerts if the server or a backup stops | Free plan |
 | Vikunja | Task manager | Free, open source |
 
 ## Lessons
@@ -59,8 +62,8 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
 | # | Lesson | Status |
 |---|---|---|
 | 06 | [Free cloud AI via API keys (Groq, NVIDIA, OpenRouter, …)](lessons/06-free-cloud-ai.md) | ✅ Done |
-| 07 | [LiteLLM gateway: one endpoint, automatic fallback](lessons/07-litellm-gateway.md) | ⏳ Next |
-| 08 | Backups and monitoring | ⬜ |
+| 07 | [LiteLLM gateway: one endpoint, automatic fallback](lessons/07-litellm-gateway.md) | ✅ Done |
+| 08 | [Backups and monitoring](lessons/08-backups-monitoring.md) | ⏳ Next |
 
 **Part 3 — Daily life and automation**
 

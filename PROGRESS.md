@@ -37,4 +37,7 @@ Newest entries at the top.
 - Second run: keys saved (56/70/73 chars) but **every cloud model still fell back**. Wrote [`07-diagnose-gateway.sh`](scripts/07-diagnose-gateway.sh): keys OK, network OK — **all model names were dead** (Groq removed them, NVIDIA's hit end-of-life 26 Aug 2026, OpenRouter's no longer free)
 - Big lesson: free-tier model names change constantly. Added [`07-pick-models.py`](scripts/07-pick-models.py): lists live models, tests them, generates the config automatically
 - ✅ Third run: the picker found working models — Groq `openai/gpt-oss-120b` (smart) + `openai/gpt-oss-20b` (fast), NVIDIA `nvidia/nemotron-3-ultra-550b-a55b` (3 others failed their test), OpenRouter `nvidia/nemotron-3-ultra-550b-a55b:free`. **All aliases answered from the cloud; the drill fell back to a cloud backup**
-- **Next:** connect Open WebUI to `http://litellm:4000/v1` (prefix `lab`), delete the direct provider connections, run `cleanup-lab.sh`, then Lesson 08
+- ✅ Open WebUI now uses only the gateway (`lab.smart` default, `lab.fast` task model); direct provider connections deleted; server cleaned — **Lesson 07 complete**
+- Wrote [Lesson 08 — Backups and monitoring](lessons/08-backups-monitoring.md): restic → Oracle Object Storage (encrypted, nightly, restore-tested), healthchecks.io dead man's switch, `lab-status`
+- Found Oracle's idle rule for A1 (CPU, network **and** memory < 20% for 7 days) → keep the private model loaded (`OLLAMA_KEEP_ALIVE=-1`) so memory stays above 20% with real usage
+- **Next:** Cloud Shell bucket script, then the VM backup installer
