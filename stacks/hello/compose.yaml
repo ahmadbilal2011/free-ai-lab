@@ -1,0 +1,12 @@
+# Lesson 03 practice stack: a tiny web server
+# Start:  docker compose up -d     Stop and remove:  docker compose down
+
+services:
+  web:                                 # our name for this service
+    image: nginx:alpine                # a small web server image (has an Arm build)
+    container_name: hello-web          # fixed name, easier to find in 'docker ps'
+    ports:
+      - "127.0.0.1:8080:80"            # server-only port 8080 -> container port 80
+    volumes:
+      - ./html:/usr/share/nginx/html:ro   # our ./html folder becomes the website (read-only)
+    restart: unless-stopped            # start again after a reboot, unless we stopped it

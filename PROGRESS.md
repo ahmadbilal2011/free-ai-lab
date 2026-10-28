@@ -15,4 +15,6 @@ Newest entries at the top.
 - First real run failed: `ED25519 keys are not allowed in FIPS mode`. Oracle Cloud Shell is FIPS-hardened, so the script now creates an **RSA 4096** key instead
 - ✅ VM created in `me-riyadh-1` and SSH login as `ubuntu` works — **Lesson 01 complete**
 - Wrote [Lesson 02 — Secure the server](lessons/02-secure-server.md) and [`scripts/02-secure-server.sh`](scripts/02-secure-server.sh)
-- **Next:** run the Lesson 02 script on the VM, test a new SSH login, reboot if asked
+- ✅ Server secured, SSH from the Windows laptop works — **Lesson 02 complete**
+- Wrote [Lesson 03 — Docker](lessons/03-docker.md), [`scripts/03-install-docker.sh`](scripts/03-install-docker.sh) and the practice stack [`stacks/hello`](stacks/hello/compose.yaml)
+- **Next:** install Docker, then do the hands-on part of Lesson 03
