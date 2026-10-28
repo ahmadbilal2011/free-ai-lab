@@ -36,4 +36,5 @@ Newest entries at the top.
 - Question: do we still need Open WebUI? **Yes**: LiteLLM has no chat screen; Open WebUI is the chat app. The mess was duplicated keys + practice leftovers → added [`scripts/cleanup-lab.sh`](scripts/cleanup-lab.sh) (never touches volumes or keys)
 - Second run: keys saved (56/70/73 chars) but **every cloud model still fell back**. Wrote [`07-diagnose-gateway.sh`](scripts/07-diagnose-gateway.sh): keys OK, network OK — **all model names were dead** (Groq removed them, NVIDIA's hit end-of-life 26 Aug 2026, OpenRouter's no longer free)
 - Big lesson: free-tier model names change constantly. Added [`07-pick-models.py`](scripts/07-pick-models.py): lists live models, tests them, generates the config automatically
-- **Next:** re-run the gateway installer (it now picks working models), connect Open WebUI, clean up
+- ✅ Third run: the picker found working models — Groq `openai/gpt-oss-120b` (smart) + `openai/gpt-oss-20b` (fast), NVIDIA `nvidia/nemotron-3-ultra-550b-a55b` (3 others failed their test), OpenRouter `nvidia/nemotron-3-ultra-550b-a55b:free`. **All aliases answered from the cloud; the drill fell back to a cloud backup**
+- **Next:** connect Open WebUI to `http://litellm:4000/v1` (prefix `lab`), delete the direct provider connections, run `cleanup-lab.sh`, then Lesson 08

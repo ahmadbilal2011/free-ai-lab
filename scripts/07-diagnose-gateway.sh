@@ -30,10 +30,13 @@ echo "  (200 or 401 = network OK.  NO-NETWORK = the container can't reach the in
 
 step "3/4  Does each key + model work when called DIRECTLY (bypassing LiteLLM)?"
 get() { grep -E "^$1=" "$ENVF" | head -1 | cut -d= -f2-; }
-for row in "groq|GROQ_API_KEY|https://api.groq.com/openai/v1|llama-3.3-70b-versatile" \
-           "nvidia|NVIDIA_API_KEY|https://integrate.api.nvidia.com/v1|meta/llama-3.3-70b-instruct" \
-           "openrouter|OPENROUTER_API_KEY|https://openrouter.ai/api/v1|meta-llama/llama-3.3-70b-instruct:free"; do
+# model names come from the GENERATED config, so this always tests what the gateway really uses
+cfg_model() { grep -A2 "model_name: $1\$" "$HOME/lab/gateway/config.yaml" | sed -n 's/^ *model: [a-z]*\///p' | head -1; }
+for row in "groq|GROQ_API_KEY|https://api.groq.com/openai/v1|$(cfg_model smart-groq)" \
+           "nvidia|NVIDIA_API_KEY|https://integrate.api.nvidia.com/v1|$(cfg_model smart-nvidia)" \
+           "openrouter|OPENROUTER_API_KEY|https://openrouter.ai/api/v1|$(cfg_model smart-openrouter)"; do
   IFS='|' read -r name var base model <<<"$row"
+  [ -n "$model" ] || { printf "  %-11s not in config (no key, or no model passed the picker)\n" "$name"; continue; }
   key=$(get "$var")
   out=$(curl -s --max-time 40 -w '\n%{http_code}' "$base/chat/completions" \
         -H @<(printf "Authorization: Bearer %s" "$key") -H "Content-Type: application/json" \

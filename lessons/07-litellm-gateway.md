@@ -43,6 +43,8 @@ Our three aliases (in [`stacks/gateway/config.yaml`](../stacks/gateway/config.ya
 | `fast` | Groq 8B → NVIDIA 70B → local 3B | Chat titles, tags, quick chores |
 | `private` | Local 3B only | Anything that must never leave the server |
 
+> **Privacy note:** Groq and NVIDIA don't train on your prompts. **OpenRouter's free models** are served by many different companies, and some free endpoints may log prompts. That's why OpenRouter is the *third* choice and why personal things go to `private`.
+
 ### Why this matters for Jarvis
 
 Every future lesson (n8n, the Telegram bot, agents) will just say "use `smart` at `http://litellm:4000/v1`". Swapping providers later means editing **one** file, not ten apps.
