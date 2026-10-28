@@ -7,6 +7,7 @@
 #   smart   -> Groq 70B  -> NVIDIA 70B -> OpenRouter free 70B -> local 3B
 #   fast    -> Groq 8B   -> NVIDIA 70B -> local 3B          (titles, quick chores)
 #   private -> local 3B only                                (never leaves the server)
+#   drill   -> always fails on purpose, to prove fallback works
 #
 # Provider model names change over time. If a test in the install script
 # fails with "model not found", update the name here (use 06-test-api-key.sh
@@ -39,6 +40,14 @@ model_list:
       model: openrouter/meta-llama/llama-3.3-70b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
 
+  # ---------- fallback drill: a deliberately broken key ----------
+  # Used by the install script to PROVE fallback works: this always fails,
+  # so the answer must come from a backup.
+  - model_name: drill
+    litellm_params:
+      model: groq/llama-3.1-8b-instant
+      api_key: "this-key-is-intentionally-invalid"
+
   # ---------- last resort and private: local Ollama ----------
   - model_name: private
     litellm_params:
@@ -52,6 +61,7 @@ router_settings:
     - fast: ["smart-nvidia", "private"]
     - smart-nvidia: ["smart-openrouter", "private"]
     - smart-openrouter: ["private"]
+    - drill: ["smart-nvidia", "smart-openrouter", "private"]
   num_retries: 1        # retry the same provider once before falling back
   timeout: 90           # seconds; the local model can be slow
   allowed_fails: 1      # after 1 failure in a minute, rest that provider...

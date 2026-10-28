@@ -65,9 +65,12 @@ It will:
 
 1. Check the AI stack from Lesson 04 is running
 2. Download the gateway files to `~/lab/gateway`
-3. **Ask for your keys** (Groq, NVIDIA, OpenRouter). Typing is hidden; press **Enter to skip** one you don't have. It also creates a random **master key**
+3. **Ask for your keys** (Groq, NVIDIA, OpenRouter). The keys you put in Open WebUI in Lesson 06 are **not** shared with the gateway, so paste them again here (copy them from each provider's website, or create new ones).
+   - **Nothing appears while you paste.** That's normal for secrets. In PowerShell, **right-click** pastes. Press Enter after each one.
+   - The script confirms each paste: `received 56 characters, ending in ...a1b2`. If it says `skipped`, the paste didn't work.
+   - Press **Enter on an empty line** to skip a provider you don't have. It also creates a random **master key**
 4. Start LiteLLM and wait until it's healthy
-5. **Test every alias**, then run a **fallback drill**: it pretends Groq failed and checks a backup answers
+5. **Test every alias**, then run a **fallback drill**: a special `drill` alias uses a deliberately broken key, so a backup **must** answer
 
 Example result:
 
@@ -76,12 +79,20 @@ Example result:
   fast              OK   answered by llama-3.1-8b-instant
   smart-nvidia      OK   answered by meta/llama-3.3-70b-instruct
   smart-openrouter  OK   answered by meta-llama/llama-3.3-70b-instruct:free
-  private           OK   answered by llama3.2:3b
+  private           OK   answered by private
 
-  smart (mock fail) OK   answered by meta/llama-3.3-70b-instruct
+  drill             OK   backup answered: meta/llama-3.3-70b-instruct
 ```
 
-A `FAIL` on a backup line is not a disaster. It usually means you skipped that key, or the provider renamed the model (see Part F).
+How to read the results:
+
+| Result | Meaning |
+|---|---|
+| `OK` | The first choice answered |
+| `FELL BACK -> answered by ollama_chat/llama3.2:3b` | The first choice failed and a backup answered. Fallback works, but fix the first choice: its key is missing/wrong, or the model was renamed (Part F) |
+| `FAIL` | Nothing answered. Read the message |
+
+> **Real first run in this lab:** every line answered from the local model, because no keys were entered: they had only been added in Open WebUI. Fallback saved the day, but the cloud was never used. The script now confirms each paste and warns when no keys are set.
 
 ---
 
@@ -91,27 +102,23 @@ On the VM:
 
 ```bash
 MASTER=$(grep LITELLM_MASTER_KEY ~/lab/gateway/.env | cut -d= -f2)
-
-# Normal request
-curl -s http://127.0.0.1:4000/v1/chat/completions \
+ask() { curl -s http://127.0.0.1:4000/v1/chat/completions \
   -H "Authorization: Bearer $MASTER" -H "Content-Type: application/json" \
-  -d '{"model":"smart","messages":[{"role":"user","content":"Say hi"}]}' | python3 -m json.tool | grep '"model"'
+  -d "{\"model\":\"$1\",\"messages\":[{\"role\":\"user\",\"content\":\"Say hi\"}]}" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin).get("model"))'; }
 
-# Simulate the primary failing
-curl -s http://127.0.0.1:4000/v1/chat/completions \
-  -H "Authorization: Bearer $MASTER" -H "Content-Type: application/json" \
-  -d '{"model":"smart","mock_testing_fallbacks":true,"messages":[{"role":"user","content":"Say hi"}]}' | python3 -m json.tool | grep '"model"'
-
+ask smart     # normally answered by Groq
+ask drill     # the 'drill' key is broken on purpose, so a BACKUP answers
 unset MASTER
 ```
 
-The first answer comes from Groq; the second from a backup. Watch it happen live in another window:
+Watch it happen live in another window:
 
 ```bash
 docker logs -f litellm      # Ctrl+C to stop following
 ```
 
----
+You'll see the authentication error for `drill`, then the fallback to the next model. That's exactly what will happen when Groq says "429" on a busy day.
 
 ## Part E — Connect Open WebUI to the gateway
 
@@ -159,6 +166,39 @@ Run the install script again and type only the key you want to change (Enter kee
 
 ---
 
+## Part G — Do we still need Open WebUI? And cleaning up
+
+**Yes, keep Open WebUI.** Each piece has a different job:
+
+| Piece | Job | Has a chat screen? |
+|---|---|---|
+| **LiteLLM** | The engine room: routes requests, holds keys, falls back | ❌ No. It's for programs, not people |
+| **Open WebUI** | Your chat app on phone and PC: accounts, chat history, files | ✅ Yes |
+| **Telegram bot** (Lesson 11) | A second way to talk to Jarvis | ✅ Yes, inside Telegram |
+| **Ollama** | Runs the private local model | ❌ No |
+
+What *was* messy is the **duplication**: the same keys stored twice, and practice leftovers. Clean that up:
+
+1. **In Open WebUI** (once `lab.smart` works): **Admin Panel → Settings → Connections** → delete the direct **Groq / NVIDIA / OpenRouter** connections from Lesson 06. Only these should remain: **Ollama** and **`http://litellm:4000/v1`**.
+2. **On the server**, remove practice leftovers and unused images:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/cleanup-lab.sh -o cleanup-lab.sh && bash cleanup-lab.sh
+   ```
+
+   It removes the Lesson 03 `hello` stack, the `web-test` container, downloaded script copies in your home folder, and Docker images nothing uses. It **never** deletes volumes (chats, users, models), your `.env` keys, or Tailscale.
+
+Your tidy server afterwards:
+
+```
+~/lab/
+├── ai/          Ollama + Open WebUI
+├── autoheal/    restarts frozen containers
+└── gateway/     LiteLLM + your keys (.env)
+```
+
+---
+
 ## If something goes wrong
 
 | Problem | Fix |
@@ -179,6 +219,7 @@ Run the install script again and type only the key you want to change (Enter kee
 - [ ] Added `http://litellm:4000/v1` to Open WebUI with prefix `lab`
 - [ ] Default model = `lab.smart`, Task Model = `lab.fast`
 - [ ] Deleted the old direct provider connections from Open WebUI
+- [ ] Ran `cleanup-lab.sh`
 - [ ] Wrote which providers answered and how fast in `PROGRESS.md`
 
 ## Check your understanding

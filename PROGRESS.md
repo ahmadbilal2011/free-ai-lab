@@ -31,4 +31,7 @@ Newest entries at the top.
 - Cerebras asked for a **credit card** at signup → dropped. While checking alternatives, found that **GitHub Models was retired** (30 July 2026) → removed too. Replaced with **NVIDIA Build** and **OpenRouter** (no card)
 - ✅ Added the cloud provider keys to Open WebUI — **Lesson 06 complete**
 - Wrote [Lesson 07 — LiteLLM gateway](lessons/07-litellm-gateway.md), [`scripts/07-install-gateway.sh`](scripts/07-install-gateway.sh) and the [`gateway` stack](stacks/gateway/): aliases `smart` / `fast` / `private`, ordered fallback, keys in one private `.env`
-- **Next:** install the gateway, connect Open WebUI to `http://litellm:4000/v1`, delete the old direct connections
+- First gateway run: **no keys were entered** (they were only in Open WebUI), so every alias fell back to the local model. Fallback worked, but the script wrongly said "OK". Fixed: it now confirms each pasted key, warns when none are set, and reports `FELL BACK` honestly
+- LiteLLM disables mock fallback tests by default, so the drill now uses a `drill` alias with a deliberately broken key
+- Question: do we still need Open WebUI? **Yes**: LiteLLM has no chat screen; Open WebUI is the chat app. The mess was duplicated keys + practice leftovers → added [`scripts/cleanup-lab.sh`](scripts/cleanup-lab.sh) (never touches volumes or keys)
+- **Next:** re-run the gateway script and paste the keys, connect Open WebUI to `http://litellm:4000/v1`, delete direct connections, run the cleanup

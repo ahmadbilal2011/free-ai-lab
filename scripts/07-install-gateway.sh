@@ -49,14 +49,30 @@ umask 077; touch "$ENVF"; chmod 600 "$ENVF"; umask 022
 # ---------- 3. keys ----------
 step "3/5  API keys (typed hidden; press Enter to keep the current one or skip)"
 [ -n "$(env_get LITELLM_MASTER_KEY)" ] || env_set LITELLM_MASTER_KEY "sk-$(openssl rand -hex 24)"
+echo "  Tip: nothing appears while you paste — that's normal. In PowerShell, right-click pastes."
 for pair in "GROQ_API_KEY:Groq" "NVIDIA_API_KEY:NVIDIA (nvapi-...)" "OPENROUTER_API_KEY:OpenRouter"; do
   var="${pair%%:*}"; label="${pair#*:}"
   cur=$(env_get "$var")
-  if [ -n "$cur" ] && [ "$cur" != "not-set" ]; then hint="saved, Enter keeps it"; else hint="not set, Enter skips"; fi
+  if [ -n "$cur" ] && [ "$cur" != "not-set" ]; then hint="saved ...${cur: -4}, Enter keeps it"; else hint="not set, Enter skips"; fi
   read -r -s -p "  $label key ($hint): " val; echo
-  if [ -n "$val" ]; then env_set "$var" "$val"; elif [ -z "$cur" ]; then env_set "$var" "not-set"; fi
+  val=$(printf '%s' "$val" | tr -d '[:space:]')
+  if [ -n "$val" ]; then
+    env_set "$var" "$val"; echo "    received ${#val} characters, ending in ...${val: -4}"
+  elif [ -z "$cur" ]; then
+    env_set "$var" "not-set"; echo "    skipped"
+  else
+    echo "    kept"
+  fi
 done
 unset val
+SET_COUNT=0
+for var in GROQ_API_KEY NVIDIA_API_KEY OPENROUTER_API_KEY; do
+  v=$(env_get "$var"); [ -n "$v" ] && [ "$v" != "not-set" ] && SET_COUNT=$((SET_COUNT+1))
+done
+if [ "$SET_COUNT" -eq 0 ]; then
+  warn "No cloud keys are set. Everything will be answered by the slow LOCAL model."
+  warn "Run this script again and paste at least your Groq key."
+fi
 echo "Keys saved in ~/lab/gateway/.env (only you can read it)."
 
 # ---------- 4. start ----------
@@ -78,22 +94,27 @@ ask() {  # ask MODEL [extra-json]
     -H @<(printf "Authorization: Bearer %s" "$MASTER") -H "Content-Type: application/json" \
     -d "{\"model\":\"$1\",\"max_tokens\":30,\"messages\":[{\"role\":\"user\",\"content\":\"Reply with just: OK\"}]${2:-}}" 2>/dev/null
 }
-summ() { python3 -c 'import json,sys
+summ() {  # summ ALIAS EXPECTED-substring   (EXPECTED=BACKUP for the drill)
+  ALIAS="$1" EXPECT="$2" python3 -c 'import json,os,sys
+alias=os.environ["ALIAS"]; exp=os.environ["EXPECT"]
 try:
   d=json.load(sys.stdin)
-  if "choices" in d: print("OK   answered by", d.get("model","?"))
-  else: print("FAIL", str(d.get("error",{}).get("message",d))[:110].replace("\n"," "))
+  if "choices" not in d:
+    print("FAIL", str(d.get("error",{}).get("message",d))[:110].replace("\n"," ")); sys.exit()
+  m=d.get("model","?")
+  if exp=="BACKUP": print(("OK   backup answered: " if m not in (alias,) and "8b-instant" not in m else "FAIL drill was not rerouted: ")+m)
+  elif m==alias or exp in m: print("OK   answered by", m)
+  else: print("FELL BACK -> answered by", m, "(the first choice failed: key missing/wrong or model renamed)")
 except Exception as e: print("FAIL", e)'; }
 
-printf "  %-17s " "smart";            ask smart            | summ
-printf "  %-17s " "fast";             ask fast             | summ
-printf "  %-17s " "smart-nvidia";     ask smart-nvidia     | summ
-printf "  %-17s " "smart-openrouter"; ask smart-openrouter | summ
-printf "  %-17s " "private";          ask private          | summ
+printf "  %-17s " "smart";            ask smart            | summ smart "llama-3.3-70b"
+printf "  %-17s " "fast";             ask fast             | summ fast "8b-instant"
+printf "  %-17s " "smart-nvidia";     ask smart-nvidia     | summ smart-nvidia "meta/llama"
+printf "  %-17s " "smart-openrouter"; ask smart-openrouter | summ smart-openrouter ":free"
+printf "  %-17s " "private";          ask private          | summ private "llama3.2"
 echo
-echo "Fallback drill: pretend the primary provider failed..."
-printf "  %-17s " "smart (mock fail)"; ask smart ',"mock_testing_fallbacks":true' | summ
-echo "  ^ should be answered by a BACKUP model, not Groq."
+echo "Fallback drill: 'drill' uses a deliberately broken key, so a BACKUP must answer..."
+printf "  %-17s " "drill";            ask drill            | summ drill "BACKUP"
 
 step "Done!"
 echo "Gateway (server-only):  http://127.0.0.1:4000/v1"
@@ -101,4 +122,4 @@ echo "Inside Docker:          http://litellm:4000/v1"
 echo
 echo -e "${c_warn}NEXT:${c_off} add the gateway to Open WebUI (Lesson 07, Part E). You'll need the master key:"
 echo "  grep LITELLM_MASTER_KEY ~/lab/gateway/.env"
-echo "A FAIL on a backup line usually means a skipped key or a changed model name (see Lesson 07)."
+echo "FELL BACK / FAIL on a line usually means a skipped key or a renamed model (see Lesson 07, Part F)."
