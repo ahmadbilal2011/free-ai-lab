@@ -20,4 +20,7 @@ Newest entries at the top.
 - Question: Kubernetes (cert-manager + ingress-nginx) instead of Docker? **Decision: Docker Compose now, K3s as a Phase 2 track** — see [docs/decisions.md](docs/decisions.md). Found that ingress-nginx was retired in March 2026
 - Added autoheal (restarts frozen containers) and healthchecks to the plan
 - Wrote [Lesson 04 — My own AI](lessons/04-ai.md), [`scripts/04-install-ai.sh`](scripts/04-install-ai.sh), stacks [`ai`](stacks/ai/compose.yaml) and [`autoheal`](stacks/autoheal/compose.yaml)
-- **Next:** finish Lesson 03 hands-on, then run Lesson 04
+- ✅ Docker installed (Lesson 03) and the AI stack installed (Lesson 04)
+- The SSH tunnel to Open WebUI didn't work for me, so we moved **Tailscale** straight in as the way to reach the AI — safer than opening port 3000 to the internet. The tunnel stays in Lesson 04 as an optional fallback
+- Wrote [Lesson 05 — Tailscale](lessons/05-tailscale.md) and [`scripts/05-install-tailscale.sh`](scripts/05-install-tailscale.sh): private HTTPS with `tailscale serve` (not Funnel)
+- **Next:** run Lesson 05, create the Open WebUI admin account, install the AI on my phone

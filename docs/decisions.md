@@ -43,3 +43,7 @@ Oracle Cloud Shell runs in FIPS mode, which forbids ED25519 keys. The VM script 
 ## 2026-10-28 — Keep Oracle's iptables, no UFW
 
 Oracle advises against UFW on its Ubuntu images (it can conflict with the built-in iptables rules). We keep Oracle's rules and expose nothing publicly except SSH.
+
+## 2026-10-28 — Reach Open WebUI through Tailscale, not a public port
+
+The SSH tunnel was awkward (PC only, window must stay open) and failed on first try. Making port 3000 public would expose the login page to the whole internet over plain HTTP. **Decision:** use Tailscale right after Lesson 04: `tailscale serve` gives tailnet-only HTTPS on `*.ts.net`, works on phone and PC, and opens no inbound port. We never use `tailscale funnel` (public). The SSH tunnel remains documented as a fallback.

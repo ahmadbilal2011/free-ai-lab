@@ -113,11 +113,9 @@ echo
 echo "Memory now:"; free -h | sed -n '1,2p'
 echo
 if [ "$WEBUI_OK" = yes ]; then
-  echo -e "${c_ok}Open WebUI is ready.${c_off} It's private (server-only). To open it from Windows:"
+  echo -e "${c_ok}Open WebUI is ready.${c_off} It's private (server-only, port 3000 is not public)."
 else
-  echo "When Open WebUI is healthy, open it from Windows like this:"
+  echo "Open WebUI is still starting. Check later with: docker ps"
 fi
-echo "  1) In a NEW PowerShell window run (keep it open):"
-echo "       ssh -i \$HOME\\.ssh\\free-ai-lab -L 3000:localhost:3000 ubuntu@<SERVER_IP>"
-echo "  2) In your browser open:  http://localhost:3000"
-echo "  3) Create your account. The FIRST account becomes the admin."
+echo -e "${c_warn}NEXT:${c_off} Lesson 05 (Tailscale) gives you a private https:// address for your laptop and phone."
+echo "Create your Open WebUI account there first: the FIRST account becomes the admin."
