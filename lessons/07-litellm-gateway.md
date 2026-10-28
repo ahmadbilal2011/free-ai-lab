@@ -69,8 +69,9 @@ It will:
    - **Nothing appears while you paste.** That's normal for secrets. In PowerShell, **right-click** pastes. Press Enter after each one.
    - The script confirms each paste: `received 56 characters, ending in ...a1b2`. If it says `skipped`, the paste didn't work.
    - Press **Enter on an empty line** to skip a provider you don't have. It also creates a random **master key**
-4. Start LiteLLM and wait until it's healthy
-5. **Test every alias**, then run a **fallback drill**: a special `drill` alias uses a deliberately broken key, so a backup **must** answer
+4. **Find models that work today.** The model picker ([`07-pick-models.py`](../scripts/07-pick-models.py)) asks each provider for its current model list, ranks the chat models (big ones for `smart`, small ones for `fast`), **tests** candidates with a tiny request, and writes `~/lab/gateway/config.yaml` from the ones that answered
+5. Start LiteLLM and wait until it's healthy
+6. **Test every alias**, then run a **fallback drill**: a special `drill` alias uses a deliberately broken key, so a backup **must** answer
 
 Example result:
 
@@ -147,10 +148,21 @@ You'll see the authentication error for `drill`, then the fallback to the next m
 
 ### A provider renamed or removed a model
 
-1. Find current names: `bash 06-test-api-key.sh groq` (or `nvidia` / `openrouter`)
-2. Edit the name in `~/lab/gateway/config.yaml` (`nano ~/lab/gateway/config.yaml`; save with Ctrl+O, Enter, Ctrl+X)
-3. Apply: `cd ~/lab/gateway && docker compose restart litellm`
-4. Also update [`stacks/gateway/config.yaml`](../stacks/gateway/config.yaml) in this repo, so GitHub stays the source of truth
+This **will** happen. Our very first config used model names that had all been retired or renamed (Groq removed them, NVIDIA's reached "end of life", OpenRouter's stopped being free). So we never hard-code names any more. To refresh:
+
+```bash
+python3 ~/lab/gateway/pick-models.py && cd ~/lab/gateway && docker compose restart litellm
+```
+
+The picker finds and tests today's models and rewrites the config. Apps keep using `smart` / `fast` / `private`, so nothing else changes.
+
+### Find out why something falls back
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/07-diagnose-gateway.sh -o 07-diagnose-gateway.sh && bash 07-diagnose-gateway.sh
+```
+
+It checks (without printing keys): do the keys reach the container, can it reach each provider, does each key + model work directly, and LiteLLM's own health check with the real error messages.
 
 ### Change or add a key
 
@@ -207,7 +219,7 @@ Your tidy server afterwards:
 | LiteLLM never becomes healthy | `docker logs --tail 50 litellm`. A typo in `config.yaml` is the usual cause; download it again from the repo |
 | `exec format error` | The image has no Arm build. Send the error; we'll pick another tag |
 | Every line says `FAIL ... AuthenticationError` | A key is wrong or was revoked. Run the script again and paste it carefully |
-| `FAIL ... model not found` / `NotFoundError` | The provider renamed the model. See Part F |
+| `FELL BACK` / `model not found` / `410 Gone` / `unavailable for free` | The provider renamed, retired or stopped offering the model for free. Re-run the picker (Part F) |
 | Open WebUI can't verify `http://litellm:4000/v1` | Check `docker network inspect ai_default` lists both `open-webui` and `litellm`. Check the key is the **master** key |
 
 ---

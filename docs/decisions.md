@@ -55,3 +55,7 @@ The local 3B model is slow on 2 CPU cores. **Decision:** add free cloud API prov
 ## 2026-10-28 — Drop Cerebras and GitHub Models; use NVIDIA Build and OpenRouter
 
 Cerebras now asks for a credit card at signup, which breaks our $0 / no-card rule. GitHub Models was retired by GitHub on 30 July 2026. **Decision:** main providers are **Groq** and **NVIDIA Build (NIM)**, with **OpenRouter** free models as a third, and Gemini optional for general questions. If any provider starts asking for a card, it gets dropped the same way.
+
+## 2026-10-28 — Never hard-code provider model names; discover and test them
+
+The first gateway config used model names from memory. A live diagnosis showed **all of them** had gone: Groq no longer had `llama-3.3-70b-versatile` / `llama-3.1-8b-instant`, NVIDIA's `meta/llama-3.3-70b-instruct` reached end of life on 26 Aug 2026, and OpenRouter's Llama 3.3 70B stopped being free. **Decision:** the installer runs `07-pick-models.py`, which lists each provider's *current* models, ranks them by preference, tests candidates with a tiny request, and generates the config. Apps only ever use our aliases (`smart`, `fast`, `private`), so provider churn never reaches them.

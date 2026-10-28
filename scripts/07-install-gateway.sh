@@ -7,9 +7,10 @@
 #
 # What it does:
 #   1. Checks the AI stack (Lesson 04) is running
-#   2. Downloads the gateway stack to ~/lab/gateway
+#   2. Downloads the gateway stack and the model picker to ~/lab/gateway
 #   3. Asks for your API keys (hidden) and stores them in ~/lab/gateway/.env
 #      (readable only by you, never committed). Press Enter to skip a provider.
+#   3b. Finds models that work TODAY (providers rename/retire models often)
 #   4. Starts LiteLLM and waits until it's healthy
 #   5. Tests every model name and the automatic fallback
 #
@@ -43,7 +44,7 @@ docker network inspect ai_default >/dev/null 2>&1 || die "The AI stack isn't run
 step "2/5  Downloading the gateway stack to ~/lab/gateway"
 mkdir -p "$DIR"
 curl -fsSL "$RAW/stacks/gateway/compose.yaml" -o "$DIR/compose.yaml"
-curl -fsSL "$RAW/stacks/gateway/config.yaml"  -o "$DIR/config.yaml"
+curl -fsSL "$RAW/scripts/07-pick-models.py"   -o "$DIR/pick-models.py"
 umask 077; touch "$ENVF"; chmod 600 "$ENVF"; umask 022
 
 # ---------- 3. keys ----------
@@ -75,8 +76,12 @@ if [ "$SET_COUNT" -eq 0 ]; then
 fi
 echo "Keys saved in ~/lab/gateway/.env (only you can read it)."
 
+# ---------- 3b. pick working models ----------
+step "3b   Finding models that work TODAY on each provider (free tiers change often)"
+python3 "$DIR/pick-models.py" || warn "No cloud model passed its test. The gateway will use the local model only."
+
 # ---------- 4. start ----------
-step "4/5  Starting LiteLLM"
+step "4/5  Starting LiteLLM with the chosen models"
 docker compose -f "$DIR/compose.yaml" --project-directory "$DIR" pull -q
 docker compose -f "$DIR/compose.yaml" --project-directory "$DIR" up -d --force-recreate
 waited=0
@@ -107,14 +112,26 @@ try:
   else: print("FELL BACK -> answered by", m, "(the first choice failed: key missing/wrong or model renamed)")
 except Exception as e: print("FAIL", e)'; }
 
-printf "  %-17s " "smart";            ask smart            | summ smart "llama-3.3-70b"
-printf "  %-17s " "fast";             ask fast             | summ fast "8b-instant"
-printf "  %-17s " "smart-nvidia";     ask smart-nvidia     | summ smart-nvidia "meta/llama"
-printf "  %-17s " "smart-openrouter"; ask smart-openrouter | summ smart-openrouter ":free"
-printf "  %-17s " "private";          ask private          | summ private "llama3.2"
+# Test every alias in the generated config; expected answer = that alias's own model
+python3 - "$DIR/config.yaml" > "$DIR/.aliases" <<'PY'
+import sys, re
+name = None
+for line in open(sys.argv[1]):
+    m = re.match(r"\s*- model_name: (\S+)", line)
+    if m: name = m.group(1); continue
+    m = re.match(r"\s*model: (\S+)", line)
+    if m and name:
+        model = m.group(1).split("/", 1)[1] if "/" in m.group(1) else m.group(1)
+        print(name, model); name = None
+PY
+while read -r alias model; do
+  [ "$alias" = "drill" ] && continue
+  printf "  %-17s " "$alias"; ask "$alias" | summ "$alias" "$model"
+done < "$DIR/.aliases"
+rm -f "$DIR/.aliases"
 echo
 echo "Fallback drill: 'drill' uses a deliberately broken key, so a BACKUP must answer..."
-printf "  %-17s " "drill";            ask drill            | summ drill "BACKUP"
+printf "  %-17s " "drill"; ask drill | summ drill "BACKUP"
 
 step "Done!"
 echo "Gateway (server-only):  http://127.0.0.1:4000/v1"

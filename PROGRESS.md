@@ -34,4 +34,6 @@ Newest entries at the top.
 - First gateway run: **no keys were entered** (they were only in Open WebUI), so every alias fell back to the local model. Fallback worked, but the script wrongly said "OK". Fixed: it now confirms each pasted key, warns when none are set, and reports `FELL BACK` honestly
 - LiteLLM disables mock fallback tests by default, so the drill now uses a `drill` alias with a deliberately broken key
 - Question: do we still need Open WebUI? **Yes**: LiteLLM has no chat screen; Open WebUI is the chat app. The mess was duplicated keys + practice leftovers → added [`scripts/cleanup-lab.sh`](scripts/cleanup-lab.sh) (never touches volumes or keys)
-- **Next:** re-run the gateway script and paste the keys, connect Open WebUI to `http://litellm:4000/v1`, delete direct connections, run the cleanup
+- Second run: keys saved (56/70/73 chars) but **every cloud model still fell back**. Wrote [`07-diagnose-gateway.sh`](scripts/07-diagnose-gateway.sh): keys OK, network OK — **all model names were dead** (Groq removed them, NVIDIA's hit end-of-life 26 Aug 2026, OpenRouter's no longer free)
+- Big lesson: free-tier model names change constantly. Added [`07-pick-models.py`](scripts/07-pick-models.py): lists live models, tests them, generates the config automatically
+- **Next:** re-run the gateway installer (it now picks working models), connect Open WebUI, clean up
