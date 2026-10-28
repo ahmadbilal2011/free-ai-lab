@@ -29,7 +29,7 @@ Rules for the whole course:
 
 | # | Lesson | What I get |
 |---|---|---|
-| 06 | **Free cloud AI via API keys** (Groq, Cerebras, + optional GitHub Models, OpenRouter, Gemini) | Fast, smart chat in Open WebUI today |
+| 06 | **Free cloud AI via API keys** (Groq, NVIDIA, OpenRouter, + optional Gemini) | Fast, smart chat in Open WebUI today |
 | 07 | **LiteLLM gateway** | One endpoint for every provider, automatic fallback when a free limit is hit, usage logs |
 | 08 | **Backups and monitoring** | Chats, settings and keys are safe before Jarvis gets my data |
 

@@ -3,7 +3,7 @@
 # free-ai-lab — Lesson 06: test a free AI API key from the server
 #
 #   bash 06-test-api-key.sh groq
-#   bash 06-test-api-key.sh cerebras
+#   bash 06-test-api-key.sh nvidia
 #   bash 06-test-api-key.sh openrouter
 #   MODEL=llama-3.3-70b-versatile bash 06-test-api-key.sh groq   # also send a test question
 #
@@ -17,10 +17,10 @@ die() { echo -e "${c_err}[x] $*${c_off}" >&2; exit 1; }
 
 case "${1:-}" in
   groq)       BASE="https://api.groq.com/openai/v1" ;;
-  cerebras)   BASE="https://api.cerebras.ai/v1" ;;
+  nvidia)     BASE="https://integrate.api.nvidia.com/v1" ;;
   openrouter) BASE="https://openrouter.ai/api/v1" ;;
   gemini)     BASE="https://generativelanguage.googleapis.com/v1beta/openai" ;;
-  *) die "Usage: bash $0 groq|cerebras|openrouter|gemini" ;;
+  *) die "Usage: bash $0 groq|nvidia|openrouter|gemini" ;;
 esac
 
 read -r -s -p "Paste your $1 API key (hidden) and press Enter: " KEY; echo

@@ -55,7 +55,7 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
 
 | # | Lesson | Status |
 |---|---|---|
-| 06 | [Free cloud AI via API keys (Groq, Cerebras, …)](lessons/06-free-cloud-ai.md) | ⏳ Next |
+| 06 | [Free cloud AI via API keys (Groq, NVIDIA, OpenRouter, …)](lessons/06-free-cloud-ai.md) | ⏳ Next |
 | 07 | LiteLLM gateway: one endpoint, automatic fallback | ⬜ |
 | 08 | Backups and monitoring | ⬜ |
 

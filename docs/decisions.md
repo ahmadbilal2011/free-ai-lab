@@ -51,3 +51,7 @@ The SSH tunnel was awkward (PC only, window must stay open) and failed on first 
 ## 2026-10-28 — Hybrid AI: free cloud APIs + local fallback
 
 The local 3B model is slow on 2 CPU cores. **Decision:** add free cloud API providers (Groq, Cerebras first; GitHub Models, OpenRouter, Gemini optional) to Open WebUI, and keep Ollama as a private, unlimited fallback. **Privacy rule:** personal data only goes to providers that don't train on prompts. Gemini's free tier trains on data in KSA, so it's for general questions only. Lesson 07 adds LiteLLM for automatic fallback between providers.
+
+## 2026-10-28 — Drop Cerebras and GitHub Models; use NVIDIA Build and OpenRouter
+
+Cerebras now asks for a credit card at signup, which breaks our $0 / no-card rule. GitHub Models was retired by GitHub on 30 July 2026. **Decision:** main providers are **Groq** and **NVIDIA Build (NIM)**, with **OpenRouter** free models as a third, and Gemini optional for general questions. If any provider starts asking for a card, it gets dropped the same way.

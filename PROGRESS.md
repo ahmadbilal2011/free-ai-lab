@@ -28,4 +28,5 @@ Newest entries at the top.
 - Local 3B model works but is slow on 2 CPU cores. **Decision: hybrid AI** — free cloud APIs (Groq, Cerebras, …) for speed, local model as private fallback
 - Expanded the course into a full path to my own **Jarvis**: LiteLLM gateway, n8n, Telegram bot, agents/harnesses, RAG, images, video, social posting, voice, security review — see [docs/roadmap.md](docs/roadmap.md)
 - Wrote [Lesson 06 — Free cloud AI](lessons/06-free-cloud-ai.md) and [`scripts/06-test-api-key.sh`](scripts/06-test-api-key.sh) (tests a key hidden, never saves it)
-- **Next:** create Groq + Cerebras keys and add them to Open WebUI
+- Cerebras asked for a **credit card** at signup → dropped. While checking alternatives, found that **GitHub Models was retired** (30 July 2026) → removed too. Replaced with **NVIDIA Build** and **OpenRouter** (no card)
+- **Next:** create Groq + NVIDIA/OpenRouter keys and add them to Open WebUI
