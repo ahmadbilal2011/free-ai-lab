@@ -52,7 +52,54 @@ Windows 10 and 11 include OpenSSH, so nothing needs installing.
 
 ---
 
-## Part C — Create the instance in the Oracle Console
+## Part C — Option 1 (recommended): one command in Oracle Cloud Shell
+
+**Cloud Shell** is a free Linux terminal inside the Oracle Console. It's already signed in to your account and has the `oci` command-line tool installed, so there's nothing to set up.
+
+Our script [`scripts/create-free-vm.sh`](../scripts/create-free-vm.sh) does everything from Part A for you:
+
+1. Checks you're in your **home region** (Always Free only exists there)
+2. Checks you're still **inside the free limits** (A1 CPU/RAM and 200 GB storage) and refuses to continue if you're not
+3. Creates the network: VCN → internet gateway → route → public subnet (only SSH port 22 is open)
+4. Finds the newest **Ubuntu 24.04 Arm** image
+5. Creates the VM with **2 OCPU / 12 GB / 100 GB** and your SSH public key
+6. If Oracle is **out of capacity**, waits 60 seconds and tries again (up to 30 times)
+7. Prints your public IP and the exact `ssh` command to connect
+
+It's safe to run again: it reuses what already exists and stops if the VM is already there.
+
+### Steps
+
+1. Sign in at <https://cloud.oracle.com> and check the region (top right) is your **home region**.
+2. Click the **Cloud Shell** icon `>_` at the top right (or **Developer tools → Cloud Shell**). Wait until you see a `$` prompt.
+3. Paste this **one line**, but first replace the text inside the quotes with **your public key** from Part B, step 5:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/create-free-vm.sh -o create-free-vm.sh && SSH_PUBLIC_KEY="PASTE-YOUR-ssh-ed25519-LINE-HERE" bash create-free-vm.sh
+   ```
+
+   - `curl ... -o create-free-vm.sh` → downloads the script from this repo
+   - `SSH_PUBLIC_KEY="..."` → hands it your **public** key (never the private one; the script refuses if you paste a private key)
+   - `bash create-free-vm.sh` → runs it
+
+4. Wait. Without capacity problems it takes about 2–4 minutes. At the end you'll see:
+
+   ```
+   ==> Done! Your Always Free VM is RUNNING
+   Public IP: x.x.x.x
+   ```
+
+   Then jump to **Part D**.
+
+> **Good habit:** never run a script from the internet without knowing what it does. Before running, you can read it in Cloud Shell with `less create-free-vm.sh` (press `q` to quit), or read it on GitHub.
+
+> **Cloud Shell closes after about 20 minutes of no typing.** If that happens during capacity retries, just reopen it and run `SSH_PUBLIC_KEY="..." bash create-free-vm.sh` again.
+
+---
+
+## Part C — Option 2: create it by clicking in the Console
+
+Use this if you prefer to see every setting yourself. The result is the same as Option 1.
 
 1. Sign in at <https://cloud.oracle.com>. Make sure the region shown at the top right is your **home region**.
 2. Open the menu (☰) → **Compute** → **Instances** → **Create instance**.
