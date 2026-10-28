@@ -23,4 +23,6 @@ Newest entries at the top.
 - ✅ Docker installed (Lesson 03) and the AI stack installed (Lesson 04)
 - The SSH tunnel to Open WebUI didn't work for me, so we moved **Tailscale** straight in as the way to reach the AI — safer than opening port 3000 to the internet. The tunnel stays in Lesson 04 as an optional fallback
 - Wrote [Lesson 05 — Tailscale](lessons/05-tailscale.md) and [`scripts/05-install-tailscale.sh`](scripts/05-install-tailscale.sh): private HTTPS with `tailscale serve` (not Funnel)
-- **Next:** run Lesson 05, create the Open WebUI admin account, install the AI on my phone
+- ✅ Tailscale works: Open WebUI opens on my private `https://…ts.net` address — **Lesson 05 working on laptop**
+- First chat: the 3B model answered, but wrongly tried a `create_calendar_event` **tool** for "Can you hear me?". Lesson: small models misuse tools; turned tools and background tasks (title/tags/follow-ups) off — added to Lesson 04
+- **Next:** retest in a new chat, install the AI on my phone, then Lesson 06
