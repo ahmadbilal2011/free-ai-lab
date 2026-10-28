@@ -1,0 +1,45 @@
+# Design decisions
+
+Short records of important choices: what we chose, what we didn't, and why. Newest first.
+
+---
+
+## 2026-10-28 — Docker Compose now, Kubernetes (K3s) later
+
+**Question:** Should the lab run on Kubernetes with cert-manager and ingress-nginx instead of Docker?
+
+**Decision:** Phase 1 uses **Docker Compose + healthchecks + autoheal**. Kubernetes becomes an optional **Phase 2 track** that migrates the same apps to **K3s**.
+
+**Why:**
+
+| Point | Detail |
+|---|---|
+| ingress-nginx is retired | The Kubernetes project ended its maintenance in March 2026. New setups should use Traefik (bundled with K3s) or the Gateway API instead. |
+| No public HTTPS needed | Everything is private behind Tailscale, which also provides free HTTPS certificates on `*.ts.net`. cert-manager with Let's Encrypt would need a domain and public ports 80/443. |
+| RAM goes to the AI | 12 GB total. K3s needs roughly 0.5–1 GB more, which the model needs. |
+| Single node | Kubernetes' biggest strength is moving work between servers. With one VM, its self-healing is close to Docker with healthchecks + autoheal. |
+| Learning order | Get a working AI first; then learning Kubernetes on apps you already understand is much easier. |
+
+**Self-healing in Phase 1:**
+
+| Failure | Handled by |
+|---|---|
+| Container crashes | `restart: unless-stopped` |
+| Container frozen (healthcheck failing) | autoheal |
+| Docker daemon crashes | systemd restarts it |
+| Server reboots | Docker starts at boot, containers come back |
+| Whole VM lost | Backups (Lesson 07). No single-server setup can avoid this, Docker or Kubernetes. |
+
+**Revisit when:** Phase 1 (Lessons 04–07) is complete.
+
+Sources: [Ingress NGINX retirement — Kubernetes blog](https://www.kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/), [Kubernetes Steering & Security Response Committees statement](https://www.kubernetes.io/blog/2026/01/29/ingress-nginx-statement/)
+
+---
+
+## 2026-10-28 — RSA 4096 key created in Cloud Shell
+
+Oracle Cloud Shell runs in FIPS mode, which forbids ED25519 keys. The VM script creates an RSA 4096 key in Cloud Shell, and the user downloads it to Windows. Students who prefer a laptop-created key can pass `SSH_PUBLIC_KEY`.
+
+## 2026-10-28 — Keep Oracle's iptables, no UFW
+
+Oracle advises against UFW on its Ubuntu images (it can conflict with the built-in iptables rules). We keep Oracle's rules and expose nothing publicly except SSH.

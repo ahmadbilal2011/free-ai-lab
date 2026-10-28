@@ -17,6 +17,7 @@ My phone / PC
       ▼
 Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── Docker ........ runs every app in its own isolated container
+  ├── autoheal ...... restarts any app that freezes
   ├── Ollama ........ engine that runs open-source AI models on the CPU
   ├── Open WebUI .... ChatGPT-style web interface (installable on phone)
   └── Vikunja ....... to-do lists and daily task management
@@ -40,10 +41,24 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
 | 01 | [Create the Oracle VM safely](lessons/01-create-vm.md) | ✅ Done |
 | 02 | [Secure SSH access, updates and firewall](lessons/02-secure-server.md) | ✅ Done |
 | 03 | [Install and understand Docker](lessons/03-docker.md) | ⏳ In progress |
-| 04 | Run my own AI: Ollama + Open WebUI | ⬜ |
+| 04 | [Run my own AI: Ollama + Open WebUI](lessons/04-ai.md) | ⏳ Ready |
 | 05 | Access from anywhere with Tailscale (PC + mobile) | ⬜ |
 | 06 | Daily task management with Vikunja | ⬜ |
 | 07 | Backups, monitoring and keeping it alive | ⬜ |
+
+### Phase 2 — Kubernetes track (optional, after Phase 1)
+
+Move the same apps from Docker Compose to Kubernetes, on the same free VM.
+
+| # | Lesson | Status |
+|---|---|---|
+| K1 | K3s: lightweight Kubernetes on one node | ⬜ |
+| K2 | Translate the Compose stacks into Kubernetes manifests and Helm | ⬜ |
+| K3 | Traffic routing with Traefik / Gateway API (ingress-nginx is retired) | ⬜ |
+| K4 | cert-manager and HTTPS certificates | ⬜ |
+| K5 | Probes, resource limits and rolling updates vs. Docker autoheal | ⬜ |
+
+Why this order: [docs/decisions.md](docs/decisions.md)
 
 Progress log: [PROGRESS.md](PROGRESS.md)
 

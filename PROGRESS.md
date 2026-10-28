@@ -17,4 +17,7 @@ Newest entries at the top.
 - Wrote [Lesson 02 — Secure the server](lessons/02-secure-server.md) and [`scripts/02-secure-server.sh`](scripts/02-secure-server.sh)
 - ✅ Server secured, SSH from the Windows laptop works — **Lesson 02 complete**
 - Wrote [Lesson 03 — Docker](lessons/03-docker.md), [`scripts/03-install-docker.sh`](scripts/03-install-docker.sh) and the practice stack [`stacks/hello`](stacks/hello/compose.yaml)
-- **Next:** install Docker, then do the hands-on part of Lesson 03
+- Question: Kubernetes (cert-manager + ingress-nginx) instead of Docker? **Decision: Docker Compose now, K3s as a Phase 2 track** — see [docs/decisions.md](docs/decisions.md). Found that ingress-nginx was retired in March 2026
+- Added autoheal (restarts frozen containers) and healthchecks to the plan
+- Wrote [Lesson 04 — My own AI](lessons/04-ai.md), [`scripts/04-install-ai.sh`](scripts/04-install-ai.sh), stacks [`ai`](stacks/ai/compose.yaml) and [`autoheal`](stacks/autoheal/compose.yaml)
+- **Next:** finish Lesson 03 hands-on, then run Lesson 04

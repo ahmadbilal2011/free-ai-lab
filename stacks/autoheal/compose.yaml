@@ -1,0 +1,24 @@
+# Autoheal: restarts any container that Docker marks "unhealthy".
+# Docker's own restart policy only restarts containers that CRASH (exit).
+# Autoheal covers the other case: a container that is still running but frozen.
+#
+# Only containers with the label  autoheal: "true"  are watched.
+#
+# Security note: autoheal needs the Docker socket, which gives it full control
+# of Docker (root-level power). We use the widely used willfarrell/autoheal
+# image and give it nothing else.
+
+name: autoheal
+
+services:
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal   # watch only containers with this label
+      AUTOHEAL_INTERVAL: 30                # check every 30 seconds
+      AUTOHEAL_START_PERIOD: 300           # ignore everything for 5 min after autoheal starts (boot time)
+      AUTOHEAL_DEFAULT_STOP_TIMEOUT: 20    # give a container 20 s to stop cleanly
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
