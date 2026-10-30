@@ -38,7 +38,7 @@ Keep backups **off the server**, **encrypted**, and **tested**:
 |---|---|
 | `~/lab/` (compose files, gateway config, **`.env` keys**) | Rebuild every app exactly as it was |
 | Docker volume `ai_open-webui` | Users, chats, settings |
-| Every **future** Docker volume (n8n, Vikunja, …) | Picked up automatically, nothing to remember |
+| Every **future** Docker volume (n8n, …) | Picked up automatically, nothing to remember |
 
 | Excluded | Why |
 |---|---|
@@ -229,4 +229,4 @@ Your chats, settings and keys are back.
 
 ## Next
 
-**Lesson 09 — Vikunja task manager.**
+**Lesson 09 — n8n basics**: the automation engine that becomes Jarvis's nervous system.

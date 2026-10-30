@@ -44,5 +44,6 @@ Newest entries at the top.
 
 ## 2026-10-30 — Day 2
 
-- Wrote [Lesson 09 — Vikunja](lessons/09-vikunja-tasks.md), [`scripts/09-install-tasks.sh`](scripts/09-install-tasks.sh) and the [`tasks` stack](stacks/tasks/compose.yaml): private task manager on Tailscale HTTPS port 8443, data inside `~/lab` so backups include it, sign-up closed after creating my account
-- **Next:** install Vikunja, create my account, `--lock`, set up projects
+- Drafted a Vikunja (self-hosted task manager) lesson, then **dropped it**: Jarvis doesn't need its own task app; it will connect to the free cloud tools I already use. The server hosts only what must be ours — see [docs/decisions.md](docs/decisions.md)
+- Reshaped the roadmap around the real goal: **Jarvis controlled by text and voice, doing things for me, at $0**. Voice moved up to Lesson 11; Part 4 connects my cloud tools
+- **Next:** Lesson 09 — n8n basics

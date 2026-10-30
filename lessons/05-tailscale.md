@@ -159,4 +159,4 @@ Later (Lesson 07) we can even **close public SSH** in Oracle's Security List, so
 
 ## Next
 
-**Lesson 06 — Daily task management with Vikunja.**
+**[Lesson 06 — Free cloud AI via API keys](06-free-cloud-ai.md)**.

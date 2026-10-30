@@ -33,7 +33,7 @@ Important warnings:
 ## 3. Arm vs x86
 
 CPUs come in "families" (architectures). Most laptops are **x86** (Intel/AMD). Oracle's free Ampere A1 is **Arm** (like phones and Apple M-chips).
-Software must be built for the right family. Everything we use (Ubuntu, Docker, Ollama, Open WebUI, Vikunja) supports Arm, so this is fine — but it's why we always check.
+Software must be built for the right family. Everything we use (Ubuntu, Docker, Ollama, Open WebUI, LiteLLM, n8n) supports Arm, so this is fine — but it's why we always check.
 
 ## 4. Linux and Ubuntu
 

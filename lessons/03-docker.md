@@ -14,7 +14,7 @@ Without Docker, installing an app like Open WebUI means installing Python, the r
 
 With Docker, each app arrives as a **ready-made package** with everything it needs inside. It runs in its own box, can't break other apps, and can be removed in one command.
 
-Every app in this lab (Ollama, Open WebUI, Vikunja) will run in Docker.
+Every app in this lab (Ollama, Open WebUI, LiteLLM, n8n) will run in Docker.
 
 ## Part B — The 6 ideas you need
 
@@ -47,7 +47,7 @@ On our VM, Oracle's cloud Security List still only allows SSH (22) from the inte
 
 ### Arm reminder
 
-Our VM is Arm (`aarch64`). Most popular images (nginx, Ollama, Open WebUI, Vikunja) publish Arm versions, and Docker picks the right one automatically. If an image only exists for x86, it won't run here. We always check.
+Our VM is Arm (`aarch64`). Most popular images (nginx, Ollama, Open WebUI, LiteLLM, n8n) publish Arm versions, and Docker picks the right one automatically. If an image only exists for x86, it won't run here. We always check.
 
 ### The `docker` group: convenience with a warning
 
@@ -193,7 +193,8 @@ cd ~
 /home/ubuntu/lab/
 ├── hello/        ← this lesson's practice
 ├── ai/           ← Lesson 04: Ollama + Open WebUI
-└── tasks/        ← Lesson 06: Vikunja
+├── gateway/      ← Lesson 07: LiteLLM
+└── jarvis/       ← Lesson 09+: n8n
 ```
 
 Each folder holds one `compose.yaml`. The same files live in this repo under [`stacks/`](../stacks/), so the whole lab can be rebuilt from GitHub.

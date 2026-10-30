@@ -1,6 +1,8 @@
 # Course roadmap: from a free server to my own "Jarvis"
 
-The goal: **one free, private system** I reach from my phone and PC, that can chat, code, create images and video, manage my tasks, automate my day, post to social media (with my approval), and act as a personal assistant ("Jarvis").
+The goal: **my own "Jarvis"**: one assistant I control by **text and voice**, from my phone and PC, that **does things** for me (plans my day, reminds me, searches, writes, codes, creates images and video, posts to social media with my approval) at **$0 cost**.
+
+Design principle: the server runs only what *must* be ours (the AI gateway, the automation engine, the private model, backups). Everything else (calendar, tasks, email, storage, social media) stays in the **free cloud tools I already use**, and Jarvis connects to them.
 
 Rules for the whole course:
 
@@ -33,36 +35,36 @@ Rules for the whole course:
 | 07 | **LiteLLM gateway** | One endpoint for every provider, automatic fallback when a free limit is hit, usage logs |
 | 08 | **Backups and monitoring** | Chats, settings and keys are safe before Jarvis gets my data |
 
-## Part 3 — Daily life and automation
+## Part 3 — Jarvis's nervous system and front door
 
 | # | Lesson | What I get |
 |---|---|---|
-| 09 | **Vikunja** task manager | My to-do lists, on phone and PC |
-| 10 | **n8n basics**: workflows, triggers, credentials | The "nervous system" that connects everything |
-| 11 | **Telegram bot + n8n** | Talk to my AI from Telegram; daily morning briefing; reminders |
+| 09 | **n8n basics**: self-hosted automation engine, workflows, triggers, credentials, connected to my AI gateway | The engine every Jarvis skill runs on |
+| 10 | **Telegram bot: text Jarvis from anywhere** | Message Jarvis on my phone; it answers using `smart` |
+| 11 | **Voice in, voice out**: free speech-to-text and text-to-speech | Send a voice note → Jarvis understands and can reply with voice |
 
-## Part 4 — Agents (the Jarvis brain)
-
-| # | Lesson | What I get |
-|---|---|---|
-| 12 | **AI agents and tools**: n8n AI Agent, function calling, MCP | The AI can *do* things: add tasks, search the web, read my calendar |
-| 13 | **Agent harnesses and coding agents** (e.g. OpenCode / Aider) with free APIs | An AI that writes and fixes code on my server, safely sandboxed |
-| 14 | **Memory and knowledge (RAG)** | The AI knows my notes and documents, privately |
-
-## Part 5 — Creative and social
+## Part 4 — Jarvis does things
 
 | # | Lesson | What I get |
 |---|---|---|
-| 15 | **Free image generation** (free API tiers; checked when we get there) | Images from a prompt, inside my system |
-| 16 | **Video generation**: what's honestly possible for free | Short clips / slideshow-style videos; real limits explained |
-| 17 | **Social media posting** (self-hosted scheduler + n8n, approval step) | Draft → I approve → it posts. Within each platform's rules |
+| 12 | **Agents and tools**: n8n AI Agent, function calling, MCP, **approval before any action** | Jarvis decides which tool to use, and asks before acting |
+| 13 | **Connect my free cloud tools** (calendar, tasks/reminders, email, web search: the ones I already use) | "Remind me tomorrow at 9", "What's on my calendar?", "Search the web for…" |
+| 14 | **Memory and knowledge (RAG)** | Jarvis remembers my preferences and can answer from my own notes and documents |
+| 15 | **Coding agent harness** with free models | Jarvis writes and runs code in a safe sandbox |
 
-## Part 6 — Jarvis
+## Part 5 — Jarvis creates
 
 | # | Lesson | What I get |
 |---|---|---|
-| 18 | **Voice**: speech-to-text and text-to-speech | Talk to it, it answers out loud |
-| 19 | **Jarvis**: tie everything together | One assistant on Telegram + Open WebUI that chats, plans, creates, automates |
+| 16 | **Free image generation** (free API tiers, checked when we get there) | "Make an image of…" from Telegram |
+| 17 | **Video generation**: what's honestly possible for free | Short clips / slideshow-style videos; real limits explained |
+| 18 | **Social media posting** via official APIs, **draft → I approve → it posts** | Hands-free posting, within each platform's rules |
+
+## Part 6 — Jarvis complete
+
+| # | Lesson | What I get |
+|---|---|---|
+| 19 | **Jarvis routines**: morning briefing, daily summary, proactive reminders, Telegram alerts from healthchecks | An assistant that works for me without being asked |
 | 20 | **Security review**: prompt injection, key scopes, approval gates, audit logs | Confidence that Jarvis can't be tricked into harm |
 
 ## Phase 2 — Kubernetes track (optional, after Part 6)
@@ -75,9 +77,10 @@ K3s, manifests and Helm, Traefik / Gateway API, cert-manager, probes. See [decis
 
 | Area | Reality |
 |---|---|
-| **Server RAM (12 GB)** | n8n, a social scheduler and databases all need RAM. When we add them, we may shrink or pause the local model. Cloud models do the heavy thinking. |
+| **Server RAM (12 GB)** | We host only what must be ours. n8n needs some RAM; if the server gets tight, we shrink the local model. Cloud models do the heavy thinking. |
 | **Free text AI** | Plenty of good options; each has daily caps. The gateway (Lesson 07) rotates between them. |
 | **Free image generation** | Some free API tiers exist but are small and change often. |
 | **Free video generation** | The hardest one. Truly free, reliable video APIs are rare; most are trials or paid. Lesson 16 shows what works and what doesn't. |
 | **Social media APIs** | Each platform has its own rules, approvals and limits; some have restricted or paid APIs. We post only through official APIs, with my approval, and never spam. |
 | **"Does everything"** | Jarvis grows one ability at a time. Each lesson adds one skill that works on its own. |
+| **Free cloud tools** | Calendar, tasks and email live with providers like Google or Microsoft. Convenient and free, but that data is stored by them. Truly private things go to `private` (the local model) |
