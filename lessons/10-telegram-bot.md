@@ -19,6 +19,17 @@
 | **Voice notes** built in | Lesson 11 turns them into voice commands |
 | Works without Tailscale on your phone | You talk to Telegram; n8n fetches your messages from Telegram |
 
+### Why a bot, and not my own Telegram account?
+
+A **bot** isn't extra software. It's a special Telegram account made for programs, and its token is how n8n uses Telegram's **Bot API**. Telegram also has a *user* API (MTProto) that would let n8n act as **your personal account**. We don't use it:
+
+| | Bot API ✅ | User API (your own account) |
+|---|---|---|
+| n8n support | Built-in nodes, plain HTTPS | None built in; needs an extra program on the server |
+| What Jarvis can see | Only messages sent **to Jarvis** | **All** your chats, contacts and groups |
+| If the key leaks | Someone controls the bot; revoke the token in seconds | Someone controls **your whole account** |
+| Telegram's rules | Made for this | Automating a personal account can get it limited or banned |
+
 ## Part B — Push or pull? Our rule: n8n reaches out, nothing reaches in
 
 There are two ways a bot can get your messages:

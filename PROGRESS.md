@@ -52,4 +52,5 @@ Newest entries at the top.
 - ✅ n8n installed, `Lab gateway` credential works — **Lesson 09 complete**
 - Lesson 10, first design: Telegram **pushes** to n8n through a public Tailscale Funnel "door" on the webhook paths. Found a port bug (Telegram only delivers to 443/80/88/8443), fixed it — then **I rejected the whole approach**: I want n8n's UI to drive everything, with nothing reaching in from the internet
 - Lesson 10 redesigned: n8n **pulls** messages from Telegram (`getUpdates` long polling, every 30 s), confirms them, keeps only my user ID, answers via `smart`. **No public ports at all.** [`10-close-public-door.sh`](scripts/10-close-public-door.sh) removes the old Funnel; n8n editor now on private `:9443`
+- Asked: why a bot, why not Telegram's API straight to n8n? The bot **is** that API (Bot API, built into n8n); the alternative user API would act as my personal account: extra server program, sees all chats, account-takeover risk if leaked. **Decision: bot**
 - **Next:** run the clean-up script, build `Jarvis chat` in the n8n UI
