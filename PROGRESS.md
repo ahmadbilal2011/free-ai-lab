@@ -56,4 +56,6 @@ Newest entries at the top.
 - Created the bot. Accidentally pasted the token in a chat → lesson learned: revoke it with @BotFather `/revoke` and use only the new token, only in n8n
 - Lesson 10 built in the n8n UI; nothing public
 - Wrote [Lesson 11 — Voice](lessons/11-voice.md), [`scripts/11-install-voice.sh`](scripts/11-install-voice.sh) and the [`voice` stack](stacks/voice/): ears = Groq Whisper via gateway alias `listen`; voice = local Piper (en/ar/ur), no host port, 768 MB cap; round-trip self-test
-- **Next:** install voice, add the voice branch to `Jarvis chat`
+- ✅ Old Telegram token deleted (revoked); new token only in n8n — **Lesson 10 complete**
+- Groq Whisper **didn't understand my speech** → switched ears and voice to **ElevenLabs** (Scribe + Eleven v3, which speaks Urdu), free plan. Backups are automatic: Groq Whisper for ears, local Piper for voice. Created my ElevenLabs account
+- **Next:** create the ElevenLabs API key, run `11-install-voice.sh`, add the voice branch to `Jarvis chat`

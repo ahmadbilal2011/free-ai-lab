@@ -123,6 +123,13 @@ def main():
                     print(f"  {name:<10} speech-to-text: {w}")
                     break
 
+    # ---------- ElevenLabs (Lesson 11): best ears and voice, small free monthly credits ----------
+    eleven = env.get("ELEVENLABS_API_KEY", "")
+    if eleven and eleven != "not-set":
+        chosen["eleven_listen"] = "elevenlabs/scribe_v1"
+        chosen["eleven_speak"] = "elevenlabs/eleven_v3"      # the ElevenLabs model that speaks Urdu
+        print("  elevenlabs ears: scribe_v1   voice: eleven_v3")
+
     # ---------- build config ----------
     deployments, smart_chain = [], []
     def add(alias, model, env_var=None, base=None):
@@ -137,9 +144,22 @@ def main():
     fast_first = "fast-groq" if "groq_fast" in chosen else None
     if fast_first: add("fast-groq", chosen["groq_fast"], "GROQ_API_KEY")
     add("private", "ollama_chat/llama3.2:3b", base="http://ollama:11434")
-    if "groq_listen" in chosen:
+    # ears: 'listen' = best available; 'listen-backup' = Groq when ElevenLabs is the first choice
+    listen_backup = None
+    if "eleven_listen" in chosen:
+        add("listen", chosen["eleven_listen"], "ELEVENLABS_API_KEY")
+        deployments[-1]["model_info"] = {"mode": "audio_transcription"}
+        if "groq_listen" in chosen:
+            add("listen-backup", chosen["groq_listen"], "GROQ_API_KEY")
+            deployments[-1]["model_info"] = {"mode": "audio_transcription"}
+            listen_backup = "listen-backup"
+    elif "groq_listen" in chosen:
         add("listen", chosen["groq_listen"], "GROQ_API_KEY")
         deployments[-1]["model_info"] = {"mode": "audio_transcription"}
+    # voice: 'speak' (the voice service falls back to local Piper by itself)
+    if "eleven_speak" in chosen:
+        add("speak", chosen["eleven_speak"], "ELEVENLABS_API_KEY")
+        deployments[-1]["model_info"] = {"mode": "audio_speech"}
     drill_target = chosen.get("groq_fast") or chosen.get("groq_smart") or "groq/llama-placeholder"
     deployments.append({"model_name": "drill", "litellm_params": {"model": drill_target, "api_key": "this-key-is-intentionally-invalid"}})
 
@@ -173,6 +193,7 @@ def main():
         fbs.append(f"    - {m}: {json.dumps(smart_chain[i+1:] + ['private'])}")
     if fast_first: fbs.append(f"    - {fast_first}: {json.dumps(smart_chain + ['private'])}")
     fbs.append(f"    - drill: {json.dumps(smart_chain + ['private'])}")
+    if listen_backup: fbs.append(f"    - listen: {json.dumps([listen_backup])}")
     lines += ["", "router_settings:", "  fallbacks:"] + [f for f in fbs if f] + [
         "  num_retries: 1", "  timeout: 90", "  allowed_fails: 1", "  cooldown_time: 60",
         "", "litellm_settings:", "  drop_params: true",
@@ -183,7 +204,9 @@ def main():
     print(f"    smart   -> {' -> '.join(chain)}")
     print(f"    fast    -> {' -> '.join(fast_chain)}")
     for k, v in chosen.items(): print(f"    {k:<17} = {v}")
-    if "groq_listen" in chosen: print("    listen  -> speech-to-text for voice notes (Lesson 11)")
+    if "eleven_listen" in chosen: print("    listen  -> ElevenLabs Scribe" + (" (backup: Groq Whisper)" if listen_backup else ""))
+    elif "groq_listen" in chosen: print("    listen  -> Groq Whisper")
+    if "eleven_speak" in chosen: print("    speak   -> ElevenLabs eleven_v3 (voice service falls back to local Piper)")
     if not smart_chain:
         print("\n  WARNING: no cloud model worked. Everything will use the local model.")
         sys.exit(2)
