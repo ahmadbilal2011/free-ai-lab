@@ -27,7 +27,7 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── LiteLLM ....... AI gateway: Groq → NVIDIA → OpenRouter → local, automatic fallback
   ├── Ollama ........ engine that runs open-source AI models on the CPU (private fallback)
   ├── Open WebUI .... ChatGPT-style web interface (installable on phone)
-  └── Vikunja ....... to-do lists and daily task management
+  └── Vikunja ....... to-do lists and daily task management (https://…ts.net:8443)
 ```
 
 | Component | What it is | Cost |
@@ -63,13 +63,13 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
 |---|---|---|
 | 06 | [Free cloud AI via API keys (Groq, NVIDIA, OpenRouter, …)](lessons/06-free-cloud-ai.md) | ✅ Done |
 | 07 | [LiteLLM gateway: one endpoint, automatic fallback](lessons/07-litellm-gateway.md) | ✅ Done |
-| 08 | [Backups and monitoring](lessons/08-backups-monitoring.md) | ⏳ Next |
+| 08 | [Backups and monitoring](lessons/08-backups-monitoring.md) | ✅ Done |
 
 **Part 3 — Daily life and automation**
 
 | # | Lesson | Status |
 |---|---|---|
-| 09 | Vikunja task manager | ⬜ |
+| 09 | [Vikunja task manager](lessons/09-vikunja-tasks.md) | ⏳ Next |
 | 10 | n8n basics: workflows, triggers, credentials | ⬜ |
 | 11 | Telegram bot + n8n: talk to my AI, daily briefing | ⬜ |
 

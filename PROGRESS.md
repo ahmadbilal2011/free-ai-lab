@@ -40,4 +40,9 @@ Newest entries at the top.
 - ✅ Open WebUI now uses only the gateway (`lab.smart` default, `lab.fast` task model); direct provider connections deleted; server cleaned — **Lesson 07 complete**
 - Wrote [Lesson 08 — Backups and monitoring](lessons/08-backups-monitoring.md): restic → Oracle Object Storage (encrypted, nightly, restore-tested), healthchecks.io dead man's switch, `lab-status`
 - Found Oracle's idle rule for A1 (CPU, network **and** memory < 20% for 7 days) → keep the private model loaded (`OLLAMA_KEEP_ALIVE=-1`) so memory stays above 20% with real usage
-- **Next:** Cloud Shell bucket script, then the VM backup installer
+- ✅ Backups and monitoring set up — **Lesson 08 complete**
+
+## 2026-10-30 — Day 2
+
+- Wrote [Lesson 09 — Vikunja](lessons/09-vikunja-tasks.md), [`scripts/09-install-tasks.sh`](scripts/09-install-tasks.sh) and the [`tasks` stack](stacks/tasks/compose.yaml): private task manager on Tailscale HTTPS port 8443, data inside `~/lab` so backups include it, sign-up closed after creating my account
+- **Next:** install Vikunja, create my account, `--lock`, set up projects
