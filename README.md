@@ -18,7 +18,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)**
 
 ```
 My phone / PC
-      │   Tailscale (free private network — no public ports opened)
+      │   Tailscale (free private network) — the only public door is n8n's webhook path for Telegram
       ▼
 Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── Docker ........ runs every app in its own isolated container
@@ -72,8 +72,8 @@ Jarvis's front door: Telegram (text + voice) ──► n8n ──► gateway ─
 
 | # | Lesson | Status |
 |---|---|---|
-| 09 | [n8n basics: workflows, triggers, credentials, connected to my AI gateway](lessons/09-n8n-basics.md) | ⏳ Next |
-| 10 | Telegram bot: text Jarvis from anywhere | ⬜ |
+| 09 | [n8n basics: workflows, triggers, credentials, connected to my AI gateway](lessons/09-n8n-basics.md) | ✅ Done |
+| 10 | [Telegram bot: text Jarvis from anywhere](lessons/10-telegram-bot.md) | ⏳ Next |
 | 11 | Voice in, voice out: free speech-to-text and text-to-speech | ⬜ |
 
 **Part 4 — Jarvis does things**

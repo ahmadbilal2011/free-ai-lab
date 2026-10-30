@@ -49,4 +49,6 @@ Newest entries at the top.
 - Asked whether Jarvis = Stanford's OpenJarvis. Decision: no, build our own from n8n + gateway + Telegram; OpenJarvis targets on-device AI (GPU / Apple Silicon, local fine-tuning), the opposite of a thin server. Kept as an optional comparison lesson
 - Goal restated: **maximum quality, minimum server load** → thin server (gateway, n8n, private model, backups), heavy work on free cloud APIs. No OpenAI account needed: "OpenAI-compatible" is only the request format
 - Wrote [Lesson 09 — n8n basics](lessons/09-n8n-basics.md), [`scripts/09-install-n8n.sh`](scripts/09-install-n8n.sh) and the [`jarvis` stack](stacks/jarvis/compose.yaml): SQLite (no Postgres), 1 GB memory cap, private editor on `:8443`, connected to the gateway, backed up nightly
-- **Next:** install n8n, create the `Lab gateway` credential, build `Hello Jarvis`
+- ✅ n8n installed, `Lab gateway` credential works — **Lesson 09 complete**
+- Wrote [Lesson 10 — Telegram bot](lessons/10-telegram-bot.md) and [`scripts/10-telegram-webhook.sh`](scripts/10-telegram-webhook.sh): Telegram needs to reach n8n, so **only** the webhook paths go public via Tailscale Funnel (port 10000); editor and everything else stay private. Protected by path-only exposure, random IDs, Telegram secret token and a user-ID restriction
+- **Next:** create the bot, open the webhook door, build `Jarvis chat` (AI Agent + memory)

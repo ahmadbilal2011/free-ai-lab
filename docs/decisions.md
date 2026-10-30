@@ -46,7 +46,7 @@ Oracle advises against UFW on its Ubuntu images (it can conflict with the built-
 
 ## 2026-10-28 — Reach Open WebUI through Tailscale, not a public port
 
-The SSH tunnel was awkward (PC only, window must stay open) and failed on first try. Making port 3000 public would expose the login page to the whole internet over plain HTTP. **Decision:** use Tailscale right after Lesson 04: `tailscale serve` gives tailnet-only HTTPS on `*.ts.net`, works on phone and PC, and opens no inbound port. We never use `tailscale funnel` (public). The SSH tunnel remains documented as a fallback.
+The SSH tunnel was awkward (PC only, window must stay open) and failed on first try. Making port 3000 public would expose the login page to the whole internet over plain HTTP. **Decision:** use Tailscale right after Lesson 04: `tailscale serve` gives tailnet-only HTTPS on `*.ts.net`, works on phone and PC, and opens no inbound port. We don't use `tailscale funnel` (public) for apps. *(Updated 2026-10-30: one narrow exception for Telegram webhooks, see below.)* The SSH tunnel remains documented as a fallback.
 
 ## 2026-10-28 — Hybrid AI: free cloud APIs + local fallback
 
@@ -71,3 +71,7 @@ Lesson 09 was going to self-host Vikunja. **Decision: dropped before installing.
 ## 2026-10-30 — Our own Jarvis on n8n, not OpenJarvis; thin server, cloud brains
 
 Goal: maximum quality with minimum server load. **Decision:** the server only coordinates (n8n, LiteLLM gateway, small private model, backups); thinking, speech, images and video run on free cloud APIs. n8n uses its built-in SQLite (no Postgres container) and a 1 GB memory cap. Stanford's OpenJarvis (Apache 2.0) was considered: good ideas (Telegram channel, MCP, scheduler, presets), but it's designed to run models on-device with GPU/Apple Silicon and fine-tune locally, so its strengths would sit idle on a 2-CPU, no-GPU VM. Kept as an optional comparison lesson. The small local model stays: privacy option, last fallback, and keeps memory above Oracle's idle threshold.
+
+## 2026-10-30 — One narrow public door: Tailscale Funnel for n8n webhook paths only
+
+Telegram delivers messages by calling a webhook on our server, and n8n's Telegram Trigger only supports webhooks. **Decision:** Tailscale Funnel on port 10000, **only** for `/webhook` and `/webhook-test`. The n8n editor (:8443), Open WebUI (:443), the gateway and SSH stay private, and no Oracle port is opened. Four layers protect the door: path-only exposure, random webhook IDs, Telegram's secret token (n8n's Telegram Trigger rejects requests without it with HTTP 403), and "Restrict to User IDs" so only the owner's messages are processed. Rejected: exposing n8n publicly (editor holds all credentials) and hand-made polling (wasteful, slower). `10-telegram-webhook.sh --off` closes the door.
