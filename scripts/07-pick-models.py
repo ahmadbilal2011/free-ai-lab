@@ -114,6 +114,14 @@ def main():
         if name == "groq":
             fast = pick(name, cfg, key, ids, FAST_PREF, avoid=smart)
             if fast: chosen["groq_fast"] = cfg["prefix"] + fast
+            # speech-to-text for voice notes (Lesson 11): prefer the fast Whisper
+            code, data = http(cfg["base"] + "/models", key)
+            all_ids = [m.get("id", "") for m in data.get("data", [])] if code == 200 else []
+            for w in ("whisper-large-v3-turbo", "whisper-large-v3"):
+                if w in all_ids:
+                    chosen["groq_listen"] = "groq/" + w
+                    print(f"  {name:<10} speech-to-text: {w}")
+                    break
 
     # ---------- build config ----------
     deployments, smart_chain = [], []
@@ -129,6 +137,9 @@ def main():
     fast_first = "fast-groq" if "groq_fast" in chosen else None
     if fast_first: add("fast-groq", chosen["groq_fast"], "GROQ_API_KEY")
     add("private", "ollama_chat/llama3.2:3b", base="http://ollama:11434")
+    if "groq_listen" in chosen:
+        add("listen", chosen["groq_listen"], "GROQ_API_KEY")
+        deployments[-1]["model_info"] = {"mode": "audio_transcription"}
     drill_target = chosen.get("groq_fast") or chosen.get("groq_smart") or "groq/llama-placeholder"
     deployments.append({"model_name": "drill", "litellm_params": {"model": drill_target, "api_key": "this-key-is-intentionally-invalid"}})
 
@@ -145,6 +156,10 @@ def main():
         lines.append(f"    litellm_params:")
         for k, v in d["litellm_params"].items():
             lines.append(f"      {k}: {json.dumps(v) if k == 'api_key' and not v.startswith('os.environ') else v}")
+        if d.get("model_info"):
+            lines.append(f"    model_info:")
+            for k, v in d["model_info"].items():
+                lines.append(f"      {k}: {v}")
     # alias entries: a second deployment under the friendly name, same params as the first choice
     for alias, target in aliases.items():
         src = next(d for d in deployments if d["model_name"] == target)
@@ -168,6 +183,7 @@ def main():
     print(f"    smart   -> {' -> '.join(chain)}")
     print(f"    fast    -> {' -> '.join(fast_chain)}")
     for k, v in chosen.items(): print(f"    {k:<17} = {v}")
+    if "groq_listen" in chosen: print("    listen  -> speech-to-text for voice notes (Lesson 11)")
     if not smart_chain:
         print("\n  WARNING: no cloud model worked. Everything will use the local model.")
         sys.exit(2)

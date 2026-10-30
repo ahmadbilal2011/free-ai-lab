@@ -79,3 +79,7 @@ Telegram can deliver messages by **push** (calling a webhook on our server) or *
 ## 2026-10-30 — Telegram Bot API, not the user API
 
 Question: why a bot instead of connecting Telegram's API straight to n8n? A bot *is* that API connection: the Bot API is Telegram's API for programs, and n8n has built-in nodes for it. The alternative, the user API (MTProto) acting as the owner's personal account, needs an extra always-running program on the server (no n8n support), exposes every private chat, turns a leaked key into full account takeover, and risks account limits for automation. **Decision:** Bot API. Acting inside personal chats can be a separate, careful advanced lesson later.
+
+## 2026-10-30 — Voice: cloud ears (Groq Whisper), local voice (Piper)
+
+**Ears:** Groq's free `whisper-large-v3-turbo` (accepts Telegram's OGG directly, multilingual, zero server load), added to the gateway as alias `listen` by the model picker, so keys stay in one place. **Voice:** no free cloud TTS fit: Groq's only covers English and Saudi Arabic (no Urdu); others are small, need a card, or train on data in KSA. **Piper** (open source, built for small CPUs, has en/ar/ur voices) runs as a tiny service with **no host port**, a 768 MB cap, and auto language detection from the reply's letters. Output is converted to OGG/Opus and sent with Telegram's `sendVoice` for a real voice-note bubble. Rule: text in → text out; voice in → text + voice out. Trade-off: Piper sounds slightly robotic; voice notes leave the server for Groq.

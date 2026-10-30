@@ -53,4 +53,7 @@ Newest entries at the top.
 - Lesson 10, first design: Telegram **pushes** to n8n through a public Tailscale Funnel "door" on the webhook paths. Found a port bug (Telegram only delivers to 443/80/88/8443), fixed it — then **I rejected the whole approach**: I want n8n's UI to drive everything, with nothing reaching in from the internet
 - Lesson 10 redesigned: n8n **pulls** messages from Telegram (`getUpdates` long polling, every 30 s), confirms them, keeps only my user ID, answers via `smart`. **No public ports at all.** [`10-close-public-door.sh`](scripts/10-close-public-door.sh) removes the old Funnel; n8n editor now on private `:9443`
 - Asked: why a bot, why not Telegram's API straight to n8n? The bot **is** that API (Bot API, built into n8n); the alternative user API would act as my personal account: extra server program, sees all chats, account-takeover risk if leaked. **Decision: bot**
-- **Next:** run the clean-up script, build `Jarvis chat` in the n8n UI
+- Created the bot. Accidentally pasted the token in a chat → **revoked it with @BotFather** and used the new one only in n8n
+- ✅ Jarvis answers on Telegram, nothing public — **Lesson 10 complete**
+- Wrote [Lesson 11 — Voice](lessons/11-voice.md), [`scripts/11-install-voice.sh`](scripts/11-install-voice.sh) and the [`voice` stack](stacks/voice/): ears = Groq Whisper via gateway alias `listen`; voice = local Piper (en/ar/ur), no host port, 768 MB cap; round-trip self-test
+- **Next:** install voice, add the voice branch to `Jarvis chat`

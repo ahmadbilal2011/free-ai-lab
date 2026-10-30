@@ -27,6 +27,7 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── LiteLLM ....... AI gateway: Groq → NVIDIA → OpenRouter → local, automatic fallback
   ├── Ollama ........ engine that runs open-source AI models on the CPU (private fallback)
   ├── Open WebUI .... ChatGPT-style web interface (installable on phone)
+  ├── voice ......... local text-to-speech (Piper: English, Arabic, Urdu), no host port
   └── n8n ........... automation engine: Jarvis's skills and connections (editor private on https://…ts.net:9443)
 
 Jarvis's front door: Telegram (text + voice) ◄── n8n asks for new messages ──► gateway ──► free cloud tools
@@ -46,6 +47,8 @@ Jarvis's front door: Telegram (text + voice) ◄── n8n asks for new messages
 | healthchecks.io | Email alerts if the server or a backup stops | Free plan |
 | n8n | Automation engine (self-hosted) | Free to self-host (fair-code licence) |
 | Telegram Bot API | Text and voice front door for Jarvis | Free |
+| Groq Whisper | Speech-to-text (Jarvis's ears) | Free tier |
+| Piper | Text-to-speech (Jarvis's voice), runs locally | Free, open source |
 
 ## Lessons
 
@@ -73,8 +76,8 @@ Jarvis's front door: Telegram (text + voice) ◄── n8n asks for new messages
 | # | Lesson | Status |
 |---|---|---|
 | 09 | [n8n basics: workflows, triggers, credentials, connected to my AI gateway](lessons/09-n8n-basics.md) | ✅ Done |
-| 10 | [Telegram bot: text Jarvis from anywhere](lessons/10-telegram-bot.md) | ⏳ Next |
-| 11 | Voice in, voice out: free speech-to-text and text-to-speech | ⬜ |
+| 10 | [Telegram bot: text Jarvis from anywhere](lessons/10-telegram-bot.md) | ✅ Done |
+| 11 | [Voice in, voice out: free speech-to-text and text-to-speech](lessons/11-voice.md) | ⏳ Next |
 
 **Part 4 — Jarvis does things**
 

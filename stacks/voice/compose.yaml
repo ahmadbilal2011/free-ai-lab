@@ -1,0 +1,33 @@
+# Lesson 11: Jarvis's voice (text-to-speech), local and private.
+#
+# Piper runs on the CPU and is designed for small computers: short replies take
+# about a second. No host port at all: only n8n (on the "ai" network) can call
+# it, at http://voice:5000/speak. Voice files live in ./voices (re-downloadable).
+
+name: voice
+
+services:
+  voice:
+    build: .
+    image: free-ai-lab/voice:local
+    container_name: voice
+    restart: unless-stopped
+    env_file: .env                      # VOICE_EN / VOICE_AR / VOICE_UR = voice file names (written by the install script)
+    volumes:
+      - ./voices:/voices:ro
+    networks:
+      - ai
+    mem_limit: 768m                     # small cap: the voice can never starve the rest of the lab
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      autoheal: "true"
+
+networks:
+  ai:
+    external: true
+    name: ai_default

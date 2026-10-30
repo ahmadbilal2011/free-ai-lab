@@ -125,7 +125,7 @@ for line in open(sys.argv[1]):
         print(name, model); name = None
 PY
 while read -r alias model; do
-  [ "$alias" = "drill" ] && continue
+  { [ "$alias" = "drill" ] || [ "$alias" = "listen" ]; } && continue   # listen = speech, not chat
   printf "  %-17s " "$alias"; ask "$alias" | summ "$alias" "$model"
 done < "$DIR/.aliases"
 rm -f "$DIR/.aliases"
