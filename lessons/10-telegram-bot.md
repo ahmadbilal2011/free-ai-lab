@@ -20,7 +20,22 @@
 | Official n8n nodes | Telegram Trigger + Telegram actions, no code |
 | Works without Tailscale on your phone | The bot is reached through Telegram's servers |
 
-## Part B — The one hard problem: Telegram must reach your server
+## Part B — "Can't I just set it up in n8n's web UI?"
+
+**Yes, and you will.** The whole bot is configured in n8n's web UI: the token, the trigger, the AI, the replies (Part D). But there are two different jobs here:
+
+| Job | Where it's done |
+|---|---|
+| Tell n8n **what to do** with a Telegram message | n8n web UI ✅ |
+| Let Telegram's servers **physically reach** n8n over the internet | The **server's network**, outside n8n ❌ the UI can't do this |
+
+Think of a post office box inside your house. You can set up the box beautifully (n8n UI), but if the house has no door the postman can reach, no letter ever arrives. The script in Part C builds **one small door, only for letters**.
+
+Two settings live outside the UI for the same reason:
+- **Tailscale Funnel** (the door) is part of the server's networking.
+- **`WEBHOOK_URL`** (the address n8n gives Telegram) is read once when the n8n container starts, so it's set in `~/lab/jarvis/.env`, not in the UI.
+
+## Part C — The one hard problem: Telegram must reach your server
 
 So far **nothing** on the server is public. But Telegram delivers messages with a **webhook**: Telegram's servers make an HTTPS request to a URL on *your* server. If they can't reach it, your bot never hears you.
 
@@ -34,15 +49,29 @@ The options:
 
 ### How the narrow door works
 
-**Tailscale Funnel** is the public sibling of `tailscale serve` (Lesson 05). We use it on **one extra port (10000)**, and only for the paths `/webhook/…` and `/webhook-test/…`:
+**Tailscale Funnel** is the public sibling of `tailscale serve` (Lesson 05). We use it on **one port (8443)**, and only for the paths `/webhook/…` and `/webhook-test/…`:
 
 ```
-INTERNET (Telegram) ──► https://free-ai-lab.<tailnet>.ts.net:10000/webhook/…  ──► n8n webhook  ✅ public
-                        https://free-ai-lab.<tailnet>.ts.net:10000/            ──► 404          ✅ nothing there
+INTERNET (Telegram) ──► https://free-ai-lab.<tailnet>.ts.net:8443/webhook/…  ──► n8n webhook  ✅ public
+                        https://free-ai-lab.<tailnet>.ts.net:8443/            ──► 404          ✅ nothing there
 
-TAILSCALE ONLY      ──► https://free-ai-lab.<tailnet>.ts.net:8443   ──► n8n editor   🔒 private (unchanged)
-                        https://free-ai-lab.<tailnet>.ts.net        ──► Open WebUI   🔒 private (unchanged)
+TAILSCALE ONLY      ──► https://free-ai-lab.<tailnet>.ts.net:9443   ──► n8n editor   🔒 private
+                        https://free-ai-lab.<tailnet>.ts.net        ──► Open WebUI   🔒 private
 ```
+
+### Why exactly port 8443? (a real mistake we made)
+
+Two different rules have to agree:
+
+| Who | Allowed ports |
+|---|---|
+| **Telegram** webhooks | 443, 80, 88, **8443** |
+| **Tailscale Funnel** | 443, **8443**, 10000 |
+| Both | **443 or 8443** |
+
+The first version of this lesson used **10000**: Tailscale accepted it, but **Telegram would have refused to deliver there**. And 443 is Open WebUI, which must stay private. So the editor moved to **9443** (a port Funnel *cannot* publish, so it can never go public by mistake) and the webhook door took **8443**.
+
+> Lesson: when two systems talk, check **both** sides' rules. Each one alone looked fine.
 
 ### Four layers of protection on that door
 
@@ -59,7 +88,7 @@ Also: Oracle's firewall is unchanged. Funnel traffic arrives through the same ou
 
 ---
 
-## Part C — Create your bot and open the door
+## Part D — Create your bot and open the door
 
 ### 1. Create the bot (on your phone, 2 minutes)
 
@@ -76,18 +105,19 @@ curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scr
 ```
 
 - First time only: Tailscale may print a link saying **Funnel isn't enabled** for your tailnet. Open it, click **Enable**, and run the script again.
-- It publishes **only** the webhook paths on port 10000, tells n8n its public webhook address, restarts n8n, and checks both doors:
+- It moves the n8n editor to private port **9443**, publishes **only** the webhook paths on port **8443**, tells n8n its public webhook address, restarts n8n, and checks the doors:
 
 ```
-  https://…ts.net:10000/webhook/...   HTTP 404  (404 from n8n = the door works; no such workflow)
-  https://…ts.net:10000/              HTTP 404  (404 = good: the editor is NOT exposed here)
+  https://…ts.net:8443/webhook/...   HTTP 404  (404 from n8n = the door works; no such workflow)
+  https://…ts.net:8443/              HTTP 404  (404 = good: the editor is NOT on the public port)
+  https://…ts.net:9443/              HTTP 200  (200 = editor works privately)
 ```
 
 ---
 
-## Part D — Build the "Jarvis chat" workflow in n8n
+## Part E — Build the "Jarvis chat" workflow in n8n
 
-Open the n8n editor (`https://…ts.net:8443`) → **Create workflow** → name it **`Jarvis chat`**.
+Open the n8n editor at its **new address** (`https://…ts.net:9443`) → **Create workflow** → name it **`Jarvis chat`**.
 
 ```
 [Telegram Trigger] ──► [AI Agent] ──► [Telegram: Send message]
@@ -154,16 +184,16 @@ Explain Docker volumes in 3 lines.
 
 ---
 
-## Part E — Check the door is narrow (do this once)
+## Part F — Check the door is narrow (do this once)
 
 On your phone, **turn Tailscale OFF** and use mobile data:
 
 | Open this | Expected |
 |---|---|
 | Telegram → message your bot | ✅ Jarvis answers (Telegram reaches the public webhook) |
-| `https://…ts.net:8443` (n8n editor) | ❌ doesn't load: private |
+| `https://…ts.net:9443` (n8n editor) | ❌ doesn't load: private |
 | `https://…ts.net` (Open WebUI) | ❌ doesn't load: private |
-| `https://…ts.net:10000/` | ❌ 404: nothing there |
+| `https://…ts.net:8443/` | ❌ 404: nothing there |
 
 Then ask a friend to message your bot: **no reply**, because of the user ID restriction.
 
@@ -183,7 +213,8 @@ Then ask a friend to message your bot: **no reply**, because of the user ID rest
 | Problem | Fix |
 |---|---|
 | "Funnel is not enabled" | Open the link the script prints, click **Enable**, run the script again |
-| Test listen never receives the message | Did you run the script **after** n8n was installed? Check `grep WEBHOOK_URL ~/lab/jarvis/.env` shows `:10000` and `tailscale funnel status` lists `/webhook-test` |
+| Test listen never receives the message | Did you run the script **after** n8n was installed? Check `grep WEBHOOK_URL ~/lab/jarvis/.env` shows `:8443` and `tailscale funnel status` lists `/webhook-test` |
+| `Bad webhook: Webhook can be set up only on ports 80, 88, 443 or 8443` | You ran the first version of the script (port 10000). Download and run it again |
 | Works in test, not when Active | Save, switch **Active** off and on again (this re-registers the webhook with Telegram) |
 | `Provided secret is not valid` in executions | Another tool or an old workflow registered the same bot. Use one active Telegram trigger per bot; toggle the workflow off and on |
 | Bot ignores you | Check **Restrict to User IDs** contains *your* `message.from.id`, not the chat ID of a group |

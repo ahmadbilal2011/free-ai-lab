@@ -45,7 +45,7 @@ Why it's the right core for your Jarvis:
 ## Part B — How it fits in
 
 ```
-Your browser ──Tailscale HTTPS──► https://free-ai-lab.<tailnet>.ts.net:8443 ──► n8n editor (127.0.0.1:5678)
+Your browser ──Tailscale HTTPS──► https://free-ai-lab.<tailnet>.ts.net:9443 ──► n8n editor (127.0.0.1:5678)
                                                                                    │
                                                           workflows call ──────────┘
                                                           http://litellm:4000/v1  (smart / fast / private)
@@ -56,7 +56,7 @@ Choices in [`stacks/jarvis/compose.yaml`](../stacks/jarvis/compose.yaml):
 | Setting | Why |
 |---|---|
 | Built-in **SQLite** (no Postgres container) | One less container: lower RAM, matches your "low usage" goal. Plenty for one person |
-| `127.0.0.1:5678` + Tailscale `:8443` | Editor is private, like everything else |
+| `127.0.0.1:5678` + Tailscale `:9443` | Editor is private, like everything else. Tailscale Funnel can't publish port 9443 at all, so the editor can never go public by mistake |
 | Joins the `ai_default` network | Workflows reach the gateway as `http://litellm:4000/v1` |
 | `N8N_ENCRYPTION_KEY` in `.env` | Encrypts saved credentials. **If it's lost, every saved credential is unreadable** |
 | `mem_limit: 1g` | n8n can never eat the memory the rest of the lab needs |
@@ -80,7 +80,7 @@ It will:
 1. Create `~/lab/jarvis` with the right folder owner
 2. Write a private `.env` with a random **encryption key** and your Tailscale name
 3. Start n8n and wait until it's healthy
-4. Publish the editor at **`https://free-ai-lab.<your-tailnet>.ts.net:8443`** (Tailscale only)
+4. Publish the editor at **`https://free-ai-lab.<your-tailnet>.ts.net:9443`** (Tailscale only)
 5. Add n8n to the nightly backup (it pauses a few seconds at 03:30)
 6. **Show the encryption key once.** Save it in your password manager
 
@@ -154,7 +154,7 @@ Now a workflow that runs **by itself**.
 
 In Lesson 10, Telegram will send your messages to n8n. Telegram does that with a **webhook**: Telegram's servers call a URL on *your* server. But our server is **private** (Tailscale only), so Telegram can't reach it.
 
-The plan for Lesson 10: open **only the webhook path** to the internet with **Tailscale Funnel**, while the n8n **editor stays private**. One small, controlled door instead of a public server. We'll go through the security of that step carefully.
+The plan for Lesson 10: open **only the webhook paths** to the internet with **Tailscale Funnel** on port 8443, while the n8n **editor stays private** on 9443. One small, controlled door instead of a public server. We'll go through the security of that step carefully.
 
 ---
 
@@ -172,7 +172,7 @@ The plan for Lesson 10: open **only the webhook path** to the internet with **Ta
 
 | Problem | Fix |
 |---|---|
-| Editor doesn't load | Tailscale on? Note the **`:8443`**. `docker ps` should show `n8n (healthy)` |
+| Editor doesn't load | Tailscale on? Note the **`:9443`**. `docker ps` should show `n8n (healthy)` |
 | `permission denied` / `EACCES` in `docker logs n8n` | `sudo chown -R 1000:1000 ~/lab/jarvis/n8n && docker restart n8n` |
 | Credential test fails | Base URL must be exactly `http://litellm:4000/v1`; the key must be the **master** key; `docker ps` must show `litellm (healthy)` |
 | Model list is empty | Choose **By ID** and type `smart` |
@@ -185,7 +185,7 @@ The plan for Lesson 10: open **only the webhook path** to the internet with **Ta
 
 - [ ] Ran `09-install-n8n.sh`; n8n is **healthy**
 - [ ] Saved the n8n encryption key in my password manager
-- [ ] Created the owner account at `https://…ts.net:8443`
+- [ ] Created the owner account at `https://…ts.net:9443`
 - [ ] Created the **`Lab gateway`** credential and its test passed
 - [ ] `Hello Jarvis` answered with `smart`, `fast` and `private`
 - [ ] Saw scheduled runs under **Executions**, then switched the practice workflow off

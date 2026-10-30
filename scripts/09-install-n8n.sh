@@ -9,7 +9,7 @@
 #   1. Creates ~/lab/jarvis with a data folder owned by the container user (1000)
 #   2. Writes a private .env (random encryption key, your Tailscale name)
 #   3. Starts n8n on 127.0.0.1:5678 and waits until it's healthy
-#   4. Publishes the editor privately with Tailscale HTTPS on port 8443
+#   4. Publishes the editor privately with Tailscale HTTPS on port 9443
 #   5. Adds n8n to the nightly backup (paused a few seconds for a clean copy)
 #   6. Prints the gateway details you'll paste into n8n's credential
 #
@@ -20,7 +20,7 @@ set -euo pipefail
 RAW="${RAW:-https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main}"
 DIR="$HOME/lab/jarvis"
 ENVF="$DIR/.env"
-TS_PORT=8443
+TS_PORT=9443        # private editor port (Funnel can't publish 9443, so it can never go public by mistake)
 
 c_ok="\033[32m"; c_warn="\033[33m"; c_err="\033[31m"; c_off="\033[0m"
 step() { echo -e "\n${c_ok}==>${c_off} $*"; }
@@ -54,7 +54,7 @@ if [ -z "$(env_get N8N_ENCRYPTION_KEY)" ]; then
   env_set N8N_ENCRYPTION_KEY "$NEW_KEY"
 fi
 env_set TS_NAME "$TS_NAME"
-[ -n "$(env_get WEBHOOK_URL)" ] || env_set WEBHOOK_URL "https://${TS_NAME}:${TS_PORT}/"
+[ -n "$(env_get WEBHOOK_URL)" ] || env_set WEBHOOK_URL "https://${TS_NAME}:${TS_PORT}/"   # private until Lesson 10
 echo "Editor address: https://${TS_NAME}:${TS_PORT}"
 
 # ---------- 3. start ----------

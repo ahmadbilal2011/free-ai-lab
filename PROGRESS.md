@@ -51,4 +51,6 @@ Newest entries at the top.
 - Wrote [Lesson 09 — n8n basics](lessons/09-n8n-basics.md), [`scripts/09-install-n8n.sh`](scripts/09-install-n8n.sh) and the [`jarvis` stack](stacks/jarvis/compose.yaml): SQLite (no Postgres), 1 GB memory cap, private editor on `:8443`, connected to the gateway, backed up nightly
 - ✅ n8n installed, `Lab gateway` credential works — **Lesson 09 complete**
 - Wrote [Lesson 10 — Telegram bot](lessons/10-telegram-bot.md) and [`scripts/10-telegram-webhook.sh`](scripts/10-telegram-webhook.sh): Telegram needs to reach n8n, so **only** the webhook paths go public via Tailscale Funnel (port 10000); editor and everything else stay private. Protected by path-only exposure, random IDs, Telegram secret token and a user-ID restriction
-- **Next:** create the bot, open the webhook door, build `Jarvis chat` (AI Agent + memory)
+- Asked: why a script, can't Telegram be set up in n8n's UI? The bot **is** configured in the UI; the script only builds the network door Telegram needs to reach the server (outside n8n's control)
+- While answering, found a bug: the door used port **10000**, but Telegram only delivers to 443/80/88/8443. Fixed: webhook door on **8443**, n8n editor moved to private **9443**. The script also cleans up the old setup
+- **Next:** re-run the Lesson 10 script, open the editor at `:9443`, build `Jarvis chat`

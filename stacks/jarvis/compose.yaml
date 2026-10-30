@@ -1,7 +1,8 @@
 # Lesson 09: n8n — Jarvis's nervous system (workflows, schedules, connections)
 #
 # Light by design: built-in SQLite database (no extra Postgres container).
-# Port 5678 is server-only. Reach the editor privately via Tailscale HTTPS :8443.
+# Port 5678 is server-only. Reach the editor privately via Tailscale HTTPS :9443.
+# (Port 9443 can never be made public by Tailscale Funnel, which is a nice safety net.)
 # Joins the "ai" network so workflows can call the gateway at http://litellm:4000/v1.
 # Data lives in ./n8n next to this file, so the nightly backup (~/lab) includes it.
 # Secrets come from .env (created by the install script, never committed).
@@ -18,7 +19,7 @@ services:
       N8N_HOST: "${TS_NAME:?Missing TS_NAME in .env}"
       N8N_PORT: "5678"
       N8N_PROTOCOL: "https"                       # Tailscale gives us real HTTPS
-      N8N_EDITOR_BASE_URL: "https://${TS_NAME}:8443/"
+      N8N_EDITOR_BASE_URL: "https://${TS_NAME}:9443/"
       WEBHOOK_URL: "${WEBHOOK_URL:?Missing WEBHOOK_URL in .env}"   # where webhooks are reached (Lesson 10 changes it for Telegram)
       GENERIC_TIMEZONE: "Asia/Riyadh"              # used by Schedule triggers
       TZ: "Asia/Riyadh"                            # container clock
