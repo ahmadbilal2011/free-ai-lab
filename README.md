@@ -27,7 +27,7 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── LiteLLM ....... AI gateway: Groq → NVIDIA → OpenRouter → local, automatic fallback
   ├── Ollama ........ engine that runs open-source AI models on the CPU (private fallback)
   ├── Open WebUI .... ChatGPT-style web interface (installable on phone)
-  └── n8n ........... automation engine: Jarvis's skills and connections (coming in Lesson 09)
+  └── n8n ........... automation engine: Jarvis's skills and connections (https://…ts.net:8443)
 
 Jarvis's front door: Telegram (text + voice) ──► n8n ──► gateway ──► free cloud tools
 ```
@@ -72,7 +72,7 @@ Jarvis's front door: Telegram (text + voice) ──► n8n ──► gateway ─
 
 | # | Lesson | Status |
 |---|---|---|
-| 09 | n8n basics: workflows, triggers, credentials, connected to my AI gateway | ⏳ Next |
+| 09 | [n8n basics: workflows, triggers, credentials, connected to my AI gateway](lessons/09-n8n-basics.md) | ⏳ Next |
 | 10 | Telegram bot: text Jarvis from anywhere | ⬜ |
 | 11 | Voice in, voice out: free speech-to-text and text-to-speech | ⬜ |
 

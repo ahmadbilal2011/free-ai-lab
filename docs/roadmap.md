@@ -83,4 +83,5 @@ K3s, manifests and Helm, Traefik / Gateway API, cert-manager, probes. See [decis
 | **Free video generation** | The hardest one. Truly free, reliable video APIs are rare; most are trials or paid. Lesson 16 shows what works and what doesn't. |
 | **Social media APIs** | Each platform has its own rules, approvals and limits; some have restricted or paid APIs. We post only through official APIs, with my approval, and never spam. |
 | **"Does everything"** | Jarvis grows one ability at a time. Each lesson adds one skill that works on its own. |
+| **Optional comparison** | After Part 4, an optional lesson tries Stanford's OpenJarvis, which is built for on-device AI, against our thin-server design |
 | **Free cloud tools** | Calendar, tasks and email live with providers like Google or Microsoft. Convenient and free, but that data is stored by them. Truly private things go to `private` (the local model) |

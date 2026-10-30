@@ -1,0 +1,48 @@
+# Lesson 09: n8n — Jarvis's nervous system (workflows, schedules, connections)
+#
+# Light by design: built-in SQLite database (no extra Postgres container).
+# Port 5678 is server-only. Reach the editor privately via Tailscale HTTPS :8443.
+# Joins the "ai" network so workflows can call the gateway at http://litellm:4000/v1.
+# Data lives in ./n8n next to this file, so the nightly backup (~/lab) includes it.
+# Secrets come from .env (created by the install script, never committed).
+
+name: jarvis
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?Missing N8N_ENCRYPTION_KEY in .env}"  # encrypts saved credentials
+      N8N_HOST: "${TS_NAME:?Missing TS_NAME in .env}"
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: "https"                       # Tailscale gives us real HTTPS
+      N8N_EDITOR_BASE_URL: "https://${TS_NAME}:8443/"
+      WEBHOOK_URL: "${WEBHOOK_URL:?Missing WEBHOOK_URL in .env}"   # where webhooks are reached (Lesson 10 changes it for Telegram)
+      GENERIC_TIMEZONE: "Asia/Riyadh"              # used by Schedule triggers
+      TZ: "Asia/Riyadh"                            # container clock
+      N8N_DIAGNOSTICS_ENABLED: "false"             # don't send usage telemetry
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      EXECUTIONS_DATA_PRUNE: "true"                # delete old run history automatically...
+      EXECUTIONS_DATA_MAX_AGE: "336"               # ...after 14 days (hours), keeps the disk small
+    volumes:
+      - ./n8n:/home/node/.n8n                      # workflows, credentials (encrypted), SQLite db
+    ports:
+      - "127.0.0.1:5678:5678"
+    networks:
+      - ai
+    mem_limit: 1g                                  # n8n can't eat the AI's RAM; raise if big workflows need it
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      autoheal: "true"
+
+networks:
+  ai:
+    external: true
+    name: ai_default

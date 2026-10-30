@@ -46,4 +46,7 @@ Newest entries at the top.
 
 - Drafted a Vikunja (self-hosted task manager) lesson, then **dropped it**: Jarvis doesn't need its own task app; it will connect to the free cloud tools I already use. The server hosts only what must be ours — see [docs/decisions.md](docs/decisions.md)
 - Reshaped the roadmap around the real goal: **Jarvis controlled by text and voice, doing things for me, at $0**. Voice moved up to Lesson 11; Part 4 connects my cloud tools
-- **Next:** Lesson 09 — n8n basics
+- Asked whether Jarvis = Stanford's OpenJarvis. Decision: no, build our own from n8n + gateway + Telegram; OpenJarvis targets on-device AI (GPU / Apple Silicon, local fine-tuning), the opposite of a thin server. Kept as an optional comparison lesson
+- Goal restated: **maximum quality, minimum server load** → thin server (gateway, n8n, private model, backups), heavy work on free cloud APIs. No OpenAI account needed: "OpenAI-compatible" is only the request format
+- Wrote [Lesson 09 — n8n basics](lessons/09-n8n-basics.md), [`scripts/09-install-n8n.sh`](scripts/09-install-n8n.sh) and the [`jarvis` stack](stacks/jarvis/compose.yaml): SQLite (no Postgres), 1 GB memory cap, private editor on `:8443`, connected to the gateway, backed up nightly
+- **Next:** install n8n, create the `Lab gateway` credential, build `Hello Jarvis`
