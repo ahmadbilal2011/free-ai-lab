@@ -18,7 +18,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)**
 
 ```
 My phone / PC
-      │   Tailscale (free private network) — the only public door is n8n's webhook paths for Telegram (:8443)
+      │   Tailscale (free private network) — no public ports at all; n8n only reaches OUT
       ▼
 Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── Docker ........ runs every app in its own isolated container
@@ -29,7 +29,7 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   ├── Open WebUI .... ChatGPT-style web interface (installable on phone)
   └── n8n ........... automation engine: Jarvis's skills and connections (editor private on https://…ts.net:9443)
 
-Jarvis's front door: Telegram (text + voice) ──► n8n ──► gateway ──► free cloud tools
+Jarvis's front door: Telegram (text + voice) ◄── n8n asks for new messages ──► gateway ──► free cloud tools
 ```
 
 | Component | What it is | Cost |

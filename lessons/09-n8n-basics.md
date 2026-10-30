@@ -150,11 +150,9 @@ Now a workflow that runs **by itself**.
 
 ---
 
-## Part G — Looking ahead: the Telegram challenge
+## Part G — Looking ahead: how Jarvis will hear you
 
-In Lesson 10, Telegram will send your messages to n8n. Telegram does that with a **webhook**: Telegram's servers call a URL on *your* server. But our server is **private** (Tailscale only), so Telegram can't reach it.
-
-The plan for Lesson 10: open **only the webhook paths** to the internet with **Tailscale Funnel** on port 8443, while the n8n **editor stays private** on 9443. One small, controlled door instead of a public server. We'll go through the security of that step carefully.
+In Lesson 10, Jarvis gets a Telegram bot. Our server stays **completely private**: instead of Telegram calling *in* to our server, **n8n will ask Telegram** for new messages every few seconds ("pull" instead of "push"). n8n only ever reaches *out*: to Telegram, to the AI gateway, and later to your cloud tools.
 
 ---
 
@@ -196,7 +194,7 @@ The plan for Lesson 10: open **only the webhook paths** to the internet with **T
 1. What's the difference between a trigger and a node?
 2. Why does n8n use the "OpenAI" credential type even though we don't use OpenAI?
 3. What happens to your saved credentials if the encryption key is lost?
-4. Why can't Telegram reach n8n right now, and what's the plan to fix it safely?
+4. Why will n8n *ask* Telegram for messages instead of letting Telegram call in?
 
 ## Next
 

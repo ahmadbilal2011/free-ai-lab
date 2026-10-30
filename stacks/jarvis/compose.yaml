@@ -20,7 +20,7 @@ services:
       N8N_PORT: "5678"
       N8N_PROTOCOL: "https"                       # Tailscale gives us real HTTPS
       N8N_EDITOR_BASE_URL: "https://${TS_NAME}:9443/"
-      WEBHOOK_URL: "${WEBHOOK_URL:?Missing WEBHOOK_URL in .env}"   # where webhooks are reached (Lesson 10 changes it for Telegram)
+      WEBHOOK_URL: "${WEBHOOK_URL:?Missing WEBHOOK_URL in .env}"   # private (Tailscale-only) address; nothing here is public
       GENERIC_TIMEZONE: "Asia/Riyadh"              # used by Schedule triggers
       TZ: "Asia/Riyadh"                            # container clock
       N8N_DIAGNOSTICS_ENABLED: "false"             # don't send usage telemetry

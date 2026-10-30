@@ -1,6 +1,6 @@
 # Lesson 10 — Telegram bot: text Jarvis from anywhere
 
-**Goal:** message your own Jarvis bot on Telegram, from your phone or PC, anywhere in the world. It answers with your free cloud models and remembers the conversation.
+**Goal:** message your own Jarvis bot on Telegram, from your phone or PC, anywhere. It answers with your free cloud models and remembers the conversation. **Everything is built in the n8n web UI, and nothing on the server is public.**
 
 **Time:** about 30–40 minutes.
 
@@ -14,232 +14,234 @@
 
 | Reason | Detail |
 |---|---|
-| Free, no limits that matter for one person | Bots and the Bot API cost nothing |
+| Free | Bots and the Bot API cost nothing |
 | Phone **and** PC apps | Same chat everywhere, with notifications |
-| **Voice notes** built in | Lesson 11 turns them into Jarvis voice commands |
-| Official n8n nodes | Telegram Trigger + Telegram actions, no code |
-| Works without Tailscale on your phone | The bot is reached through Telegram's servers |
+| **Voice notes** built in | Lesson 11 turns them into voice commands |
+| Works without Tailscale on your phone | You talk to Telegram; n8n fetches your messages from Telegram |
 
-## Part B — "Can't I just set it up in n8n's web UI?"
+## Part B — Push or pull? Our rule: n8n reaches out, nothing reaches in
 
-**Yes, and you will.** The whole bot is configured in n8n's web UI: the token, the trigger, the AI, the replies (Part D). But there are two different jobs here:
+There are two ways a bot can get your messages:
 
-| Job | Where it's done |
-|---|---|
-| Tell n8n **what to do** with a Telegram message | n8n web UI ✅ |
-| Let Telegram's servers **physically reach** n8n over the internet | The **server's network**, outside n8n ❌ the UI can't do this |
+| | **Push (webhook)** | **Pull (getUpdates)** ✅ our choice |
+|---|---|---|
+| How | Telegram's servers **call your server** | **n8n asks Telegram**: "anything new for me?" |
+| Needs a public address on your server | **Yes** | **No** |
+| Configured in | Server networking + n8n | **n8n UI only** |
+| Speed | Instant | Near-instant (see "long polling" below) |
 
-Think of a post office box inside your house. You can set up the box beautifully (n8n UI), but if the house has no door the postman can reach, no letter ever arrives. The script in Part C builds **one small door, only for letters**.
-
-Two settings live outside the UI for the same reason:
-- **Tailscale Funnel** (the door) is part of the server's networking.
-- **`WEBHOOK_URL`** (the address n8n gives Telegram) is read once when the n8n container starts, so it's set in `~/lab/jarvis/.env`, not in the UI.
-
-## Part C — The one hard problem: Telegram must reach your server
-
-So far **nothing** on the server is public. But Telegram delivers messages with a **webhook**: Telegram's servers make an HTTPS request to a URL on *your* server. If they can't reach it, your bot never hears you.
-
-The options:
-
-| Option | Verdict |
-|---|---|
-| Open n8n to the internet | ❌ The editor (which holds all your keys and workflows) becomes a public login page |
-| Ask Telegram for messages every few seconds ("polling") | ⚠️ n8n's Telegram Trigger only supports webhooks; polling by hand wastes resources and adds delay |
-| **Tailscale Funnel, for the webhook paths only** | ✅ One narrow, public door. Everything else stays private |
-
-### How the narrow door works
-
-**Tailscale Funnel** is the public sibling of `tailscale serve` (Lesson 05). We use it on **one port (8443)**, and only for the paths `/webhook/…` and `/webhook-test/…`:
+The pull design fits the whole lab: **n8n talks *out* to everything it needs** (Telegram, the AI gateway, and later Google and other cloud tools), and **nothing on the internet can talk *in***.
 
 ```
-INTERNET (Telegram) ──► https://free-ai-lab.<tailnet>.ts.net:8443/webhook/…  ──► n8n webhook  ✅ public
-                        https://free-ai-lab.<tailnet>.ts.net:8443/            ──► 404          ✅ nothing there
-
-TAILSCALE ONLY      ──► https://free-ai-lab.<tailnet>.ts.net:9443   ──► n8n editor   🔒 private
-                        https://free-ai-lab.<tailnet>.ts.net        ──► Open WebUI   🔒 private
+                 ┌──────────── your server (private, no public ports) ────────────┐
+ You ──► Telegram ◄── n8n: "any new messages?" ──► AI gateway (smart) ──┐          │
+            ▲                                                           │          │
+            └──────────── n8n: "here is Jarvis's reply" ◄───────────────┘          │
+                 └────────────────────────────────────────────────────────────────┘
 ```
 
-### Why exactly port 8443? (a real mistake we made)
+### Long polling: why it's still fast
 
-Two different rules have to agree:
+n8n doesn't just ask once and hang up. It asks: *"anything new? I'll wait up to 20 seconds."* If you send a message during those 20 seconds, Telegram answers **immediately**. Every 30 seconds n8n starts a new wait. So replies feel near-instant, and the server is idle almost all the time: it's mostly just waiting.
 
-| Who | Allowed ports |
+### Honest trade-offs
+
+| Trade-off | How we handle it |
 |---|---|
-| **Telegram** webhooks | 443, 80, 88, **8443** |
-| **Tailscale Funnel** | 443, **8443**, 10000 |
-| Both | **443 or 8443** |
+| ~3,000 small "anything new?" runs a day | Mostly waiting; tiny CPU. We tell n8n **not to save** successful runs, so the disk doesn't fill |
+| A message must be **confirmed** to Telegram, or it comes back again | The workflow confirms each batch *before* asking the AI, so you never get double replies |
+| n8n's built-in Telegram **trigger** only supports push | We build the pull loop from standard nodes: Schedule, HTTP Request, If, Code. Good practice for later lessons |
+| The bot token sits in the URL of two HTTP nodes (not in an encrypted credential) | It stays on your server and in your encrypted backups. **Never export or share this workflow without removing the token** |
 
-The first version of this lesson used **10000**: Tailscale accepted it, but **Telegram would have refused to deliver there**. And 443 is Open WebUI, which must stay private. So the editor moved to **9443** (a port Funnel *cannot* publish, so it can never go public by mistake) and the webhook door took **8443**.
+### Security: who can command Jarvis?
 
-> Lesson: when two systems talk, check **both** sides' rules. Each one alone looked fine.
-
-### Four layers of protection on that door
-
-| Layer | What it stops |
-|---|---|
-| 1. **Only `/webhook…` paths** are public | Nobody can reach the editor, Open WebUI, the gateway or SSH through it |
-| 2. **Random webhook IDs** | Each n8n webhook URL contains a long random ID; unknown paths just get 404 |
-| 3. **Telegram secret token** | n8n's Telegram Trigger gives Telegram a secret when it registers the webhook, and **rejects any request without it** (HTTP 403) |
-| 4. **Restrict to *your* user ID** | Even if someone finds your bot in Telegram and messages it, the trigger **drops** their messages |
-
-Also: Oracle's firewall is unchanged. Funnel traffic arrives through the same outbound Tailscale connection, so **no Oracle port is opened**.
-
-> **Defence in depth** again: any single layer could fail, but all four would have to fail together.
+Anyone can find a Telegram bot by name and message it. Our workflow **ignores every message that isn't from your Telegram user ID**, so strangers simply get no reply.
 
 ---
 
-## Part D — Create your bot and open the door
+## Part C — Make sure nothing is public (one command)
 
-### 1. Create the bot (on your phone, 2 minutes)
-
-1. In Telegram, open **@BotFather** (blue checkmark: it's Telegram's official bot).
-2. Send `/newbot`.
-3. Name: e.g. `My Jarvis`. Username: must end in `bot`, e.g. `ahmad_jarvis_bot`.
-4. BotFather replies with a **token** like `123456789:AA…`. **It's a password**: whoever has it controls your bot. Don't paste it in chats, screenshots or GitHub. You'll paste it only into n8n.
-5. Optional: `/setdescription` and `/setuserpic` to make it look nice.
-
-### 2. Open the webhook door (on the VM)
+An earlier version of this lesson opened a public "webhook door" with Tailscale Funnel. We withdrew that design. This script removes any public door, moves the n8n editor to its final private address `:9443`, and restarts n8n. It's safe to run even if you never ran the old script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/10-telegram-webhook.sh -o 10-telegram-webhook.sh && bash 10-telegram-webhook.sh
+curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/10-close-public-door.sh -o 10-close-public-door.sh && bash 10-close-public-door.sh
 ```
 
-- First time only: Tailscale may print a link saying **Funnel isn't enabled** for your tailnet. Open it, click **Enable**, and run the script again.
-- It moves the n8n editor to private port **9443**, publishes **only** the webhook paths on port **8443**, tells n8n its public webhook address, restarts n8n, and checks the doors:
+It should say **"No Funnel: nothing on this server is reachable from the internet."** Your n8n editor is now at **`https://…ts.net:9443`** (Tailscale only). Your credentials and workflows are kept.
 
-```
-  https://…ts.net:8443/webhook/...   HTTP 404  (404 from n8n = the door works; no such workflow)
-  https://…ts.net:8443/              HTTP 404  (404 = good: the editor is NOT on the public port)
-  https://…ts.net:9443/              HTTP 200  (200 = editor works privately)
-```
+---
+
+## Part D — Create your bot (phone, 2 minutes)
+
+1. In Telegram, open **@BotFather** (blue checkmark).
+2. Send `/newbot`, choose a name (e.g. `My Jarvis`) and a username ending in `bot`.
+3. BotFather gives you a **token** like `123456789:AA…`. **It's a password**: whoever has it controls your bot. Paste it only into n8n.
+4. Send your new bot one message: `hello`. (We'll use it to find your user ID.)
 
 ---
 
 ## Part E — Build the "Jarvis chat" workflow in n8n
 
-Open the n8n editor at its **new address** (`https://…ts.net:9443`) → **Create workflow** → name it **`Jarvis chat`**.
+Open the editor at `https://…ts.net:9443` → **Create workflow** → name it **`Jarvis chat`**.
 
 ```
-[Telegram Trigger] ──► [AI Agent] ──► [Telegram: Send message]
-                          ├─ Chat Model: OpenAI Chat Model (Lab gateway, smart)
-                          └─ Memory: Simple Memory (per chat)
+[Every 30s] → [Ask Telegram] → [Got messages?] → [Confirm] → [Keep my messages] → [AI Agent] → [Send reply]
+                                                                                       ├ OpenAI Chat Model (Lab gateway, smart)
+                                                                                       └ Simple Memory
 ```
 
-### 1. Telegram Trigger
+### 0. A Telegram credential (for sending replies)
 
-1. **Add first step** → search **Telegram** → **On message**.
-2. **Credential** → **Create new** → paste the **BotFather token** → **Save**. Name it `Jarvis bot`.
-3. **Trigger On:** `Message`.
+**Credentials → Create → Telegram API** → paste the BotFather token → **Save** as `Jarvis bot`. The green "Connection tested successfully" proves the token works.
 
-### 2. Find your own Telegram user ID
+### 1. Trigger: Every 30 seconds
 
-1. Click **Listen for test event** on the trigger.
-2. On your phone, send your bot: `hello`.
-3. In n8n, the trigger output shows the message. Find **`message.from.id`** (a number like `123456789`). That's **your user ID**. Note it.
-4. Back in the trigger: **Add field** (Additional Fields) → **Restrict to User IDs** → paste your ID.
+**Add first step → On a schedule** → **Trigger Interval:** Seconds → **Seconds Between Triggers:** `30`.
 
-From now on, messages from anyone else are silently dropped.
+### 2. HTTP Request: "Ask Telegram"
 
-### 3. AI Agent (the brain)
+Add **HTTP Request**, rename it **`Ask Telegram`**:
 
-1. Click **+** after the trigger → **AI Agent**.
-2. **Source for Prompt:** *Define below* → **Prompt:** `{{ $json.message.text }}`
-3. **Options → Add option → System Message:**
+| Field | Value |
+|---|---|
+| Method | `GET` |
+| URL | `https://api.telegram.org/bot<YOUR-TOKEN>/getUpdates` (replace `<YOUR-TOKEN>`; keep the word `bot` in front) |
+| Send Query Parameters | on |
+| → `timeout` | `20` (the long-poll wait, in seconds) |
+| → `allowed_updates` | `["message"]` |
+| Options → Timeout | `30000` (ms; a little longer than the long poll) |
+| Settings (⚙ tab) → On Error | **Continue** (a rare network hiccup shouldn't stop Jarvis) |
 
-   ```
-   You are Jarvis, Ahmad's personal assistant.
-   Be helpful, concise and friendly. Reply in the same language the user writes in
-   (English, Urdu or Arabic). Keep answers short enough to read on a phone,
-   unless asked for detail. Never invent facts; say when you're not sure.
-   ```
+**Find your user ID now:** click **Execute step**. In the output, open `result` → `0` → `message` → `from` → **`id`**. That number is your Telegram user ID. Write it down.
 
-4. **Chat Model** connector → **OpenAI Chat Model** → Credential **`Lab gateway`** → Model **`smart`**.
-5. **Memory** connector → **Simple Memory**:
-   - **Session ID:** *Define below* → `{{ $('Telegram Trigger').item.json.message.chat.id }}`
-   - **Context Window Length:** `10` (remembers the last 10 messages; more costs more free-tier tokens)
+> If the output says `Conflict: can't use getUpdates method while webhook is active`, the bot still has a webhook from the old design. Change the URL's last word from `getUpdates` to `deleteWebhook`, execute once, then change it back.
 
-### 4. Send the reply
+### 3. If: "Got messages?"
 
-1. Click **+** after the AI Agent → **Telegram** → **Send a text message**.
-2. **Credential:** `Jarvis bot`.
-3. **Chat ID:** `{{ $('Telegram Trigger').item.json.message.chat.id }}`
-4. **Text:** `{{ $json.output }}`
-5. **Additional Fields → Append n8n Attribution:** off.
+Add **If**, rename it **`Got messages?`**. Condition (switch the value to *expression*):
 
-### 5. Test, then switch it on
+- **Value 1:** `{{ ($json.result ?? []).length }}` → **Number** → **is greater than** → **Value 2:** `0`
 
-1. Click **Execute workflow** (test mode), then message your bot: `What can you do?`
-2. If the reply arrives in Telegram 🎉, **Save** and switch the workflow to **Active** (top right).
+Continue from the **true** output only.
 
-**Active** registers the *production* webhook with Telegram. From now on Jarvis answers 24/7, even when the n8n editor is closed.
+### 4. HTTP Request: "Confirm"
 
-Try:
+Add **HTTP Request** on the *true* branch, rename it **`Confirm`**. This tells Telegram "I've got these", so they're never delivered twice:
+
+| Field | Value |
+|---|---|
+| Method | `GET` |
+| URL | the same `https://api.telegram.org/bot<YOUR-TOKEN>/getUpdates` |
+| → `offset` | `{{ $json.result.at(-1).update_id + 1 }}` |
+| → `timeout` | `0` |
+| → `limit` | `1` |
+| Settings → On Error | **Continue** |
+
+### 5. Code: "Keep my messages"
+
+Add **Code** (JavaScript), rename it **`Keep my messages`**, mode **Run Once for All Items**, and paste:
+
+```js
+// Only messages from ME, and only text (voice comes in Lesson 11).
+const MY_ID = 123456789;   // ← replace with YOUR Telegram user ID from step 2
+
+const updates = $('Ask Telegram').first().json.result ?? [];
+return updates
+  .filter(u => u.message && u.message.from && u.message.from.id === MY_ID && u.message.text)
+  .map(u => ({ json: { chatId: u.message.chat.id, text: u.message.text } }));
+```
+
+Messages from anyone else are dropped right here.
+
+### 6. AI Agent (the brain)
+
+Add **AI Agent**:
+
+- **Source for Prompt:** *Define below* → `{{ $json.text }}`
+- **Options → System Message:**
+
+  ```
+  You are Jarvis, Ahmad's personal assistant.
+  Be helpful, concise and friendly. Reply in the same language the user writes in
+  (English, Urdu or Arabic). Keep answers short enough to read on a phone,
+  unless asked for detail. Never invent facts; say when you're not sure.
+  ```
+
+- **Chat Model** connector → **OpenAI Chat Model** → credential **`Lab gateway`** → model **`smart`**
+- **Memory** connector → **Simple Memory** → **Session ID:** *Define below* → `{{ $('Keep my messages').item.json.chatId }}` → **Context Window Length:** `10`
+
+### 7. Telegram: "Send reply"
+
+Add **Telegram → Send a text message**:
+
+- **Credential:** `Jarvis bot`
+- **Chat ID:** `{{ $('Keep my messages').item.json.chatId }}`
+- **Text:** `{{ $json.output }}`
+- **Additional Fields → Append n8n Attribution:** off
+
+### 8. Settings, test, activate
+
+1. **Workflow settings** (⋯ menu → **Settings**): **Save successful production executions:** *Do not save*. Keep saving **failed** ones so you can debug.
+2. Send your bot a message, then click **Execute workflow**. The reply should arrive in Telegram 🎉
+3. **Save** and switch the workflow to **Active**.
+
+From now on Jarvis checks Telegram every 30 seconds, 24/7, even when the editor is closed. Try:
 
 ```
 My name is Ahmad and I work in DevOps.
-What's my name and job?          ← memory test
+What's my name and job?                 ← memory test
 Explain Docker volumes in 3 lines.
-مجھے لینکس سیکھنے کے تین مشورے دو    ← language test
+مجھے لینکس سیکھنے کے تین مشورے دو         ← language test
 ```
 
 ---
 
-## Part F — Check the door is narrow (do this once)
+## Part F — Prove it's private
 
-On your phone, **turn Tailscale OFF** and use mobile data:
+On your phone with **Tailscale OFF** (mobile data):
 
-| Open this | Expected |
+| Try | Expected |
 |---|---|
-| Telegram → message your bot | ✅ Jarvis answers (Telegram reaches the public webhook) |
-| `https://…ts.net:9443` (n8n editor) | ❌ doesn't load: private |
-| `https://…ts.net` (Open WebUI) | ❌ doesn't load: private |
-| `https://…ts.net:8443/` | ❌ 404: nothing there |
+| Message your bot on Telegram | ✅ Jarvis answers |
+| Open `https://…ts.net:9443` (n8n editor) | ❌ doesn't load |
+| Open `https://…ts.net` (Open WebUI) | ❌ doesn't load |
 
-Then ask a friend to message your bot: **no reply**, because of the user ID restriction.
+On the VM, `tailscale funnel status` should show **no Funnel**. Ask a friend to message your bot: **no reply**.
 
 ---
-
-## Useful commands
-
-| Command | What it does |
-|---|---|
-| `tailscale funnel status` | Shows exactly what is public |
-| `bash 10-telegram-webhook.sh --off` | Close the door (bot stops receiving) |
-| `bash 10-telegram-webhook.sh` | Open it again |
-| n8n → **Executions** | Every message Jarvis handled, step by step |
 
 ## If something goes wrong
 
 | Problem | Fix |
 |---|---|
-| "Funnel is not enabled" | Open the link the script prints, click **Enable**, run the script again |
-| Test listen never receives the message | Did you run the script **after** n8n was installed? Check `grep WEBHOOK_URL ~/lab/jarvis/.env` shows `:8443` and `tailscale funnel status` lists `/webhook-test` |
-| `Bad webhook: Webhook can be set up only on ports 80, 88, 443 or 8443` | You ran the first version of the script (port 10000). Download and run it again |
-| Works in test, not when Active | Save, switch **Active** off and on again (this re-registers the webhook with Telegram) |
-| `Provided secret is not valid` in executions | Another tool or an old workflow registered the same bot. Use one active Telegram trigger per bot; toggle the workflow off and on |
-| Bot ignores you | Check **Restrict to User IDs** contains *your* `message.from.id`, not the chat ID of a group |
-| Reply says "Bad Request: message text is empty" | You sent a voice note or a sticker. Voice comes in Lesson 11 |
-| Slow or no answer | Check the gateway: `bash 07-diagnose-gateway.sh` |
+| `Unauthorized` / 401 in **Ask Telegram** | The token in the URL is wrong. Check the word `bot` is directly in front of the token, with no space |
+| `Conflict: can't use getUpdates method while webhook is active` | Call `deleteWebhook` once (step 2 note) |
+| `Conflict: terminated by other getUpdates request` once in a while | Two runs overlapped (a slow AI reply). Harmless: *On Error → Continue* handles it |
+| Same message answered twice | The **Confirm** step must run *before* the AI Agent, and its `offset` must be `update_id + 1` |
+| No reply, and the If goes to *false* | No new messages, or the token belongs to a different bot |
+| Reply never comes, but **Keep my messages** outputs nothing | `MY_ID` doesn't match your `message.from.id` (a number, no quotes) |
+| Voice notes or stickers are ignored | Expected for now. Voice is Lesson 11 |
+| Slow answers | Check the gateway: `bash 07-diagnose-gateway.sh` |
 
 ---
 
 ## Checklist
 
-- [ ] Created the bot with @BotFather; token only in n8n
-- [ ] Ran `10-telegram-webhook.sh`; both checks show 404
-- [ ] Built `Jarvis chat`: Telegram Trigger → AI Agent (smart + memory) → Send message
-- [ ] Restricted the trigger to my user ID
-- [ ] Workflow is **Active**; Jarvis answers with Tailscale off
-- [ ] Memory test passed; language test passed
-- [ ] Editor and Open WebUI do **not** load with Tailscale off
+- [ ] Ran `10-close-public-door.sh`: **no Funnel**; editor on `:9443`
+- [ ] Created the bot; token only in n8n
+- [ ] Built `Jarvis chat`: Schedule → Ask → If → Confirm → Keep my messages → AI Agent → Send reply
+- [ ] `MY_ID` set to my own user ID
+- [ ] Successful runs not saved; workflow **Active**
+- [ ] Memory and language tests passed
+- [ ] With Tailscale off: bot answers, editor and Open WebUI don't load
 - [ ] Wrote today's notes in `PROGRESS.md` (no token, no user ID)
 
 ## Check your understanding
 
-1. Why can't Telegram reach n8n without Funnel, and why not just open n8n to the internet?
-2. Name the four protection layers on the webhook door.
-3. What does the Simple Memory **Session ID** do, and why use the chat ID?
-4. What's the difference between *test* mode and *Active* in n8n?
+1. What's the difference between push (webhook) and pull (getUpdates), and why does pull need no public address?
+2. How does long polling make replies near-instant while keeping the server idle?
+3. Why must the **Confirm** step run before the AI Agent?
+4. What stops a stranger from using your Jarvis?
 
 ## Next
 
