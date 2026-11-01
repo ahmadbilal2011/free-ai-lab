@@ -30,7 +30,7 @@ Rules for the whole course:
 
 | # | Lesson | What I get |
 |---|---|---|
-| 05 | **Free AI API keys** (Groq, NVIDIA, OpenRouter; Gemini optional), tested without saving them | Access to strong free models |
+| 05 | **Free AI API keys** (Groq, NVIDIA, OpenRouter; Gemini optional), tested and kept in one private file | Access to strong free models |
 | 06 | **The AI gateway**: LiteLLM + a small private model (Ollama), models discovered and tested automatically | One address, aliases `smart` / `fast` / `private`, automatic fallback |
 | 07 | **Backups and monitoring**: restic → Oracle Object Storage, healthchecks.io | Keys and workflows safe before Jarvis gets my data |
 
