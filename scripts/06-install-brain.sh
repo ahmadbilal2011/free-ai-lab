@@ -93,22 +93,35 @@ step "5/6  Starting the gateway (LiteLLM) and testing it"
 dc up -d --no-deps --force-recreate litellm
 wait_healthy litellm 240 || die "The gateway didn't become healthy. See the logs above."
 MASTER=$(env_get LITELLM_MASTER_KEY)
-ask_json() {  # ask_json MODEL
-  curl -sS --max-time 150 http://127.0.0.1:4000/v1/chat/completions \
+HDR="$DIR/.last-headers"
+ask_json() {  # ask_json MODEL   (body on stdout, response headers saved to $HDR)
+  curl -sS --max-time 150 -D "$HDR" http://127.0.0.1:4000/v1/chat/completions \
     -H @<(printf "Authorization: Bearer %s" "$MASTER") -H "Content-Type: application/json" \
     -d "{\"model\":\"$1\",\"max_tokens\":40,\"messages\":[{\"role\":\"user\",\"content\":\"Reply with just: OK\"}]}" 2>/dev/null
 }
 verdict() {  # verdict ALIAS EXPECTED-model (EXPECTED=BACKUP for the drill)
-  ALIAS="$1" EXPECT="$2" python3 -c 'import json,os,sys
+  # Newer LiteLLM reports the ALIAS as the model name, so we read its own counter
+  # header (x-litellm-attempted-fallbacks) to know whether a backup answered.
+  ALIAS="$1" EXPECT="$2" HDR="$HDR" python3 -c 'import json,os,sys
 a=os.environ["ALIAS"]; exp=os.environ["EXPECT"]
+fb=None
+try:
+  for line in open(os.environ["HDR"], errors="ignore"):
+    k,_,v=line.partition(":")
+    if k.strip().lower()=="x-litellm-attempted-fallbacks": fb=int(v.strip() or 0)
+except Exception: pass
 try:
   d=json.load(sys.stdin)
   if "choices" not in d:
     print("FAIL", str(d.get("error",{}).get("message",d))[:110].replace("\n"," ")); sys.exit()
   m=d.get("model","?")
-  if exp=="BACKUP": print("OK   the broken first choice was skipped; a backup answered:", m)
-  elif exp.split("/")[-1] in m: print("OK   answered by", m)
-  else: print("FELL BACK -> answered by", m, "(first choice failed right now; fine if it happens rarely)")
+  if exp=="BACKUP":
+    if fb is None or fb>=1: print("OK   the broken first choice was skipped; a backup answered")
+    else: print("FAIL the drill was not rerouted")
+  elif fb==0 or (fb is None and (m==a or exp.split("/")[-1] in m)):
+    print("OK   answered by", exp)
+  else:
+    print("FELL BACK: a backup answered (first choice", exp, "failed right now; fine if rare)")
 except Exception as e: print("FAIL", e)'; }
 python3 - "$DIR/config.yaml" > "$DIR/.aliases" <<'PY'
 import sys, re
@@ -126,6 +139,7 @@ done < "$DIR/.aliases"
 rm -f "$DIR/.aliases"
 echo "  Fallback drill ('drill' has a broken key on purpose, so a backup must answer):"
 printf "  %-9s " "drill"; ask_json drill | verdict drill "BACKUP"
+rm -f "$HDR"
 
 # ---------- 6. ask command ----------
 step "6/6  Installing the 'ask' command"
@@ -148,7 +162,8 @@ echo "$(python3 -c "print(round($(date +%s.%N) - $START, 1))")s"
 EOF
 chmod 755 "$HOME/.local/bin/ask"
 grep -q '.local/bin' "$HOME/.profile" 2>/dev/null || echo 'PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.profile"
-echo "Installed. Try:  ask \"What can you help me with?\"   (open a new SSH session first if 'ask' isn't found)"
+echo "Installed. To use it in THIS session, run once:  source ~/.profile"
+echo "Then try:  ask \"What can you help me with?\""
 
 step "Done! Summary"
 docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E 'NAMES|ollama|litellm|autoheal'

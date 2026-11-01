@@ -14,7 +14,10 @@ Newest entries at the top.
 - `wipe-apps.sh` first asked for a password: it checked access with `sudo -v`, which prompts when *any* sudo rule needs a password (Ubuntu's `%sudo` rule), even though Oracle gives `ubuntu` `NOPASSWD`. Now it runs as root (`sudo bash wipe-apps.sh`) with no inner sudo calls. GitHub's raw cache served the old version for a few minutes → use a commit-pinned URL right after a fix
 - Wrote [Lesson 05 — Free AI API keys](lessons/05-free-ai-keys.md) and [`05-add-ai-key.sh`](scripts/05-add-ai-key.sh): tests each key hidden, asks a live model, and saves it to one private file (`~/lab/brain/.env`, mode 600) for the gateway. Fixes v1's mistake of keys typed into one app but not the gateway
 - Wrote [Lesson 06 — The AI gateway](lessons/06-ai-gateway.md): one `brain` stack (LiteLLM + Ollama) on a shared `jarvis` network, model picker reused from v1 (now also an optional Gemini `general` alias kept out of the personal chains), fallback drill, and an `ask` command for the terminal. Tested the picker, the alias checks and `ask` against fake providers
-- **Next:** run Lessons 05 and 06 for real, then Lesson 07 (backups)
+- ✅ Ran Lessons 05 + 06 for real: 4 keys saved; picker chose Groq `gpt-oss-120b` (smart) / `gpt-oss-20b` (fast), NVIDIA and OpenRouter `nemotron-3-ultra-550b-a55b` as backups, Gemini `gemini-3.5-flash` for `general` (2.5 Flash models failed their test); private `llama3.2:3b` answered in 14 s; memory 4 GB used of 11
+- Every alias said `FELL BACK` although nothing failed: newer LiteLLM returns the **alias** as the model name, so comparing names no longer works. Fixed: the test now reads LiteLLM's `x-litellm-attempted-fallbacks` header
+- `ask: command not found` right after install: `~/.local/bin` only joins the PATH at login if it already exists → `source ~/.profile` once
+- **Next:** Lesson 07 (backups)
 
 ---
 

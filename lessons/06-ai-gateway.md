@@ -76,7 +76,7 @@ Sources: [`scripts/06-install-brain.sh`](../scripts/06-install-brain.sh), [`scri
 
 ## Part F — Talk to Jarvis's brain
 
-The installer adds an `ask` command. Open a **new** SSH session (so it's found), then:
+The installer adds an `ask` command. Run `source ~/.profile` once (or open a new SSH session) so it's found, then:
 
 ```bash
 ask "Plan a 30-minute evening walk routine for me"
@@ -124,7 +124,7 @@ Each answer ends with **which model** answered and how long it took. Try the sam
 | Every line says `FAIL ... AuthenticationError` | A key is wrong or was deleted. Replace it with Lesson 05's script, then re-run this one |
 | One alias says `FELL BACK` | That provider failed right now (limit, busy). Fine if rare; if it repeats, re-run the picker |
 | `private` is very slow or times out | Normal on the first question (loading into memory). If always slow, try a smaller model: `PRIVATE_MODEL=llama3.2:1b bash 06-install-brain.sh` |
-| `ask: command not found` | Open a new SSH session, or run `~/.local/bin/ask "…"` |
+| `ask: command not found` | The folder it lives in is new, so this session doesn't know it yet: run `source ~/.profile` once (or open a new SSH session) |
 | `exec format error` | An image has no Arm build. Send the error |
 
 ## Checklist
