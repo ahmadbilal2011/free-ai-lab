@@ -13,7 +13,8 @@ Newest entries at the top.
 - New: [Lesson 00 — The plan](lessons/00-concepts.md), [Lesson 04 — Tailscale](lessons/04-tailscale.md) + [`04-install-tailscale.sh`](scripts/04-install-tailscale.sh) (publishes nothing), [Lesson 11 — Prepare the Windows laptop](lessons/11-prepare-windows-laptop.md) + [`11-check-laptop.ps1`](scripts/11-check-laptop.ps1)
 - `wipe-apps.sh` first asked for a password: it checked access with `sudo -v`, which prompts when *any* sudo rule needs a password (Ubuntu's `%sudo` rule), even though Oracle gives `ubuntu` `NOPASSWD`. Now it runs as root (`sudo bash wipe-apps.sh`) with no inner sudo calls. GitHub's raw cache served the old version for a few minutes → use a commit-pinned URL right after a fix
 - Wrote [Lesson 05 — Free AI API keys](lessons/05-free-ai-keys.md) and [`05-add-ai-key.sh`](scripts/05-add-ai-key.sh): tests each key hidden, asks a live model, and saves it to one private file (`~/lab/brain/.env`, mode 600) for the gateway. Fixes v1's mistake of keys typed into one app but not the gateway
-- **Next:** create and save the keys (Lesson 05), then Lesson 06 (gateway)
+- Wrote [Lesson 06 — The AI gateway](lessons/06-ai-gateway.md): one `brain` stack (LiteLLM + Ollama) on a shared `jarvis` network, model picker reused from v1 (now also an optional Gemini `general` alias kept out of the personal chains), fallback drill, and an `ask` command for the terminal. Tested the picker, the alias checks and `ask` against fake providers
+- **Next:** run Lessons 05 and 06 for real, then Lesson 07 (backups)
 
 ---
 

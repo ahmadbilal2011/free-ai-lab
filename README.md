@@ -66,8 +66,8 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | # | Lesson | Status |
 |---|---|---|
 | 05 | [Free AI API keys: Jarvis's brain at $0](lessons/05-free-ai-keys.md) | ✅ Written |
-| 06 | The AI gateway: LiteLLM + private model, automatic fallback | ⏳ Next |
-| 07 | Backups and monitoring | ⬜ |
+| 06 | [The AI gateway: one address, free models, automatic fallback](lessons/06-ai-gateway.md) | ✅ Written |
+| 07 | Backups and monitoring | ⏳ Next |
 
 **Part 3 — Jarvis's front door (my phone)**
 
