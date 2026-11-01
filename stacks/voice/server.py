@@ -79,6 +79,12 @@ def cloud_ogg(text: str) -> bytes:
         with urllib.request.urlopen(req, timeout=40) as r:
             return to_ogg(r.read())
     except urllib.error.HTTPError as e:
+        detail = ""
+        try:
+            detail = e.read().decode(errors="replace")[:300].replace("\n", " ")
+        except Exception:
+            pass
+        print(f"cloud voice HTTP {e.code}: {detail}", flush=True)   # the gateway's reason (no keys in it)
         if e.code in (401, 402, 403, 429):          # credits used up / key problem: stop trying for a while
             _cloud_paused_until = time.time() + CLOUD_PAUSE
         raise

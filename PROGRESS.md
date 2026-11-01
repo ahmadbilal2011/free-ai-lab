@@ -58,4 +58,5 @@ Newest entries at the top.
 - Wrote [Lesson 11 — Voice](lessons/11-voice.md), [`scripts/11-install-voice.sh`](scripts/11-install-voice.sh) and the [`voice` stack](stacks/voice/): ears = Groq Whisper via gateway alias `listen`; voice = local Piper (en/ar/ur), no host port, 768 MB cap; round-trip self-test
 - ✅ Old Telegram token deleted (revoked); new token only in n8n — **Lesson 10 complete**
 - Groq Whisper **didn't understand my speech** → switched ears and voice to **ElevenLabs** (Scribe + Eleven v3, which speaks Urdu), free plan. Backups are automatic: Groq Whisper for ears, local Piper for voice. Created my ElevenLabs account
-- **Next:** create the ElevenLabs API key, run `11-install-voice.sh`, add the voice branch to `Jarvis chat`
+- Ran `11-install-voice.sh`: ✅ ears work (ElevenLabs Scribe heard me; Groq backup works), ✅ local Piper voices installed (en, ar, **ur**), ❌ ElevenLabs **voice** failed (HTTP 500, real reason hidden). Added [`11-diagnose-voice.sh`](scripts/11-diagnose-voice.sh) and made the voice service log the gateway's real error
+- **Next:** run the voice diagnosis, fix the ElevenLabs voice, then add the voice branch to `Jarvis chat`
