@@ -74,11 +74,24 @@ pick() { local pref="${2:-}"
 VEN=$(pick en_US en_US-lessac-medium); VAR=$(pick ar_); VUR=$(pick ur_)
 [ -n "$VUR" ] || VUR=$(echo "$ALL" | grep "^ur_" | head -1 || true)
 
+OLD_VOICE=$(grep -E '^CLOUD_VOICE=' "$ENVF" 2>/dev/null | cut -d= -f2- || true)
 umask 077; : > "$ENVF"; umask 022
 echo "GATEWAY_URL=http://litellm:4000/v1" >> "$ENVF"
 echo "GATEWAY_KEY=$(gw_get LITELLM_MASTER_KEY)" >> "$ENVF"
-if grep -q "model_name: speak" "$GW/config.yaml"; then echo "CLOUD_MODEL=speak" >> "$ENVF"
-else sed -i '/^GATEWAY_KEY=/d' "$ENVF"; fi     # no cloud voice configured: local only
+if grep -q "model_name: speak" "$GW/config.yaml"; then
+  echo "CLOUD_MODEL=speak" >> "$ENVF"
+  # Free ElevenLabs plans can only use PRE-MADE voices through the API (not Voice Library voices).
+  DEFAULT_VOICE="${OLD_VOICE:-JBFqnCBsd6RMkjVDRZzb}"     # George (pre-made, male, warm)
+  echo "  Cloud voice: ElevenLabs PRE-MADE voices only on the free plan, e.g."
+  echo "    JBFqnCBsd6RMkjVDRZzb George (male)    EXAVITQu4vr4xnSDxMaL Sarah (female)"
+  echo "    CwhRBWXzGAHq8TQ4Fs17 Roger (male)     FGY2WhTYpPnrIDTdsKH5 Laura (female)"
+  echo "  (bash 11-diagnose-voice.sh lists all voices your key can use)"
+  read -r -p "  Voice ID (Enter = $DEFAULT_VOICE): " VID
+  VID=$(printf '%s' "${VID:-$DEFAULT_VOICE}" | tr -d '[:space:]')
+  echo "CLOUD_VOICE=$VID" >> "$ENVF"
+else
+  sed -i '/^GATEWAY_KEY=/d' "$ENVF"     # no cloud voice configured: local only
+fi
 for pair in "EN:$VEN" "AR:$VAR" "UR:$VUR"; do
   lang="${pair%%:*}"; name="${pair#*:}"
   if [ -z "$name" ]; then warn "No local voice for ${lang}."; continue; fi

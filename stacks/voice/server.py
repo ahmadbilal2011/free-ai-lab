@@ -23,7 +23,7 @@ VOICE_FILES = {lang: os.environ.get(f"VOICE_{lang.upper()}", "") for lang in ("e
 GATEWAY_URL = os.environ.get("GATEWAY_URL", "http://litellm:4000/v1")
 GATEWAY_KEY = os.environ.get("GATEWAY_KEY", "")
 CLOUD_MODEL = os.environ.get("CLOUD_MODEL", "speak")
-CLOUD_VOICE = os.environ.get("CLOUD_VOICE", "alloy")      # any ElevenLabs voice ID also works
+CLOUD_VOICE = os.environ.get("CLOUD_VOICE", "JBFqnCBsd6RMkjVDRZzb")  # ElevenLabs PRE-MADE voice (George); free plans can't use library voices
 CLOUD_PAUSE = int(os.environ.get("CLOUD_PAUSE_SECONDS", "3600"))
 _cloud_paused_until = 0.0
 

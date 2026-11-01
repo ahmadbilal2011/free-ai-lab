@@ -13,10 +13,11 @@ get() { grep -E "^$1=" "$GW/.env" | head -1 | cut -d= -f2-; }
 mask() { sed -E 's/(sk-|xi-|sk_)[A-Za-z0-9_-]{6,}/\1***/g'; }
 TMP=$(mktemp -d)
 
-step "1/4  Voice through the gateway ('speak', voice 'alloy')"
+VOICE=$(grep -E '^CLOUD_VOICE=' "$HOME/lab/voice/.env" 2>/dev/null | cut -d= -f2-); VOICE="${VOICE:-JBFqnCBsd6RMkjVDRZzb}"
+step "1/4  Voice through the gateway ('speak', voice $VOICE)"
 code=$(curl -s -o "$TMP/a" -w '%{http_code}' --max-time 60 http://127.0.0.1:4000/v1/audio/speech \
   -H @<(printf "Authorization: Bearer %s" "$(get LITELLM_MASTER_KEY)") -H "Content-Type: application/json" \
-  -d '{"model":"speak","input":"Hello Ahmad","voice":"alloy","response_format":"mp3"}')
+  -d '{"model":"speak","input":"Hello Ahmad","voice":"'"$VOICE"'","response_format":"mp3"}')
 echo "  HTTP $code  ($(file -b "$TMP/a" | cut -c1-40))"
 [ "$code" = 200 ] || { echo -n "  reason: "; head -c 500 "$TMP/a" | mask; echo; }
 

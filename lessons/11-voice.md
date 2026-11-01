@@ -91,7 +91,7 @@ curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scr
 
 It will:
 
-1. Ask for your **ElevenLabs key** (hidden, confirms the length and last 4 characters) and save it in the gateway's `.env`
+1. Ask for your **ElevenLabs key** (hidden, confirms the length and last 4 characters) and save it in the gateway's `.env`, then ask which **pre-made voice** Jarvis should use (free plans can't use Voice Library voices through the API)
 2. Re-run the model picker: **`listen`** = ElevenLabs Scribe, **`listen-backup`** = Groq Whisper, **`speak`** = ElevenLabs v3
 3. **Build** the voice service on your server (first time: a few minutes)
 4. Download the local **Piper** fallback voices (English, Arabic, Urdu)
@@ -270,6 +270,7 @@ The voice service should sit near **0% CPU** when idle.
 
 | Problem | Fix |
 |---|---|
+| Install: `voice (cloud, ElevenLabs): FAILED 500` and the diagnosis says **"Free users cannot use library voices via the API"** | Our real first run. The free plan only allows **pre-made** voices through the API. Run the installer again and choose a pre-made voice ID (George, Sarah, Roger, Laura…); `bash 11-diagnose-voice.sh` lists them |
 | Install: `voice (cloud, ElevenLabs): FAILED 401` | The key is wrong or lacks the **Text to Speech** permission. Fix it in ElevenLabs, run the script again, paste the key |
 | Install: `ears 'listen' heard: FAILED …` | ElevenLabs key lacks **Speech to Text** permission, or credits are used up. `listen-backup` (Groq) still works |
 | ElevenLabs credits used up | Expected near the end of a busy month. Jarvis switches to Groq ears and Piper voice by itself. Check credits at elevenlabs.io → Subscription |
