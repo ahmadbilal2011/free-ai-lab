@@ -25,7 +25,7 @@ warn() { echo -e "${c_warn}[!] $*${c_off}"; }
 die()  { echo -e "${c_err}[x] $*${c_off}" >&2; exit 1; }
 
 [ "$(id -u)" -ne 0 ] || die "Run as your normal user (ubuntu), not root. The script uses sudo where needed."
-sudo -v || die "This needs sudo."
+sudo -n true 2>/dev/null || die "This needs passwordless sudo (the default ubuntu user on Oracle has it). Log in as ubuntu and try again."
 
 LAB="$HOME/lab"
 UNITS="lab-backup.timer lab-backup.service lab-heartbeat.timer lab-heartbeat.service"
