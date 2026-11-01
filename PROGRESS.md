@@ -2,75 +2,28 @@
 
 Newest entries at the top.
 
-## 2026-10-28 — Day 1
+## 2026-11-01 — Course v2: restart around one goal
 
-- Created this repo (`free-ai-lab`)
-- Planned the stack: Oracle Always Free VM + Docker + Ollama + Open WebUI + Tailscale + Vikunja
-- Learned that Oracle halved Always Free Ampere A1 to **2 OCPU / 12 GB** in 2026 — the whole lab is designed to fit inside that
-- Completed [Lesson 00 — Core concepts](lessons/00-concepts.md)
-- Confirmed: account is **Always Free**, laptop is **Windows**
-- Wrote [Lesson 01 — Create the Oracle VM](lessons/01-create-vm.md)
-- Added [`scripts/create-free-vm.sh`](scripts/create-free-vm.sh): one Cloud Shell command creates the whole Always Free VM (with limit checks and capacity retries)
-- Simplified the script: no key needed up front — it creates the SSH key in Cloud Shell, user `ubuntu` logs in from Cloud Shell, and the key is downloaded for Windows
-- First real run failed: `ED25519 keys are not allowed in FIPS mode`. Oracle Cloud Shell is FIPS-hardened, so the script now creates an **RSA 4096** key instead
-- ✅ VM created in `me-riyadh-1` and SSH login as `ubuntu` works — **Lesson 01 complete**
-- Wrote [Lesson 02 — Secure the server](lessons/02-secure-server.md) and [`scripts/02-secure-server.sh`](scripts/02-secure-server.sh)
-- ✅ Server secured, SSH from the Windows laptop works — **Lesson 02 complete**
-- Wrote [Lesson 03 — Docker](lessons/03-docker.md), [`scripts/03-install-docker.sh`](scripts/03-install-docker.sh) and the practice stack [`stacks/hello`](stacks/hello/compose.yaml)
-- Question: Kubernetes (cert-manager + ingress-nginx) instead of Docker? **Decision: Docker Compose now, K3s as a Phase 2 track** — see [docs/decisions.md](docs/decisions.md). Found that ingress-nginx was retired in March 2026
-- Added autoheal (restarts frozen containers) and healthchecks to the plan
-- Wrote [Lesson 04 — My own AI](lessons/04-ai.md), [`scripts/04-install-ai.sh`](scripts/04-install-ai.sh), stacks [`ai`](stacks/ai/compose.yaml) and [`autoheal`](stacks/autoheal/compose.yaml)
-- ✅ Docker installed (Lesson 03) and the AI stack installed (Lesson 04)
-- The SSH tunnel to Open WebUI didn't work for me, so we moved **Tailscale** straight in as the way to reach the AI — safer than opening port 3000 to the internet. The tunnel stays in Lesson 04 as an optional fallback
-- Wrote [Lesson 05 — Tailscale](lessons/05-tailscale.md) and [`scripts/05-install-tailscale.sh`](scripts/05-install-tailscale.sh): private HTTPS with `tailscale serve` (not Funnel)
-- ✅ Tailscale works: Open WebUI opens on my private `https://…ts.net` address — **Lesson 05 working on laptop**
-- First chat: the 3B model answered, but wrongly tried a `create_calendar_event` **tool** for "Can you hear me?". Lesson: small models misuse tools; turned tools and background tasks (title/tags/follow-ups) off — added to Lesson 04
-- Local 3B model works but is slow on 2 CPU cores. **Decision: hybrid AI** — free cloud APIs (Groq, Cerebras, …) for speed, local model as private fallback
-- Expanded the course into a full path to my own **Jarvis**: LiteLLM gateway, n8n, Telegram bot, agents/harnesses, RAG, images, video, social posting, voice, security review — see [docs/roadmap.md](docs/roadmap.md)
-- Wrote [Lesson 06 — Free cloud AI](lessons/06-free-cloud-ai.md) and [`scripts/06-test-api-key.sh`](scripts/06-test-api-key.sh) (tests a key hidden, never saves it)
-- Cerebras asked for a **credit card** at signup → dropped. While checking alternatives, found that **GitHub Models was retired** (30 July 2026) → removed too. Replaced with **NVIDIA Build** and **OpenRouter** (no card)
-- ✅ Added the cloud provider keys to Open WebUI — **Lesson 06 complete**
-- Wrote [Lesson 07 — LiteLLM gateway](lessons/07-litellm-gateway.md), [`scripts/07-install-gateway.sh`](scripts/07-install-gateway.sh) and the [`gateway` stack](stacks/gateway/): aliases `smart` / `fast` / `private`, ordered fallback, keys in one private `.env`
-- First gateway run: **no keys were entered** (they were only in Open WebUI), so every alias fell back to the local model. Fallback worked, but the script wrongly said "OK". Fixed: it now confirms each pasted key, warns when none are set, and reports `FELL BACK` honestly
-- LiteLLM disables mock fallback tests by default, so the drill now uses a `drill` alias with a deliberately broken key
-- Question: do we still need Open WebUI? **Yes**: LiteLLM has no chat screen; Open WebUI is the chat app. The mess was duplicated keys + practice leftovers → added [`scripts/cleanup-lab.sh`](scripts/cleanup-lab.sh) (never touches volumes or keys)
-- Second run: keys saved (56/70/73 chars) but **every cloud model still fell back**. Wrote [`07-diagnose-gateway.sh`](scripts/07-diagnose-gateway.sh): keys OK, network OK — **all model names were dead** (Groq removed them, NVIDIA's hit end-of-life 26 Aug 2026, OpenRouter's no longer free)
-- Big lesson: free-tier model names change constantly. Added [`07-pick-models.py`](scripts/07-pick-models.py): lists live models, tests them, generates the config automatically
-- ✅ Third run: the picker found working models — Groq `openai/gpt-oss-120b` (smart) + `openai/gpt-oss-20b` (fast), NVIDIA `nvidia/nemotron-3-ultra-550b-a55b` (3 others failed their test), OpenRouter `nvidia/nemotron-3-ultra-550b-a55b:free`. **All aliases answered from the cloud; the drill fell back to a cloud backup**
-- ✅ Open WebUI now uses only the gateway (`lab.smart` default, `lab.fast` task model); direct provider connections deleted; server cleaned — **Lesson 07 complete**
-- Wrote [Lesson 08 — Backups and monitoring](lessons/08-backups-monitoring.md): restic → Oracle Object Storage (encrypted, nightly, restore-tested), healthchecks.io dead man's switch, `lab-status`
-- Found Oracle's idle rule for A1 (CPU, network **and** memory < 20% for 7 days) → keep the private model loaded (`OLLAMA_KEEP_ALIVE=-1`) so memory stays above 20% with real usage
-- ✅ Backups and monitoring set up — **Lesson 08 complete**
+- Wanted Jarvis to also **control my Windows PC** by voice. Tried Stanford's **OpenJarvis** on the laptop: the native Windows installer failed (I had **Python 3.15**; it needs 3.10–3.13, no numpy wheels for 3.14+), `winget` was missing, and the desktop app needed **Ollama** first
+- Too many half-finished tries (OpenJarvis desktop + CLI, OpenClaw, Hermes) → clean slate on the laptop: every AI tool listed, each removal approved by me. Kept Python 3.13, Ollama + models, Gemini CLI. Old tools kept **API keys** in their own files → revoke keys from tools you remove
+- Asked whether OpenJarvis alone is a complete Jarvis: **no** (no phone app; bots can't place phone calls; Gemini Pro / Claude Pro are subscriptions, not API keys)
+- **Decision:** one Jarvis on two machines: the server is the always-on **brain and front door**, the laptop is the **hands** (OpenJarvis over Tailscale, thinking through the server's gateway). No ADB / phone control; maybe our own phone app later. See [docs/decisions.md](docs/decisions.md)
+- **Restarted the course from Lesson 00** around that goal ([docs/roadmap.md](docs/roadmap.md)). Old lessons removed; what still holds (VM, security, Docker) carried over; Open WebUI dropped
+- Added [`scripts/wipe-apps.sh`](scripts/wipe-apps.sh): removes every app, data, key file, backup timer and Tailscale publication from the server; keeps Ubuntu, SSH hardening, Tailscale and the Docker engine. Shows everything first and needs `WIPE` typed
+- New: [Lesson 00 — The plan](lessons/00-concepts.md), [Lesson 04 — Tailscale](lessons/04-tailscale.md) + [`04-install-tailscale.sh`](scripts/04-install-tailscale.sh) (publishes nothing), [Lesson 11 — Prepare the Windows laptop](lessons/11-prepare-windows-laptop.md) + [`11-check-laptop.ps1`](scripts/11-check-laptop.ps1)
+- **Next:** run `wipe-apps.sh` on the server, re-check Tailscale (Lesson 04), then Lesson 05 (free AI keys)
 
-## 2026-10-30 — Day 2
+---
 
-- Drafted a Vikunja (self-hosted task manager) lesson, then **dropped it**: Jarvis doesn't need its own task app; it will connect to the free cloud tools I already use. The server hosts only what must be ours — see [docs/decisions.md](docs/decisions.md)
-- Reshaped the roadmap around the real goal: **Jarvis controlled by text and voice, doing things for me, at $0**. Voice moved up to Lesson 11; Part 4 connects my cloud tools
-- Asked whether Jarvis = Stanford's OpenJarvis. Decision: no, build our own from n8n + gateway + Telegram; OpenJarvis targets on-device AI (GPU / Apple Silicon, local fine-tuning), the opposite of a thin server. Kept as an optional comparison lesson
-- Goal restated: **maximum quality, minimum server load** → thin server (gateway, n8n, private model, backups), heavy work on free cloud APIs. No OpenAI account needed: "OpenAI-compatible" is only the request format
-- Wrote [Lesson 09 — n8n basics](lessons/09-n8n-basics.md), [`scripts/09-install-n8n.sh`](scripts/09-install-n8n.sh) and the [`jarvis` stack](stacks/jarvis/compose.yaml): SQLite (no Postgres), 1 GB memory cap, private editor on `:8443`, connected to the gateway, backed up nightly
-- ✅ n8n installed, `Lab gateway` credential works — **Lesson 09 complete**
-- Lesson 10, first design: Telegram **pushes** to n8n through a public Tailscale Funnel "door" on the webhook paths. Found a port bug (Telegram only delivers to 443/80/88/8443), fixed it — then **I rejected the whole approach**: I want n8n's UI to drive everything, with nothing reaching in from the internet
-- Lesson 10 redesigned: n8n **pulls** messages from Telegram (`getUpdates` long polling, every 30 s), confirms them, keeps only my user ID, answers via `smart`. **No public ports at all.** [`10-close-public-door.sh`](scripts/10-close-public-door.sh) removes the old Funnel; n8n editor now on private `:9443`
-- Asked: why a bot, why not Telegram's API straight to n8n? The bot **is** that API (Bot API, built into n8n); the alternative user API would act as my personal account: extra server program, sees all chats, account-takeover risk if leaked. **Decision: bot**
-- Created the bot. Accidentally pasted the token in a chat → lesson learned: revoke it with @BotFather `/revoke` and use only the new token, only in n8n
-- Lesson 10 built in the n8n UI; nothing public
-- Wrote [Lesson 11 — Voice](lessons/11-voice.md), [`scripts/11-install-voice.sh`](scripts/11-install-voice.sh) and the [`voice` stack](stacks/voice/): ears = Groq Whisper via gateway alias `listen`; voice = local Piper (en/ar/ur), no host port, 768 MB cap; round-trip self-test
-- ✅ Old Telegram token deleted (revoked); new token only in n8n — **Lesson 10 complete**
-- Groq Whisper **didn't understand my speech** → switched ears and voice to **ElevenLabs** (Scribe + Eleven v3, which speaks Urdu), free plan. Backups are automatic: Groq Whisper for ears, local Piper for voice. Created my ElevenLabs account
-- Ran `11-install-voice.sh`: ✅ ears work (ElevenLabs Scribe heard me; Groq backup works), ✅ local Piper voices installed (en, ar, **ur**), ❌ ElevenLabs **voice** failed (HTTP 500, real reason hidden). Added [`11-diagnose-voice.sh`](scripts/11-diagnose-voice.sh) and made the voice service log the gateway's real error
-- Diagnosis: ElevenLabs said **"Free users cannot use library voices via the API"** — the default voice was a library voice. A pre-made voice worked directly (HTTP 200); 4 of 10,000 credits used. Fix: installer now asks for a **pre-made voice ID**
-- Chose voice **Sarah** (pre-made). Still failed: this time the **Key ID** was pasted instead of the secret key (`sk_…`). The gateway quietly used the Groq backup for the ears test. Installer now rejects values that don't start with `sk_`
-- **Next:** re-run `11-install-voice.sh` with the `sk_…` key, then add the voice branch to `Jarvis chat`
+## Version 1 (2026-10-28 → 2026-11-01) — what I built and learned
 
-## 2026-11-01 — Day 3: the laptop joins Jarvis
+The first version reached Lesson 11 (voice) on the server. Its lessons were replaced by v2; the lessons learned live on in [docs/decisions.md](docs/decisions.md) and in the new lessons as they're rewritten.
 
-- Wanted Jarvis to also **control my Windows PC** by voice, and tried Stanford's **OpenJarvis** on the laptop as a separate project
-- Native Windows installer failed: I had **Python 3.15**; OpenJarvis needs **3.10–3.13** (no numpy wheels for 3.14+ on Windows). `winget` wasn't available, so Python 3.13 came from python.org. The OpenJarvis desktop app then failed with `Could not start Ollama` → installed Ollama (already had `qwen3.5` 0.8b/2b/4b and `mistral`)
-- Too many half-finished tries (OpenJarvis desktop + CLI, OpenClaw, Hermes) → **clean slate**: Claude listed every AI tool on the laptop through the desktop app, I approved each removal. Removed OpenJarvis (app, data, source), OpenClaw, Hermes, uv and Python 3.15. Kept Python 3.13, Ollama + models, Gemini CLI
-- Found that old tools stored **API keys** in their own files (`cloud-keys.env`, `.env`, `auth.json`) → lesson: revoke keys from tools you remove; from now on the laptop holds no provider keys
-- Asked: will OpenJarvis alone be my complete Jarvis? **No**: no phone app, and bots can't place phone calls. Gemini Pro / Claude Pro are chat subscriptions, not API keys (useful through Gemini CLI / Claude Code)
-- **Decision: merge both projects** — the server stays Jarvis's always-on brain and Telegram front door; the laptop becomes Jarvis's **hands** via OpenJarvis, reached over Tailscale with a key, thinking through the server's gateway. Checked OpenJarvis's source: OpenAI-compatible `/v1/chat/completions` with Bearer key, a `litellm` engine, tool confirmation on by default — see [docs/decisions.md](docs/decisions.md)
-- New **Part 4 — Jarvis on my PC** (Lessons 12–17); later parts renumbered to 18–25 — see [docs/roadmap.md](docs/roadmap.md)
-- Wrote [Lesson 12 — Prepare the Windows laptop](lessons/12-prepare-windows-laptop.md) and [`scripts/12-check-laptop.ps1`](scripts/12-check-laptop.ps1) (checks everything, `-Fix` puts Python 3.13 on PATH)
-- **Next:** run the laptop check (with `-Fix`), install git if missing; finish Lesson 11 (voice) on the server
+- **VM:** one Cloud Shell command creates the Always Free A1 VM (2 OCPU / 12 GB after Oracle halved the limit in 2026). Cloud Shell is FIPS-hardened, so the key is **RSA 4096**, not ED25519
+- **Security, Docker:** key-only SSH, fail2ban, unattended upgrades, swap, no UFW. Docker Compose now, K3s as an optional later track (ingress-nginx retired March 2026)
+- **Access:** the SSH tunnel to the chat app was awkward → **Tailscale** (`serve`, never Funnel)
+- **AI:** the local 3B model was slow on 2 CPUs and misused tools → **hybrid**: free cloud models + local fallback. Cerebras wanted a credit card (dropped); GitHub Models was retired (dropped); Groq, NVIDIA Build, OpenRouter kept
+- **Gateway:** first run had no keys entered, and then **every hard-coded model name was dead**. Fixed for good with a model picker that discovers and tests live models; apps only use aliases
+- **Backups:** restic → Oracle Object Storage, nightly, restore-tested; healthchecks.io alerts; private model kept loaded to stay clear of Oracle's idle rule
+- **n8n + Telegram:** first built with a public Funnel webhook door, then **rejected** it: n8n now **polls** Telegram, nothing public. Bot API, not my personal account. Accidentally pasted a bot token in a chat → revoked it with @BotFather
+- **Voice:** Groq Whisper didn't understand my speech → ElevenLabs (Scribe ears, Eleven v3 voice with Urdu), Groq + local Piper as automatic backups. Free ElevenLabs accounts need a **pre-made** voice via the API, and the **secret key** (`sk_…`), not the Key ID

@@ -10,7 +10,7 @@
 #   2. Turns on automatic security updates
 #   3. Hardens SSH: keys only, no passwords, no root login, max 3 tries
 #   4. Installs fail2ban: blocks IPs that keep guessing SSH logins
-#   5. Adds a 4 GB swap file (safety net for AI models in Lesson 04)
+#   5. Adds a 4 GB swap file (safety net for the private AI model in Lesson 06)
 #   6. Sets the timezone to Asia/Riyadh
 #   7. Checks the firewall (keeps Oracle's built-in iptables rules)
 #

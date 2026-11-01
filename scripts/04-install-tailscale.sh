@@ -1,23 +1,22 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — Lesson 05: private access from anywhere with Tailscale
+# free-ai-lab — Lesson 04: put the server on your private Tailscale network
 #
 # Run ON THE VM:
-#   sudo bash 05-install-tailscale.sh
+#   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/04-install-tailscale.sh -o 04-install-tailscale.sh && sudo bash 04-install-tailscale.sh
 #
 # What it does:
 #   1. Installs Tailscale (official package, Arm supported)
 #   2. Connects this server to YOUR Tailscale account (you approve in a browser)
-#   3. Publishes Open WebUI with HTTPS *inside your tailnet only*
-#      (tailscale serve — NOT funnel, so nothing is on the public internet)
-#   4. Prints the private https://... address for your laptop and phone
+#   3. Checks that nothing is published (and that Funnel, the public mode, is off)
+#   4. Prints the server's private name and IP for your laptop and phone
 #
+# It does NOT publish anything and does NOT use Funnel (public).
 # Safe to re-run.
 # =============================================================================
 set -euo pipefail
 
 TS_HOSTNAME="${TS_HOSTNAME:-free-ai-lab}"
-APP_PORT="${APP_PORT:-3000}"      # Open WebUI on 127.0.0.1:3000 (Lesson 04)
 LOGIN_USER="${SUDO_USER:-ubuntu}"
 
 c_ok="\033[32m"; c_warn="\033[33m"; c_err="\033[31m"; c_off="\033[0m"
@@ -52,34 +51,25 @@ else
 fi
 [ "$(ts_state)" = "Running" ] || die "Tailscale isn't connected. Run the script again."
 TS_NAME=$(ts_dns)
-echo "Connected. Private name: $TS_NAME   Private IP: $(tailscale ip -4)"
 
-# ---------- 3. serve Open WebUI over HTTPS (tailnet only) ----------
-step "3/4  Publishing Open WebUI at https://${TS_NAME} (only your devices can reach it)"
-if ! curl -fsS -o /dev/null "http://127.0.0.1:${APP_PORT}/health"; then
-  warn "Open WebUI isn't answering on 127.0.0.1:${APP_PORT} yet. Continuing; it will work once it's up."
+# ---------- 3. nothing published ----------
+step "3/4  Checking that nothing is published"
+# Later lessons publish single apps privately with 'tailscale serve'. Right now there should be none,
+# and NEVER 'funnel' (that would put an app on the public internet).
+if tailscale funnel status 2>/dev/null | grep -qi "funnel on"; then
+  warn "Something is PUBLIC through Funnel. Turning it off."; tailscale funnel reset || true
 fi
-echo "If a link appears saying HTTPS / Serve is not enabled, open it, click Enable, and come back."
-tailscale serve --bg "$APP_PORT"
-echo
-tailscale serve status
+echo "Published apps: $(tailscale serve status 2>&1 | head -1)"
 
-# ---------- 4. check ----------
-step "4/4  Checking"
-sleep 3
-if curl -fsS -o /dev/null --max-time 30 "https://${TS_NAME}/health"; then
-  echo -e "${c_ok}HTTPS works:${c_off} https://${TS_NAME}"
-else
-  warn "Couldn't open https://${TS_NAME} from the server yet (the certificate can take a minute on first use)."
-  warn "Try it from your laptop after installing Tailscale there (see the lesson)."
-fi
-
+# ---------- 4. summary ----------
 step "Done! Summary"
-echo "  This server on Tailscale:  ${TS_NAME}"
-echo "  Open WebUI (private):      https://${TS_NAME}"
-echo "  Public internet:           still only SSH (22) is open; port ${APP_PORT} is NOT public"
+echo "  Private name:  ${TS_NAME}"
+echo "  Private IP:    $(tailscale ip -4)"
+echo "  Public internet: still only SSH (22) is open"
 echo
-echo -e "${c_warn}Do these 2 things now (see Lesson 05):${c_off}"
+echo -e "${c_warn}Now do these 3 things (see Lesson 04):${c_off}"
 echo "  1) Install Tailscale on your laptop and phone, and sign in with the SAME account."
-echo "  2) In the Tailscale admin console, turn OFF key expiry for '${TS_HOSTNAME}'"
-echo "     (otherwise the server disconnects itself after about 6 months)."
+echo "  2) Test from the laptop:   ssh ubuntu@${TS_HOSTNAME}"
+echo "  3) In the Tailscale admin console, turn OFF key expiry for '${TS_HOSTNAME}'"
+echo "     (otherwise the server disconnects itself after about 6 months),"
+echo "     and turn on HTTPS certificates (DNS page) for later lessons."

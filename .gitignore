@@ -11,3 +11,7 @@ secrets/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Python cache
+__pycache__/
+*.pyc

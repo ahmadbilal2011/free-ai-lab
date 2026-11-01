@@ -10,11 +10,11 @@
 
 ## Part A — Why Docker?
 
-Without Docker, installing an app like Open WebUI means installing Python, the right library versions, a database, and so on, directly on the server. Two apps may need different versions of the same thing and break each other. Removing an app cleanly is hard.
+Without Docker, installing an app like n8n means installing Python, the right library versions, a database, and so on, directly on the server. Two apps may need different versions of the same thing and break each other. Removing an app cleanly is hard.
 
 With Docker, each app arrives as a **ready-made package** with everything it needs inside. It runs in its own box, can't break other apps, and can be removed in one command.
 
-Every app in this lab (Ollama, Open WebUI, LiteLLM, n8n) will run in Docker.
+Every app on Jarvis's server (the AI gateway, the private model, n8n, the voice service) will run in Docker.
 
 ## Part B — The 6 ideas you need
 
@@ -41,13 +41,13 @@ When you map a port, you choose **who can reach it**:
 | `"8080:80"` | Anyone who can reach the server's IP (all network interfaces) |
 | `"127.0.0.1:8080:80"` | **Only the server itself** |
 
-On our VM, Oracle's cloud Security List still only allows SSH (22) from the internet, so nothing else is public either way. But a good habit is to **bind to `127.0.0.1` unless there's a reason not to**. In Lesson 05, Tailscale will let *your* devices in privately.
+On our VM, Oracle's cloud Security List still only allows SSH (22) from the internet, so nothing else is public either way. But a good habit is to **bind to `127.0.0.1` unless there's a reason not to**. In Lesson 04, Tailscale will let *your* devices in privately.
 
 > Docker manages its own firewall (iptables) rules for container ports, separately from Oracle's INPUT rules we checked in Lesson 02. That's normal. We don't change them by hand.
 
 ### Arm reminder
 
-Our VM is Arm (`aarch64`). Most popular images (nginx, Ollama, Open WebUI, LiteLLM, n8n) publish Arm versions, and Docker picks the right one automatically. If an image only exists for x86, it won't run here. We always check.
+Our VM is Arm (`aarch64`). Most popular images (nginx, Ollama, LiteLLM, n8n) publish Arm versions, and Docker picks the right one automatically. If an image only exists for x86, it won't run here. We always check.
 
 ### The `docker` group: convenience with a warning
 
@@ -192,9 +192,10 @@ cd ~
 ```
 /home/ubuntu/lab/
 ├── hello/        ← this lesson's practice
-├── ai/           ← Lesson 04: Ollama + Open WebUI
-├── gateway/      ← Lesson 07: LiteLLM
-└── jarvis/       ← Lesson 09+: n8n
+├── autoheal/     ← Lesson 06: restarts frozen apps
+├── brain/        ← Lesson 06: AI gateway (LiteLLM) + private model (Ollama)
+├── jarvis/       ← Lesson 08+: n8n
+└── voice/        ← Lesson 10: Jarvis's voice
 ```
 
 Each folder holds one `compose.yaml`. The same files live in this repo under [`stacks/`](../stacks/), so the whole lab can be rebuilt from GitHub.
@@ -229,4 +230,4 @@ Each folder holds one `compose.yaml`. The same files live in this repo under [`s
 
 ## Next
 
-**Lesson 04 — Run my own AI: Ollama + Open WebUI.**
+**Lesson 04 — Tailscale: one private network for the server, laptop and phone.**

@@ -1,11 +1,11 @@
 # =============================================================================
-# free-ai-lab - Lesson 12: is my Windows laptop ready for OpenJarvis?
+# free-ai-lab - Lesson 11: is my Windows laptop ready for OpenJarvis?
 #
 # Check only (changes nothing):
-#   irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/12-check-laptop.ps1 | iex
+#   irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/11-check-laptop.ps1 | iex
 #
 # Check AND fix the Python PATH (puts your newest supported Python first, for your user only):
-#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/12-check-laptop.ps1))) -Fix
+#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/11-check-laptop.ps1))) -Fix
 #
 # Run it in a NORMAL PowerShell window (not "Run as administrator").
 # It never deletes anything and never asks for keys or passwords.
@@ -102,7 +102,7 @@ if (Get-Command ollama -ErrorAction SilentlyContinue) {
     try {
         $tags = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 5
         Ok "Ollama is running"
-        if ($tags.models.Count -eq 0) { Warn "No models yet. Lesson 13 picks one." }
+        if ($tags.models.Count -eq 0) { Warn "No models yet. Lesson 12 picks one." }
         foreach ($m in $tags.models) { Info ("model: {0}  ({1:N1} GB)" -f $m.name, ($m.size / 1GB)) }
     } catch {
         Bad "Ollama is installed but not running. Open 'Ollama' from the Start menu, then re-run this check."
@@ -122,7 +122,7 @@ $left = @(
     "$env:APPDATA\OpenClawTray",
     "$env:LOCALAPPDATA\hermes"
 ) | Where-Object { (Test-Path $_) -and (Get-ChildItem $_ -Force -ErrorAction SilentlyContinue | Select-Object -First 1) }
-if ($left) { foreach ($l in $left) { Warn "Not empty: $l  (see Lesson 12, Part C)" } } else { Ok "No old install folders with content" }
+if ($left) { foreach ($l in $left) { Warn "Not empty: $l  (see Lesson 11, Part C)" } } else { Ok "No old install folders with content" }
 
 $tasks = @(Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -match 'jarvis|openclaw|hermes' })
 if ($tasks.Count -gt 0) { foreach ($t in $tasks) { Warn "Old scheduled task: $($t.TaskName)" } } else { Ok "No old scheduled tasks" }
@@ -147,7 +147,7 @@ if ($ram -ge 16) { Ok "16 GB+ RAM: small local models (up to ~4B) are usable as 
 else { Warn "Under 16 GB RAM: keep local models tiny; the server's free cloud models do the thinking" }
 
 # ---------------------------------------------------------------------------
-Step "8/8  Tailscale (how the server will reach the laptop, Lesson 14)"
+Step "8/8  Tailscale (how the server will reach the laptop, Lesson 13)"
 $ts = Get-Command tailscale -ErrorAction SilentlyContinue
 if (-not $ts -and (Test-Path "$env:ProgramFiles\Tailscale\tailscale.exe")) { $ts = "$env:ProgramFiles\Tailscale\tailscale.exe" }
 if ($ts) {
@@ -160,7 +160,7 @@ if ($ts) {
 # ---------------------------------------------------------------------------
 Write-Host ""
 if ($script:fails -eq 0) {
-    Write-Host "RESULT: ready for Lesson 13 ($($script:warns) warning(s) to read above)." -ForegroundColor Green
+    Write-Host "RESULT: ready for Lesson 12 ($($script:warns) warning(s) to read above)." -ForegroundColor Green
 } else {
     Write-Host "RESULT: $($script:fails) problem(s) to fix first, $($script:warns) warning(s). Fix the [fail] lines and run this check again." -ForegroundColor Red
 }

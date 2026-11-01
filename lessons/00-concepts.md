@@ -1,106 +1,137 @@
-# Lesson 00 — Core concepts before we start
+# Lesson 00 — The plan: what Jarvis is, and the ideas it's built on
 
-Before creating anything, it helps to understand the handful of ideas the whole lab is built on. Nothing here costs money or changes your Oracle account.
+Before creating anything, here's **what we're building** and the handful of ideas the whole course rests on. Nothing in this lesson costs money or changes any account.
 
 ---
 
-## 1. Cloud and virtual machines (VM)
+## 1. What Jarvis will do
+
+By the end of the course you have your own assistant, **Jarvis**:
+
+- You **talk or type** to it: on your phone (Telegram) or at your Windows PC (microphone).
+- It **answers by text and voice**, in your language.
+- It **does things**: reminders, calendar, web search, writing; and on your PC it opens apps, handles files and runs scripts.
+- It acts **only when you ask**, and asks **"Yes / No?"** before anything that can't be undone (sending, posting, deleting).
+- It costs **$0**: free and open-source software, Oracle's Always Free server, and free AI tiers. Paid subscriptions you may already have (like Gemini Pro or Claude Pro) are used only for the hardest jobs, and only if you want.
+
+## 2. The design: one brain, two hands
+
+```
+ 📱 Phone ── Telegram (text + voice notes) ──┐
+                                             ▼
+ ☁️  SERVER  (Oracle Always Free, on 24/7) — Jarvis's BRAIN and FRONT DOOR
+      • n8n ............ reads your messages, decides what to do, runs routines
+      • AI gateway ..... one door to many free AI models, with automatic fallback
+      • private model .. a small AI that runs on the server itself (backup + privacy)
+      • voice .......... understands voice notes, answers with a voice
+                                             │
+                          private network (Tailscale), with a key
+                                             ▼
+ 💻 WINDOWS LAPTOP (on when you're at it) — Jarvis's HANDS
+      • OpenJarvis ..... acts on the PC: apps, files, scripts; asks before risky steps
+      • microphone ..... talk to Jarvis at your desk
+```
+
+Why split it this way:
+
+| Choice | Reason |
+|---|---|
+| The brain is on the server | It's on 24/7, so Jarvis answers your phone even when the laptop is off |
+| The thinking uses **free cloud AI** | Free cloud models are far smarter and faster than anything a free 2-CPU server can run |
+| The laptop is only the hands | Only your PC can act on your PC. It holds **no AI keys**; it borrows the server's |
+| Telegram is the front door | Free, phone + PC apps, voice notes built in, and it works without opening any port |
+
+**Honest limits, up front:**
+
+| You might expect | Reality |
+|---|---|
+| "Jarvis calls me on the phone" | Bots can't place phone calls. Jarvis sends a **voice note with a loud notification** instead. Real calls need paid services |
+| Jarvis controls my phone's apps | Not in this course. A Jarvis phone app of our own may come later |
+| PC jobs while the laptop is off | They can't run; Jarvis tells you, and everything server-side still works |
+| Free AI forever, unchanged | Free tiers change often. The course checks them live and switches automatically |
+
+## 3. Cloud and virtual machines (VM)
 
 A **cloud** is someone else's data centre that you rent computers from over the internet.
-A **virtual machine (VM)** is a computer made of software: one big physical server is sliced into many smaller "virtual" computers. Each VM has its own CPU share, RAM, disk and operating system, and behaves like a real computer you reach over the network.
+A **virtual machine (VM)** is a computer made of software: one big physical server is sliced into many smaller "virtual" computers. Each VM has its own CPU share, RAM, disk and operating system.
 
 Oracle calls VMs **Compute Instances**.
 
-## 2. Oracle Always Free — and its limits
+## 4. Oracle Always Free, and its limits
 
-Oracle gives every account a set of resources that stay free forever, in your **home region** (the region you chose at signup, which can never be changed).
+Oracle gives every account resources that stay free forever, in your **home region** (chosen at signup, can't be changed).
 
-What matters for us (as of 2026):
-
-| Resource | Free limit |
+| Resource | Free limit (2026) |
 |---|---|
 | Ampere A1 (Arm) compute | **2 OCPU and 12 GB RAM in total** (halved from 4 OCPU / 24 GB in mid-2026) |
-| AMD micro VMs | 2 VMs, each 1/8 OCPU and 1 GB RAM |
 | Block storage (disks) | 200 GB total, including boot disks |
+| Object Storage | 20 GB (we use it for encrypted backups) |
 
-Important warnings:
+Warnings:
 
-- **Stay inside the limits.** Going over 2 OCPU / 12 GB on A1 can mean charges, or Oracle disabling the instances.
-- **Free Trial vs Always Free.** New accounts get a 30-day trial with extra credit. If A1 usage is above the free limit when the trial ends, *all* A1 instances can be disabled. We will build within the free limit from day one, so this never affects us.
-- **Idle accounts can be reclaimed.** Oracle may stop accounts or resources that sit unused. Running real services (like our AI) keeps it active.
-- **"Out of host capacity" errors** are common when creating A1 instances. It just means Oracle's free Arm servers are busy; we retry. It is not your mistake.
+- **Stay inside the limits.** Going over can mean charges, or Oracle disabling the instances.
+- **Free Trial vs Always Free.** New accounts get a 30-day trial. If A1 usage is above the free limit when it ends, *all* A1 instances can be disabled. We stay inside the free limit from day one.
+- **Idle servers can be reclaimed.** Oracle may reclaim an Always Free VM whose CPU, network **and** memory all stay very low for 7 days. Jarvis's server keeps real work running (including the private model, kept in memory), so it isn't idle.
+- **"Out of host capacity"** when creating an A1 server just means Oracle's free Arm machines are busy. We retry. It's not your mistake.
 
-## 3. Arm vs x86
+## 5. Arm vs x86
 
-CPUs come in "families" (architectures). Most laptops are **x86** (Intel/AMD). Oracle's free Ampere A1 is **Arm** (like phones and Apple M-chips).
-Software must be built for the right family. Everything we use (Ubuntu, Docker, Ollama, Open WebUI, LiteLLM, n8n) supports Arm, so this is fine — but it's why we always check.
+CPUs come in "families". Most laptops are **x86** (Intel/AMD); Oracle's free A1 is **Arm**. Software must be built for the right family. Everything on our server (Ubuntu, Docker, Ollama, LiteLLM, n8n) supports Arm, but we always check.
 
-## 4. Linux and Ubuntu
+Your Windows laptop is (usually) x86, and that's fine: its software is installed separately (Part 4).
 
-The VM needs an operating system. We use **Ubuntu Server** — free, popular, and well documented. There's no desktop or mouse; you control it by typing commands in a **terminal**.
+## 6. Linux, SSH and keys
 
-## 5. SSH and key pairs
+The server runs **Ubuntu Server**: no desktop; you type commands in a **terminal**. You reach it with **SSH (Secure Shell)** using a **key pair** instead of a password:
 
-**SSH (Secure Shell)** is how you open a terminal on a remote computer safely.
+- **Private key**: stays on your laptop, never shared, never on GitHub.
+- **Public key**: on the server, like a lock only your private key opens.
 
-Instead of a password, we use an **SSH key pair**:
+There's nothing for attackers to guess, so it's much safer than a password.
 
-- **Private key** — stays on *your* PC, never shared, never committed to GitHub.
-- **Public key** — uploaded to the server. Think of it as a lock that only your private key opens.
+## 7. IP addresses, ports and firewalls
 
-Key-based login is much safer than passwords, because there's nothing for attackers to guess.
-
-## 6. IP addresses, ports and firewalls
-
-- An **IP address** is the server's address on the network (like a phone number).
-- A **port** is a numbered "door" on that address. Each service listens on its own port (SSH uses 22, websites use 80/443).
+- An **IP address** is a machine's address on the network.
+- A **port** is a numbered door on that address (SSH = 22, websites = 443).
 - A **firewall** decides which doors are open.
 
-Oracle has **two** firewall layers: the cloud **Security List** (outside the VM) and the VM's own Linux firewall. Both must allow traffic for something to be reachable.
+Oracle has **two** firewall layers: the cloud **Security List** and the server's own Linux firewall. Our rule: **only SSH is public. Everything else is private.**
 
-Our safety strategy: **open as few doors as possible to the public internet.** Only SSH will be public, and even that could be closed later.
+## 8. Containers and Docker
 
-## 7. Containers and Docker
+A **container** packages an app with everything it needs, so it runs the same everywhere and doesn't disturb the rest of the system. **Docker** runs containers; **Docker Compose** describes them in one file. You install, update or remove an app cleanly with one command.
 
-A **container** packages an app with everything it needs, so it runs the same everywhere and doesn't mess up the rest of the system.
-**Docker** is the tool that runs containers. Benefits for a beginner:
+## 9. AI models, APIs and the gateway
 
-- Install an app with one command or one file (`docker compose`)
-- Delete it cleanly if something goes wrong
-- Update it easily
+- An **LLM (Large Language Model)** is the "brain" behind chat AI. Some are open source and can run on your own machine; the best ones run in big data centres.
+- An **API** lets a program use a service. With a free **API key**, our server can ask cloud models (Groq, NVIDIA, OpenRouter, Google Gemini...) questions. Each has a free daily limit.
+- A **gateway** (LiteLLM) sits in front of all of them: apps ask the gateway for `smart` or `fast`, and the gateway picks a working free model, switching automatically when one hits its limit.
+- **Ollama** runs a small open model **on the server itself**: slower, but private and unlimited, and the last fallback.
+- A **subscription** (Gemini Pro, Claude Pro) is not an API key. It powers command-line tools like Gemini CLI and Claude Code, which Jarvis can use on the laptop for hard jobs.
 
-## 8. Running AI yourself
+## 10. Automation and agents
 
-- An **LLM (Large Language Model)** is the "brain" behind chat AI. Many are open source (e.g. Llama, Qwen, Gemma, Phi).
-- **Ollama** downloads and runs these models on your server.
-- **Open WebUI** gives you a ChatGPT-like page to talk to them, and can be installed on your phone's home screen like an app.
+- **n8n** is an automation engine: you connect boxes ("nodes") into **workflows** in a web page. "When a Telegram message arrives → ask the AI → reply" is a workflow.
+- An **agent** is an AI that can **use tools** (search, calendar, the PC) to finish a task, not just chat.
+- The safety rule for every agent in this course: **it asks before acting** on anything irreversible.
 
-**Honest expectation:** our server has no GPU and only 12 GB RAM, so we'll run **small models (about 1–4 billion parameters)**. They're good for everyday questions, drafting, summaries and simple coding help, but slower and less capable than ChatGPT or Claude. Answers may take several seconds to start.
+## 11. Reaching everything privately: Tailscale
 
-Models are measured in **parameters** (e.g. "3B" = 3 billion). Bigger = smarter but needs more RAM. **Quantization** shrinks a model so it fits in less memory with a small loss of quality.
+**Tailscale** creates a private, encrypted network between *your* devices only: server, laptop, phone. They reach each other from anywhere, while the rest of the internet can't even see them. The personal plan is free.
 
-## 9. Reaching it from anywhere — safely
+## 12. Git and GitHub
 
-The risky way is to open the AI's port to the whole internet. Anyone could find it.
-
-The safe way is **Tailscale**: it creates a private, encrypted network between *your* devices only (PC, phone, server). Your phone can reach the AI as if it were on your home Wi-Fi, but the rest of the internet can't even see it. The personal plan is free.
-
-## 10. Git and GitHub
-
-- **Git** tracks changes to files over time (like "save points").
-- **GitHub** stores that history online.
-- A **commit** is one save point with a message describing what changed.
-
-This repo is our lab notebook: every lesson, config file and lesson learned is committed here.
+**Git** tracks changes to files ("save points", called **commits**); **GitHub** stores them online. This repo is the lab notebook: every lesson, script and lesson learned. **Secrets (keys, passwords, tokens) never go into it.**
 
 ---
 
 ## Check your understanding
 
-1. Why do we use an SSH key instead of a password?
-2. What's the difference between the Oracle Security List and the Linux firewall?
-3. Why is Tailscale safer than opening the AI's port to the internet?
-4. Why must we keep A1 usage at or below 2 OCPU / 12 GB?
+1. Why does Jarvis's brain live on the server and not on the laptop?
+2. What's the difference between an API key and a subscription like Gemini Pro?
+3. What does the gateway do when a free model hits its daily limit?
+4. Why does Jarvis ask "Yes / No?" before sending or deleting anything?
+5. Why must we keep A1 usage at or below 2 OCPU / 12 GB?
 
 ## Next
 

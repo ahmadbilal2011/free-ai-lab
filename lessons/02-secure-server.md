@@ -39,7 +39,7 @@ Remember from Lesson 00: Oracle has **two** firewall layers.
 
 Many Ubuntu guides tell you to use **UFW** (a simpler firewall tool). **Don't use UFW on Oracle images.** Oracle warns that it can conflict with their built-in iptables rules and can even stop the instance from booting properly. We keep Oracle's rules and only check them.
 
-Later, we'll use **Tailscale** (Lesson 05) so the AI apps never need a public port at all.
+Later, we'll use **Tailscale** (Lesson 04) so Jarvis's apps never need a public port at all.
 
 ### Swap: a closer look
 

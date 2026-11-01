@@ -1,127 +1,78 @@
 # Design decisions
 
-Short records of important choices: what we chose, what we didn't, and why. Newest first.
+Short records of the choices behind this course: what we chose, what we didn't, and why. Most were learned the hard way while building the first version of the lab (see [PROGRESS.md](../PROGRESS.md)).
 
 ---
 
-## 2026-10-28 — Docker Compose now, Kubernetes (K3s) later
+## Course v2 (2026-11-01) — restart around one goal
 
-**Question:** Should the lab run on Kubernetes with cert-manager and ingress-nginx instead of Docker?
+The first version grew lesson by lesson (local chat app first, Jarvis later, the PC added last). The goal is now clear, so the course was rewritten from Lesson 00: **one Jarvis, controlled by text and voice from the phone and the Windows PC, that does tasks only when asked, at $0.** The server's apps were wiped ([`scripts/wipe-apps.sh`](../scripts/wipe-apps.sh)); the server itself, its hardening and Tailscale were kept. Everything that worked in v1 (scripts, fixes) is reused as each new lesson is written and tested.
 
-**Decision:** Phase 1 uses **Docker Compose + healthchecks + autoheal**. Kubernetes becomes an optional **Phase 2 track** that migrates the same apps to **K3s**.
-
-**Why:**
-
-| Point | Detail |
-|---|---|
-| ingress-nginx is retired | The Kubernetes project ended its maintenance in March 2026. New setups should use Traefik (bundled with K3s) or the Gateway API instead. |
-| No public HTTPS needed | Everything is private behind Tailscale, which also provides free HTTPS certificates on `*.ts.net`. cert-manager with Let's Encrypt would need a domain and public ports 80/443. |
-| RAM goes to the AI | 12 GB total. K3s needs roughly 0.5–1 GB more, which the model needs. |
-| Single node | Kubernetes' biggest strength is moving work between servers. With one VM, its self-healing is close to Docker with healthchecks + autoheal. |
-| Learning order | Get a working AI first; then learning Kubernetes on apps you already understand is much easier. |
-
-**Self-healing in Phase 1:**
-
-| Failure | Handled by |
-|---|---|
-| Container crashes | `restart: unless-stopped` |
-| Container frozen (healthcheck failing) | autoheal |
-| Docker daemon crashes | systemd restarts it |
-| Server reboots | Docker starts at boot, containers come back |
-| Whole VM lost | Backups (Lesson 07). No single-server setup can avoid this, Docker or Kubernetes. |
-
-**Revisit when:** Phase 1 (Lessons 04–07) is complete.
-
-Sources: [Ingress NGINX retirement — Kubernetes blog](https://www.kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/), [Kubernetes Steering & Security Response Committees statement](https://www.kubernetes.io/blog/2026/01/29/ingress-nginx-statement/)
-
----
-
-## 2026-10-28 — RSA 4096 key created in Cloud Shell
-
-Oracle Cloud Shell runs in FIPS mode, which forbids ED25519 keys. The VM script creates an RSA 4096 key in Cloud Shell, and the user downloads it to Windows. Students who prefer a laptop-created key can pass `SSH_PUBLIC_KEY`.
-
-## 2026-10-28 — Keep Oracle's iptables, no UFW
-
-Oracle advises against UFW on its Ubuntu images (it can conflict with the built-in iptables rules). We keep Oracle's rules and expose nothing publicly except SSH.
-
-## 2026-10-28 — Reach Open WebUI through Tailscale, not a public port
-
-The SSH tunnel was awkward (PC only, window must stay open) and failed on first try. Making port 3000 public would expose the login page to the whole internet over plain HTTP. **Decision:** use Tailscale right after Lesson 04: `tailscale serve` gives tailnet-only HTTPS on `*.ts.net`, works on phone and PC, and opens no inbound port. We don't use `tailscale funnel` (public) for apps. *(Updated 2026-10-30: one narrow exception for Telegram webhooks, see below.)* The SSH tunnel remains documented as a fallback.
-
-## 2026-10-28 — Hybrid AI: free cloud APIs + local fallback
-
-The local 3B model is slow on 2 CPU cores. **Decision:** add free cloud API providers (Groq, Cerebras first; GitHub Models, OpenRouter, Gemini optional) to Open WebUI, and keep Ollama as a private, unlimited fallback. **Privacy rule:** personal data only goes to providers that don't train on prompts. Gemini's free tier trains on data in KSA, so it's for general questions only. Lesson 07 adds LiteLLM for automatic fallback between providers.
-
-## 2026-10-28 — Drop Cerebras and GitHub Models; use NVIDIA Build and OpenRouter
-
-Cerebras now asks for a credit card at signup, which breaks our $0 / no-card rule. GitHub Models was retired by GitHub on 30 July 2026. **Decision:** main providers are **Groq** and **NVIDIA Build (NIM)**, with **OpenRouter** free models as a third, and Gemini optional for general questions. If any provider starts asking for a card, it gets dropped the same way.
-
-## 2026-10-28 — Never hard-code provider model names; discover and test them
-
-The first gateway config used model names from memory. A live diagnosis showed **all of them** had gone: Groq no longer had `llama-3.3-70b-versatile` / `llama-3.1-8b-instant`, NVIDIA's `meta/llama-3.3-70b-instruct` reached end of life on 26 Aug 2026, and OpenRouter's Llama 3.3 70B stopped being free. **Decision:** the installer runs `07-pick-models.py`, which lists each provider's *current* models, ranks them by preference, tests candidates with a tiny request, and generates the config. Apps only ever use our aliases (`smart`, `fast`, `private`), so provider churn never reaches them.
-
-## 2026-10-28 — Backups: restic to Oracle Object Storage, healthchecks.io alerts
-
-Off-server, encrypted, tested, automatic and watched. restic encrypts before upload and deduplicates; Oracle Always Free gives 20 GB of Object Storage via an S3-compatible API. AI models are excluded (re-downloadable). Open WebUI is paused a few seconds so its SQLite file is copied consistently. A healthchecks.io dead man's switch (heartbeat every 5 min + nightly backup ping) emails us when the server or a backup stops, which an on-server monitor can't do. To stay clear of Oracle's A1 idle-reclaim rule, the private model stays loaded (real memory use > 20%) rather than running fake load.
-
-## 2026-10-30 — No self-hosted task app; Jarvis connects to free cloud tools
-
-Lesson 09 was going to self-host Vikunja. **Decision: dropped before installing.** Jarvis doesn't need its own task app: the tasks just need to live somewhere Jarvis can reach, and free cloud tools (calendar, reminders, email) already have polished phone apps and notifications, keep working when our server is down, and n8n has ready-made connectors for them. Self-hosting would add a container to update and back up for little gain. **Principle from now on:** the server hosts only what must be ours (AI gateway, n8n, private model, backups); everything else stays in free cloud tools. Trade-off: that data is stored by those providers, so truly private things go to the local model. Voice moved earlier (Lesson 11) because text **and voice** control is the core of Jarvis.
-
-## 2026-10-30 — Our own Jarvis on n8n, not OpenJarvis; thin server, cloud brains
-
-Goal: maximum quality with minimum server load. **Decision:** the server only coordinates (n8n, LiteLLM gateway, small private model, backups); thinking, speech, images and video run on free cloud APIs. n8n uses its built-in SQLite (no Postgres container) and a 1 GB memory cap. Stanford's OpenJarvis (Apache 2.0) was considered: good ideas (Telegram channel, MCP, scheduler, presets), but it's designed to run models on-device with GPU/Apple Silicon and fine-tune locally, so its strengths would sit idle on a 2-CPU, no-GPU VM. Kept as an optional comparison lesson. The small local model stays: privacy option, last fallback, and keeps memory above Oracle's idle threshold.
-
-## 2026-10-30 — Telegram by polling: n8n reaches out, nothing reaches in
-
-Telegram can deliver messages by **push** (calling a webhook on our server) or **pull** (`getUpdates`). A first version of Lesson 10 used push through a Tailscale Funnel "door" for n8n's webhook paths (it also had a port bug: Telegram only delivers webhooks to 443/80/88/8443). **Withdrawn** before use: it needed a public entry point and server-side networking outside the n8n UI. **Decision:** pull. An n8n workflow long-polls `getUpdates` (20 s wait, every 30 s), **confirms** each batch with `offset = last update_id + 1` *before* calling the AI (no double replies), filters to the owner's user ID, then answers via the gateway. Everything is built in the n8n UI; **no Funnel, no public port**. Costs: ~3k tiny runs/day (successful runs not saved), and the bot token lives in two HTTP node URLs because n8n's Telegram credential can't be used by the HTTP Request node, so the workflow must never be shared with the token in it. n8n's built-in Telegram *Trigger* (push-only) is not used. The n8n editor moved to private port 9443. Earlier decisions mentioning Funnel are superseded by this.
-
-## 2026-10-30 — Telegram Bot API, not the user API
-
-Question: why a bot instead of connecting Telegram's API straight to n8n? A bot *is* that API connection: the Bot API is Telegram's API for programs, and n8n has built-in nodes for it. The alternative, the user API (MTProto) acting as the owner's personal account, needs an extra always-running program on the server (no n8n support), exposes every private chat, turns a leaked key into full account takeover, and risks account limits for automation. **Decision:** Bot API. Acting inside personal chats can be a separate, careful advanced lesson later.
-
-## 2026-10-30 — Voice: cloud ears (Groq Whisper), local voice (Piper)
-
-**Ears:** Groq's free `whisper-large-v3-turbo` (accepts Telegram's OGG directly, multilingual, zero server load), added to the gateway as alias `listen` by the model picker, so keys stay in one place. **Voice:** no free cloud TTS fit: Groq's only covers English and Saudi Arabic (no Urdu); others are small, need a card, or train on data in KSA. **Piper** (open source, built for small CPUs, has en/ar/ur voices) runs as a tiny service with **no host port**, a 768 MB cap, and auto language detection from the reply's letters. Output is converted to OGG/Opus and sent with Telegram's `sendVoice` for a real voice-note bubble. Rule: text in → text out; voice in → text + voice out. Trade-off: Piper sounds slightly robotic; voice notes leave the server for Groq.
-
-## 2026-10-30 — Voice v2: ElevenLabs first, free backups automatic
-
-Real-world test: Groq Whisper **did not understand Ahmad's speech well**. **Decision:** ElevenLabs for both ears (Scribe, `listen`) and voice (Eleven v3, `speak`; the only ElevenLabs model that speaks Urdu), via the gateway so the key stays in one `.env`. The free plan is 10,000 credits/month shared between listening and speaking (≈ 30 min listening or ≈ 10 min speech), personal use only, attribution if published. Backups switch in automatically: `listen-backup` (Groq Whisper) through an n8n error branch, and local Piper inside the voice service, which pauses cloud attempts for an hour after a quota/auth error. Rejected: Azure / Google speech (need a credit card), unofficial "Edge TTS" (uses Microsoft's service without permission). Lesson: test speech models with your own voice and accent.
-
-**Update (2026-11-01):** first real run: Scribe ears worked; the voice failed with ElevenLabs `paid_plan_required`: "Free users cannot use library voices via the API." LiteLLM's `alloy` name maps to a library voice. Fix: use a **pre-made** voice ID (default George `JBFqnCBsd6RMkjVDRZzb`), chosen during install. Diagnosis via `11-diagnose-voice.sh`.
-
-## 2026-11-01 — One Jarvis, two machines: the server is the brain, my laptop is the hands
-
-**Question:** I also want Jarvis to control my Windows PC (and later my phone's apps) by voice, and I tried Stanford's OpenJarvis on the laptop. Separate project, or one?
-
-**Decision: one project.** The Oracle server stays Jarvis's **always-on brain and front door**; my Windows laptop joins as Jarvis's **hands**, running OpenJarvis. They talk only over Tailscale.
+## One Jarvis, two machines: the server is the brain, the laptop is the hands
 
 | Job | Where | Why |
 |---|---|---|
-| Telegram front door (text + voice notes), reminders, schedules, cloud tools | **Server (n8n)** | On 24/7, so Jarvis answers even when the laptop is off |
-| AI models and keys | **Server (LiteLLM gateway)** | One set of free provider keys; the laptop uses the gateway too, so keys never live on the laptop |
-| Opening apps, files, scripts, desktop voice | **Laptop (OpenJarvis)** | Only the PC can act on the PC |
-| Hard jobs (coding, big automations) | **Laptop**, handed to Gemini CLI / Claude Code | Uses subscriptions I already pay for, only when needed |
+| Telegram front door, routines, cloud tools, voice | **Server** (n8n) | On 24/7; answers even when the laptop is off |
+| AI models and all provider keys | **Server** (LiteLLM gateway + Ollama) | One set of keys; the laptop borrows the gateway |
+| Apps, files, scripts on the PC; desktop voice | **Laptop** (OpenJarvis) | Only the PC can act on the PC |
+| Hard jobs (coding, big automations) | **Laptop**, via Gemini CLI / Claude Code | Uses subscriptions already paid for, only on request |
 
-How they connect (checked in OpenJarvis's source, v1.0):
+Connection (checked in OpenJarvis's source, v1.0): OpenJarvis serves an **OpenAI-compatible** `/v1/chat/completions` (`jarvis serve`, Bearer key via `OPENJARVIS_API_KEY`, `127.0.0.1` by default) → published to the **tailnet only**; n8n calls it like any AI model. OpenJarvis's `litellm` engine sends its thinking to our gateway. Tool confirmation stays on (`security.enforce_tool_confirmation = true`), and n8n adds a Telegram **Yes / No** step for irreversible actions. **Only n8n polls the Telegram bot** (two pollers on one bot steal each other's messages), so OpenJarvis's own Telegram channel stays off.
 
-- OpenJarvis serves an **OpenAI-compatible** endpoint (`/v1/chat/completions`, `jarvis serve`). n8n calls it like any other AI model, over Tailscale, with a **Bearer key** (`OPENJARVIS_API_KEY`). By default it listens only on `127.0.0.1`; we publish it to the tailnet only.
-- OpenJarvis has a `litellm` engine, so its thinking goes to **our gateway** (`smart` / `fast`), not to separate keys on the laptop.
-- OpenJarvis asks before running tools by default (`security.enforce_tool_confirmation = true`). We keep it on, and n8n adds a Telegram **"Yes / No"** step for anything irreversible.
-- **Only n8n polls the Telegram bot.** OpenJarvis also has a Telegram channel, but two programs polling one bot steal each other's messages, so the laptop never uses it.
+Why OpenJarvis on the laptop, not on the server: it's built for on-device AI (GPU / Apple Silicon); on a 2-CPU server its strengths sit idle. On the laptop they fit: PC tools, approval queue, voice, an OpenAI-compatible API.
 
-**Why OpenJarvis now, when we rejected it for the server:** the earlier decision is unchanged for the server (on-device AI makes no sense on a 2-CPU VM). On a laptop, its strengths fit: tools that act on the PC, approval queue, voice I/O, an OpenAI-compatible API. Its local models (Ollama) are the laptop's offline fallback.
+Native Windows, not WSL2: WSL2 is smoother to install but can't easily drive Windows apps. Native needs Python **3.10–3.13** (3.14+ has no numpy wheels yet) and **git**.
 
-**Honest limits, recorded up front:**
+Sources: [OpenJarvis](https://github.com/open-jarvis/OpenJarvis), [native Windows guide](https://github.com/open-jarvis/OpenJarvis/blob/main/docs/getting-started/windows-native.md)
 
-| Want | Reality |
-|---|---|
-| "Jarvis calls me" | Telegram and Messenger bots **can't place phone calls**. Free option: a Telegram **voice note** with a loud notification. Real ringing calls need a paid service (e.g. Twilio) → not in a $0 course |
-| Jarvis on my phone when the laptop is off | Works for everything the server does; PC jobs wait (or Jarvis says the PC is offline) |
-| Gemini Pro / Claude Pro subscriptions | Chat subscriptions, **not API keys**. They power **Gemini CLI** and **Claude Code** on the laptop, used for hard jobs only |
-| Control phone apps | Android: possible through ADB from the laptop. iPhone: very limited (Shortcuts) |
-| Native Windows install | Needs Python **3.10–3.13** (3.14+ has no numpy wheels yet) and **git** on PATH; WSL2 is smoother but can't easily drive Windows apps, so we use native Windows |
+## Not in the course (for now)
 
-Supersedes: "OpenJarvis kept as an optional comparison lesson" (2026-10-30).
+| Idea | Decision | Why |
+|---|---|---|
+| Open WebUI (chat web app) on the server | **Dropped** in v2 | Telegram (phone) and OpenJarvis (PC) are the chat apps; one less container to update and back up |
+| Self-hosted task app (Vikunja) | **Dropped** | Jarvis connects to the free cloud tools already in use (calendar, reminders, email): polished apps, work when the server is down, n8n connectors exist. The server hosts only what must be ours |
+| Controlling phone apps via ADB | **Not used** | Owner's choice: the phone won't be wired to the laptop for Jarvis. A Jarvis phone app of our own may come later |
+| "Jarvis calls me" (real phone calls) | **Not possible for free** | Telegram / Messenger bots can't place calls. Free option: a Telegram voice note with a loud notification. Real calls need paid services (e.g. Twilio) |
+| Telegram user API (acting as my own account) | **Rejected** | Needs an extra program, sees every private chat, a leaked key = account takeover, automation can get the account limited. Bot API instead |
+| Unofficial "Edge TTS" | **Rejected** | Uses Microsoft's service without permission |
 
-Sources: [OpenJarvis on GitHub](https://github.com/open-jarvis/OpenJarvis), [Native Windows install guide](https://github.com/open-jarvis/OpenJarvis/blob/main/docs/getting-started/windows-native.md)
+## Private by default: Tailscale, never Funnel
+
+Only SSH is public. Server, laptop and phone share a Tailscale tailnet; apps are published with `tailscale serve` (tailnet-only HTTPS on `*.ts.net`). `tailscale funnel` (public) is never used. An SSH tunnel was tried first in v1 and was awkward (PC only, window must stay open).
+
+## Telegram by polling: n8n reaches out, nothing reaches in
+
+Telegram can **push** (call a webhook on our server, which needs a public door) or be **pulled** (`getUpdates`). v1 first built push through a Funnel door (and found Telegram only delivers to ports 443/80/88/8443), then withdrew it. **Decision: pull.** n8n long-polls (20 s wait, every 30 s), **confirms** each batch (`offset = last update_id + 1`) *before* calling the AI so nothing is answered twice, and only accepts the owner's user ID. Built entirely in the n8n UI. Trade-off: the bot token sits in HTTP node URLs, so that workflow is never shared with the token in it.
+
+## Hybrid AI: free cloud models first, private model last
+
+The server has 2 Arm CPUs and no GPU: a local 3B model is slow. **Decision:** free cloud APIs do the thinking; Ollama keeps a small model on the server as a private, unlimited last fallback (and its memory use keeps the VM clear of Oracle's idle-reclaim rule, `OLLAMA_KEEP_ALIVE=-1`).
+
+Rules learned in v1:
+
+- **No credit card, ever.** Cerebras asked for one → dropped. GitHub Models was retired (30 July 2026) → dropped. Current: **Groq**, **NVIDIA Build**, **OpenRouter** free models; **Gemini** optional.
+- **Privacy rule:** personal data (calendar, email, tasks) only goes to providers that don't train on it, or stays local. Gemini's free tier trains on data in KSA → general questions only.
+- **Never hard-code model names.** In v1 every hard-coded model had disappeared within weeks (removed, end-of-life, or no longer free). The installer discovers each provider's *current* models, tests them, and writes the config. Apps only use our aliases (`smart`, `fast`, `private`, `listen`, `speak`).
+- **"OpenAI-compatible" is just a request format.** No OpenAI account needed.
+
+## Voice: ElevenLabs first, free backups automatic
+
+Groq Whisper didn't understand the owner's speech well. **Ears:** ElevenLabs Scribe; **voice:** ElevenLabs Eleven v3 (speaks Urdu). Free plan: 10,000 credits/month shared (≈ 30 min listening or ≈ 10 min speech), personal use. Backups switch in automatically: Groq Whisper (ears) and local **Piper** (voice: en/ar/ur, no host port, 768 MB cap). Lessons from v1: free ElevenLabs accounts must use a **pre-made** voice via the API (library voices return `paid_plan_required`), and the API needs the **secret key** (`sk_…`), not the Key ID. Text in → text out; voice in → text + voice out. Test speech models with your own voice and accent.
+
+## Backups: restic to Oracle Object Storage, healthchecks.io alerts
+
+Off-server, encrypted, deduplicated, nightly, restore-tested. Oracle gives 20 GB Object Storage (S3-compatible). AI models are excluded (re-downloadable). A healthchecks.io dead man's switch emails when the server or a backup stops, which an on-server monitor can't do.
+
+## Thin server
+
+n8n uses its built-in SQLite (no Postgres) with a 1 GB memory cap; every app has a memory cap; autoheal restarts frozen containers. Whatever can live in a free cloud tool stays there.
+
+## Docker Compose now, Kubernetes (K3s) later
+
+Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes to the AI. **Phase 1:** Docker Compose + healthchecks + autoheal. **Phase 2 (optional):** migrate to K3s with Traefik / Gateway API; **ingress-nginx was retired in March 2026**, so it isn't used. Sources: [Ingress NGINX retirement](https://www.kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/), [statement](https://www.kubernetes.io/blog/2026/01/29/ingress-nginx-statement/)
+
+## Small server decisions
+
+- **RSA 4096 key, created in Cloud Shell:** Oracle Cloud Shell runs in FIPS mode, which forbids ED25519 keys.
+- **No UFW:** Oracle advises against it on its Ubuntu images; we keep Oracle's iptables rules.
+- **Swap 4 GB:** safety net when the private model loads.
