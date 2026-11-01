@@ -119,7 +119,7 @@ Status: **Tested** = run for real and working · **Written** = ready to run · *
 The first version of this course installed different apps (Open WebUI and others). To start this version on the same server, wipe the apps but keep the server, SSH and Tailscale:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/wipe-apps.sh -o wipe-apps.sh && bash wipe-apps.sh
+curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/wipe-apps.sh -o wipe-apps.sh && sudo bash wipe-apps.sh
 ```
 
 It shows everything it will remove and asks you to type `WIPE` first. Then continue from Lesson 04 (re-run it to check Tailscale) and Lesson 05.
