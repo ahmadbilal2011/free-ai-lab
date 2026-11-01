@@ -62,3 +62,15 @@ Newest entries at the top.
 - Diagnosis: ElevenLabs said **"Free users cannot use library voices via the API"** — the default voice was a library voice. A pre-made voice worked directly (HTTP 200); 4 of 10,000 credits used. Fix: installer now asks for a **pre-made voice ID**
 - Chose voice **Sarah** (pre-made). Still failed: this time the **Key ID** was pasted instead of the secret key (`sk_…`). The gateway quietly used the Groq backup for the ears test. Installer now rejects values that don't start with `sk_`
 - **Next:** re-run `11-install-voice.sh` with the `sk_…` key, then add the voice branch to `Jarvis chat`
+
+## 2026-11-01 — Day 3: the laptop joins Jarvis
+
+- Wanted Jarvis to also **control my Windows PC** by voice, and tried Stanford's **OpenJarvis** on the laptop as a separate project
+- Native Windows installer failed: I had **Python 3.15**; OpenJarvis needs **3.10–3.13** (no numpy wheels for 3.14+ on Windows). `winget` wasn't available, so Python 3.13 came from python.org. The OpenJarvis desktop app then failed with `Could not start Ollama` → installed Ollama (already had `qwen3.5` 0.8b/2b/4b and `mistral`)
+- Too many half-finished tries (OpenJarvis desktop + CLI, OpenClaw, Hermes) → **clean slate**: Claude listed every AI tool on the laptop through the desktop app, I approved each removal. Removed OpenJarvis (app, data, source), OpenClaw, Hermes, uv and Python 3.15. Kept Python 3.13, Ollama + models, Gemini CLI
+- Found that old tools stored **API keys** in their own files (`cloud-keys.env`, `.env`, `auth.json`) → lesson: revoke keys from tools you remove; from now on the laptop holds no provider keys
+- Asked: will OpenJarvis alone be my complete Jarvis? **No**: no phone app, and bots can't place phone calls. Gemini Pro / Claude Pro are chat subscriptions, not API keys (useful through Gemini CLI / Claude Code)
+- **Decision: merge both projects** — the server stays Jarvis's always-on brain and Telegram front door; the laptop becomes Jarvis's **hands** via OpenJarvis, reached over Tailscale with a key, thinking through the server's gateway. Checked OpenJarvis's source: OpenAI-compatible `/v1/chat/completions` with Bearer key, a `litellm` engine, tool confirmation on by default — see [docs/decisions.md](docs/decisions.md)
+- New **Part 4 — Jarvis on my PC** (Lessons 12–17); later parts renumbered to 18–25 — see [docs/roadmap.md](docs/roadmap.md)
+- Wrote [Lesson 12 — Prepare the Windows laptop](lessons/12-prepare-windows-laptop.md) and [`scripts/12-check-laptop.ps1`](scripts/12-check-laptop.ps1) (checks everything, `-Fix` puts Python 3.13 on PATH)
+- **Next:** run the laptop check (with `-Fix`), install git if missing; finish Lesson 11 (voice) on the server

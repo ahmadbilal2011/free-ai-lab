@@ -307,4 +307,4 @@ The voice service should sit near **0% CPU** when idle.
 
 ## Next
 
-**Lesson 12 — Agents and tools**: Jarvis starts *doing* things (with your approval before any action).
+**[Lesson 12 — Prepare the Windows laptop](12-prepare-windows-laptop.md)**: the laptop joins Jarvis as its hands, so Jarvis can act on your PC (always with your approval).

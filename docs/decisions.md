@@ -89,3 +89,39 @@ Question: why a bot instead of connecting Telegram's API straight to n8n? A bot 
 Real-world test: Groq Whisper **did not understand Ahmad's speech well**. **Decision:** ElevenLabs for both ears (Scribe, `listen`) and voice (Eleven v3, `speak`; the only ElevenLabs model that speaks Urdu), via the gateway so the key stays in one `.env`. The free plan is 10,000 credits/month shared between listening and speaking (≈ 30 min listening or ≈ 10 min speech), personal use only, attribution if published. Backups switch in automatically: `listen-backup` (Groq Whisper) through an n8n error branch, and local Piper inside the voice service, which pauses cloud attempts for an hour after a quota/auth error. Rejected: Azure / Google speech (need a credit card), unofficial "Edge TTS" (uses Microsoft's service without permission). Lesson: test speech models with your own voice and accent.
 
 **Update (2026-11-01):** first real run: Scribe ears worked; the voice failed with ElevenLabs `paid_plan_required`: "Free users cannot use library voices via the API." LiteLLM's `alloy` name maps to a library voice. Fix: use a **pre-made** voice ID (default George `JBFqnCBsd6RMkjVDRZzb`), chosen during install. Diagnosis via `11-diagnose-voice.sh`.
+
+## 2026-11-01 — One Jarvis, two machines: the server is the brain, my laptop is the hands
+
+**Question:** I also want Jarvis to control my Windows PC (and later my phone's apps) by voice, and I tried Stanford's OpenJarvis on the laptop. Separate project, or one?
+
+**Decision: one project.** The Oracle server stays Jarvis's **always-on brain and front door**; my Windows laptop joins as Jarvis's **hands**, running OpenJarvis. They talk only over Tailscale.
+
+| Job | Where | Why |
+|---|---|---|
+| Telegram front door (text + voice notes), reminders, schedules, cloud tools | **Server (n8n)** | On 24/7, so Jarvis answers even when the laptop is off |
+| AI models and keys | **Server (LiteLLM gateway)** | One set of free provider keys; the laptop uses the gateway too, so keys never live on the laptop |
+| Opening apps, files, scripts, desktop voice | **Laptop (OpenJarvis)** | Only the PC can act on the PC |
+| Hard jobs (coding, big automations) | **Laptop**, handed to Gemini CLI / Claude Code | Uses subscriptions I already pay for, only when needed |
+
+How they connect (checked in OpenJarvis's source, v1.0):
+
+- OpenJarvis serves an **OpenAI-compatible** endpoint (`/v1/chat/completions`, `jarvis serve`). n8n calls it like any other AI model, over Tailscale, with a **Bearer key** (`OPENJARVIS_API_KEY`). By default it listens only on `127.0.0.1`; we publish it to the tailnet only.
+- OpenJarvis has a `litellm` engine, so its thinking goes to **our gateway** (`smart` / `fast`), not to separate keys on the laptop.
+- OpenJarvis asks before running tools by default (`security.enforce_tool_confirmation = true`). We keep it on, and n8n adds a Telegram **"Yes / No"** step for anything irreversible.
+- **Only n8n polls the Telegram bot.** OpenJarvis also has a Telegram channel, but two programs polling one bot steal each other's messages, so the laptop never uses it.
+
+**Why OpenJarvis now, when we rejected it for the server:** the earlier decision is unchanged for the server (on-device AI makes no sense on a 2-CPU VM). On a laptop, its strengths fit: tools that act on the PC, approval queue, voice I/O, an OpenAI-compatible API. Its local models (Ollama) are the laptop's offline fallback.
+
+**Honest limits, recorded up front:**
+
+| Want | Reality |
+|---|---|
+| "Jarvis calls me" | Telegram and Messenger bots **can't place phone calls**. Free option: a Telegram **voice note** with a loud notification. Real ringing calls need a paid service (e.g. Twilio) → not in a $0 course |
+| Jarvis on my phone when the laptop is off | Works for everything the server does; PC jobs wait (or Jarvis says the PC is offline) |
+| Gemini Pro / Claude Pro subscriptions | Chat subscriptions, **not API keys**. They power **Gemini CLI** and **Claude Code** on the laptop, used for hard jobs only |
+| Control phone apps | Android: possible through ADB from the laptop. iPhone: very limited (Shortcuts) |
+| Native Windows install | Needs Python **3.10–3.13** (3.14+ has no numpy wheels yet) and **git** on PATH; WSL2 is smoother but can't easily drive Windows apps, so we use native Windows |
+
+Supersedes: "OpenJarvis kept as an optional comparison lesson" (2026-10-30).
+
+Sources: [OpenJarvis on GitHub](https://github.com/open-jarvis/OpenJarvis), [Native Windows install guide](https://github.com/open-jarvis/OpenJarvis/blob/main/docs/getting-started/windows-native.md)

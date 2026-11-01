@@ -4,12 +4,13 @@ My personal, **zero-cost** AI lab on Oracle Cloud Always Free, built step by ste
 
 ## Goal
 
-Build my own **Jarvis**: one AI assistant I control by **text and voice**, from my phone and PC, that **does things** for me, at **$0 cost**.
+Build my own **Jarvis**: one AI assistant I control by **text and voice**, from my phone and PC, that **does things** for me (on my Windows PC too), at **$0 cost**.
 
 - Fast free cloud AI models, with a private local model as backup
 - Text and voice control through Telegram
 - Connects to the free cloud tools I already use (calendar, reminders, email, search) through n8n
 - Agents that act for me **with my approval**: plan, remind, write, code, create images and video, post to social media
+- My Windows laptop as Jarvis's **hands** (OpenJarvis): opens apps, handles files, runs scripts, only when I ask
 - The server hosts only what must be ours; everything is open source or free tier, documented here so others can repeat it
 
 Full plan: **[docs/roadmap.md](docs/roadmap.md)**
@@ -31,6 +32,13 @@ Oracle Cloud VM  (Ubuntu, Arm Ampere A1, 2 OCPU / 12 GB RAM — Always Free)
   └── n8n ........... automation engine: Jarvis's skills and connections (editor private on https://…ts.net:9443)
 
 Jarvis's front door: Telegram (text + voice) ◄── n8n asks for new messages ──► gateway ──► free cloud tools
+                                                          │
+                                                          │ Tailscale only, with a key (Part 4)
+                                                          ▼
+Windows laptop — Jarvis's hands (on when I'm at my PC)
+  ├── OpenJarvis ...... acts on the PC (apps, files, scripts), asks before risky actions; thinks via the gateway
+  ├── Ollama .......... offline fallback models on the laptop
+  └── Gemini CLI / Claude Code ... hard jobs, using subscriptions I already have
 ```
 
 | Component | What it is | Cost |
@@ -50,6 +58,8 @@ Jarvis's front door: Telegram (text + voice) ◄── n8n asks for new messages
 | ElevenLabs | Best ears (Scribe) and voice (Eleven v3, speaks Urdu) | Free plan: 10k credits/month, personal use |
 | Groq Whisper | Backup ears | Free tier |
 | Piper | Backup voice, runs locally | Free, open source |
+| OpenJarvis | Jarvis's hands on the Windows laptop | Free, open source (Apache 2.0) |
+| Ollama (laptop) | Offline models on the laptop | Free, open source |
 
 ## Lessons
 
@@ -78,35 +88,45 @@ Jarvis's front door: Telegram (text + voice) ◄── n8n asks for new messages
 |---|---|---|
 | 09 | [n8n basics: workflows, triggers, credentials, connected to my AI gateway](lessons/09-n8n-basics.md) | ✅ Done |
 | 10 | [Telegram bot: text Jarvis from anywhere](lessons/10-telegram-bot.md) | ✅ Done |
-| 11 | [Voice in, voice out: free speech-to-text and text-to-speech](lessons/11-voice.md) | ⏳ Next |
+| 11 | [Voice in, voice out: free speech-to-text and text-to-speech](lessons/11-voice.md) | ⏳ Almost done |
 
-**Part 4 — Jarvis does things**
-
-| # | Lesson | Status |
-|---|---|---|
-| 12 | Agents and tools (n8n AI Agent, MCP), with approval before actions | ⬜ |
-| 13 | Connect my free cloud tools: calendar, reminders, email, web search | ⬜ |
-| 14 | Memory and knowledge (RAG) | ⬜ |
-| 15 | Coding agent harness with free models | ⬜ |
-
-**Part 5 — Jarvis creates**
+**Part 4 — Jarvis on my PC**
 
 | # | Lesson | Status |
 |---|---|---|
-| 16 | Free image generation | ⬜ |
-| 17 | Video generation: what's honestly possible for free | ⬜ |
-| 18 | Social media posting with approval | ⬜ |
+| 12 | [Prepare the Windows laptop: clean installs, Python 3.13, git, Ollama](lessons/12-prepare-windows-laptop.md) | ⏳ In progress |
+| 13 | OpenJarvis on the laptop, thinking through the server's gateway | ⬜ |
+| 14 | Server → laptop over Tailscale: PC jobs from Telegram, Yes / No before risky actions | ⬜ |
+| 15 | Talk to Jarvis at the desk: microphone in, spoken replies out | ⬜ |
+| 16 | Hard jobs: Gemini CLI / Claude Code with my subscriptions | ⬜ |
+| 17 | Phone apps via ADB (Android, optional) | ⬜ |
 
-**Part 6 — Jarvis complete**
+**Part 5 — Jarvis does things**
 
 | # | Lesson | Status |
 |---|---|---|
-| 19 | Jarvis routines: morning briefing, reminders, alerts on Telegram | ⬜ |
-| 20 | Security review: prompt injection, key scopes, approval gates | ⬜ |
+| 18 | Agents and tools (n8n AI Agent, MCP), with approval before actions | ⬜ |
+| 19 | Connect my free cloud tools: calendar, reminders, email, web search | ⬜ |
+| 20 | Memory and knowledge (RAG) | ⬜ |
 
-### Phase 2 — Kubernetes track (optional, after Part 6)
+**Part 6 — Jarvis creates**
 
-Move the same apps from Docker Compose to Kubernetes, on the same free VM.
+| # | Lesson | Status |
+|---|---|---|
+| 21 | Free image generation | ⬜ |
+| 22 | Video generation: what's honestly possible for free | ⬜ |
+| 23 | Social media posting with approval | ⬜ |
+
+**Part 7 — Jarvis complete**
+
+| # | Lesson | Status |
+|---|---|---|
+| 24 | Jarvis routines: morning briefing, reminders, "call me" alerts on Telegram | ⬜ |
+| 25 | Security review: prompt injection, key scopes, approval gates, laptop limits | ⬜ |
+
+### Phase 2 — Kubernetes track (optional, after Part 7)
+
+Move the same server apps from Docker Compose to Kubernetes, on the same free VM.
 
 | # | Lesson | Status |
 |---|---|---|

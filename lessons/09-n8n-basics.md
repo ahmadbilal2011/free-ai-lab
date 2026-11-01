@@ -24,7 +24,7 @@ Why it's the right core for your Jarvis:
 |---|---|
 | **Low server load** | n8n only *coordinates*. The heavy thinking happens in free cloud models through our gateway |
 | **Hundreds of ready connectors** | Telegram, Google (Calendar, Tasks, Gmail), Microsoft, web requests, and more. No code needed for most |
-| **AI built in** | AI Agent nodes, chat models, memory and tools (Lesson 12) |
+| **AI built in** | AI Agent nodes, chat models, memory and tools (Lesson 18) |
 | **Visual** | You see each step and its data, which makes it easy to learn and debug |
 | **Your data stays here** | Workflows and saved credentials live on your server, encrypted |
 
