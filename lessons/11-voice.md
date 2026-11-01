@@ -87,7 +87,7 @@ On the VM, as `ubuntu`, **without** `sudo`:
 curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/11-install-voice.sh -o 11-install-voice.sh && bash 11-install-voice.sh
 ```
 
-**Before running it**, create your ElevenLabs API key: **elevenlabs.io → your profile → API Keys → Create**. If it asks which permissions to give, allow **Text to Speech** and **Speech to Text**. Copy the key, but **don't paste it in any chat**.
+**Before running it**, create your ElevenLabs API key: **elevenlabs.io → your profile → API Keys → Create**. Copy the **secret key that starts with `sk_`** (it's shown only once), not the Key ID. If it asks which permissions to give, allow **Text to Speech** and **Speech to Text**. Copy the key, but **don't paste it in any chat**.
 
 It will:
 
@@ -271,6 +271,7 @@ The voice service should sit near **0% CPU** when idle.
 | Problem | Fix |
 |---|---|
 | Install: `voice (cloud, ElevenLabs): FAILED 500` and the diagnosis says **"Free users cannot use library voices via the API"** | Our real first run. The free plan only allows **pre-made** voices through the API. Run the installer again and choose a pre-made voice ID (George, Sarah, Roger, Laura…); `bash 11-diagnose-voice.sh` lists them |
+| Diagnosis says **"API key ID used as API key … API keys start with 'sk_'"** | Our real second run. ElevenLabs shows a **Key ID** (a label) and the **secret key** (starts with `sk_`, shown only once). Paste the `sk_…` value. If you didn't save it, create a new key. The installer now refuses values that don't start with `sk_` |
 | Install: `voice (cloud, ElevenLabs): FAILED 401` | The key is wrong or lacks the **Text to Speech** permission. Fix it in ElevenLabs, run the script again, paste the key |
 | Install: `ears 'listen' heard: FAILED …` | ElevenLabs key lacks **Speech to Text** permission, or credits are used up. `listen-backup` (Groq) still works |
 | ElevenLabs credits used up | Expected near the end of a busy month. Jarvis switches to Groq ears and Piper voice by itself. Check credits at elevenlabs.io → Subscription |

@@ -60,4 +60,5 @@ Newest entries at the top.
 - Groq Whisper **didn't understand my speech** → switched ears and voice to **ElevenLabs** (Scribe + Eleven v3, which speaks Urdu), free plan. Backups are automatic: Groq Whisper for ears, local Piper for voice. Created my ElevenLabs account
 - Ran `11-install-voice.sh`: ✅ ears work (ElevenLabs Scribe heard me; Groq backup works), ✅ local Piper voices installed (en, ar, **ur**), ❌ ElevenLabs **voice** failed (HTTP 500, real reason hidden). Added [`11-diagnose-voice.sh`](scripts/11-diagnose-voice.sh) and made the voice service log the gateway's real error
 - Diagnosis: ElevenLabs said **"Free users cannot use library voices via the API"** — the default voice was a library voice. A pre-made voice worked directly (HTTP 200); 4 of 10,000 credits used. Fix: installer now asks for a **pre-made voice ID**
-- **Next:** re-run `11-install-voice.sh` and pick a voice, then add the voice branch to `Jarvis chat`
+- Chose voice **Sarah** (pre-made). Still failed: this time the **Key ID** was pasted instead of the secret key (`sk_…`). The gateway quietly used the Groq backup for the ears test. Installer now rejects values that don't start with `sk_`
+- **Next:** re-run `11-install-voice.sh` with the `sk_…` key, then add the voice branch to `Jarvis chat`

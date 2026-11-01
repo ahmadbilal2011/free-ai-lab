@@ -43,7 +43,12 @@ cur=$(gw_get ELEVENLABS_API_KEY)
 if [ -n "$cur" ] && [ "$cur" != "not-set" ]; then hint="saved ...${cur: -4}, Enter keeps it"; else hint="not set, Enter skips"; fi
 read -r -s -p "  ElevenLabs key ($hint): " val; echo
 val=$(printf '%s' "$val" | tr -d '[:space:]')
-if [ -n "$val" ]; then gw_set ELEVENLABS_API_KEY "$val"; echo "    received ${#val} characters, ending in ...${val: -4}"
+if [ -n "$val" ] && [ "${val#sk_}" = "$val" ]; then
+  warn "That doesn't start with 'sk_', so it's not an ElevenLabs secret key (probably the Key ID). NOT saved."
+  warn "In ElevenLabs create a new key and copy the value starting with sk_ (shown only once). Then run this script again."
+  val=""
+fi
+if [ -n "$val" ]; then gw_set ELEVENLABS_API_KEY "$val"; echo "    received ${#val} characters, starting sk_ and ending in ...${val: -4}"
 elif [ -z "$cur" ]; then gw_set ELEVENLABS_API_KEY not-set; echo "    skipped: ears = Groq, voice = local Piper only"
 else echo "    kept"; fi
 unset val cur
