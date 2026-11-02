@@ -31,6 +31,7 @@ Sources: [OpenJarvis](https://github.com/open-jarvis/OpenJarvis), [native Window
 |---|---|---|
 | Open WebUI (chat web app) on the server | **Dropped** in v2 | Telegram (phone) and OpenJarvis (PC) are the chat apps; one less container to update and back up |
 | Self-hosted task app (Vikunja) | **Dropped** | Jarvis connects to the free cloud tools already in use (calendar, reminders, email): polished apps, work when the server is down, n8n connectors exist. The server hosts only what must be ours |
+| WhatsApp (2 accounts): Jarvis reads and replies to my chats | **Postponed** (2026-11-02) | No free, official, ban-free way exists for *personal* chats: unofficial QR-linked bridges (WAHA, Evolution API, Baileys) break WhatsApp's terms and bans are permanent; the official Cloud API only works with Business numbers, needs a public webhook and can't see groups. **Plan:** in Part 4, Jarvis uses the **WhatsApp desktop app on the laptop**, with Yes / No before sending. To check again then: what WhatsApp's terms say about automating its desktop app, and what's possible for calls |
 | Controlling phone apps via ADB | **Not used** | Owner's choice: the phone won't be wired to the laptop for Jarvis. A Jarvis phone app of our own may come later |
 | "Jarvis calls me" (real phone calls) | **Not possible for free** | Telegram / Messenger bots can't place calls. Free option: a Telegram voice note with a loud notification. Real calls need paid services (e.g. Twilio) |
 | Telegram user API (acting as my own account) | **Rejected** | Needs an extra program, sees every private chat, a leaked key = account takeover, automation can get the account limited. Bot API instead |
@@ -58,6 +59,9 @@ Rules learned in v1:
 - **"OpenAI-compatible" is just a request format.** No OpenAI account needed.
 
 ## Voice: ElevenLabs first, free backups automatic
+
+**v2 (2026-11-02):** same design on the new layout: keys in `~/lab/brain/.env`, voice service on the `jarvis` network, no port. The Telegram workflow gained a voice path in the n8n UI (import the new version): voice note → download → rename `.oga` to `.ogg` → `listen` → normal message marked "by voice" → brain (short, speakable answer) → text reply with 🎙️ transcript + voice note. Voice notes over 2 minutes are refused to save credits.
+
 
 Groq Whisper didn't understand the owner's speech well. **Ears:** ElevenLabs Scribe; **voice:** ElevenLabs Eleven v3 (speaks Urdu). Free plan: 10,000 credits/month shared (≈ 30 min listening or ≈ 10 min speech), personal use. Backups switch in automatically: Groq Whisper (ears) and local **Piper** (voice: en/ar/ur, no host port, 768 MB cap). Lessons from v1: free ElevenLabs accounts must use a **pre-made** voice via the API (library voices return `paid_plan_required`), and the API needs the **secret key** (`sk_…`), not the Key ID. Text in → text out; voice in → text + voice out. Test speech models with your own voice and accent.
 

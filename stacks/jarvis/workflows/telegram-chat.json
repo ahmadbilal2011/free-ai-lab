@@ -6,9 +6,19 @@
       "name": "Every 10 seconds",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 300],
+      "position": [
+        0,
+        300
+      ],
       "parameters": {
-        "rule": { "interval": [ { "field": "seconds", "secondsInterval": 10 } ] }
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
       }
     },
     {
@@ -16,72 +26,260 @@
       "name": "Settings",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 300],
-      "notes": "The only node you edit: your bot token and your Telegram user ID. Never share this workflow while the token is in it.",
+      "position": [
+        220,
+        300
+      ],
       "parameters": {
         "jsCode": "// ===== Jarvis settings: edit these two lines, then click Publish =====\n\nconst BOT_TOKEN = 'PASTE_YOUR_BOT_TOKEN_HERE';  // from @BotFather: /mybots → your bot → API Token\nconst OWNER_ID  = 0;                            // your Telegram user ID (a number). Leave 0 at first:\n                                                // send /start to your bot and Jarvis tells you your ID.\n\n// ===== nothing to change below =====\nif (!/^\\d{5,}:[A-Za-z0-9_-]{30,}$/.test(BOT_TOKEN)) {\n  throw new Error('Settings: paste your bot token into BOT_TOKEN (it looks like 123456789:AAF...)');\n}\nreturn [{ json: { bot_token: BOT_TOKEN, owner_id: Number(OWNER_ID) || 0 } }];"
-      }
+      },
+      "notes": "The only node you edit: your bot token and your Telegram user ID. Never share this workflow while the token is in it."
     },
     {
       "id": "6b1f2a10-0002-4a3e-9c01-000000000002",
       "name": "Ask Telegram for new messages",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 300],
-      "onError": "continueErrorOutput",
-      "notes": "Long polling: Telegram holds the request up to 8 s (checks start every 10 s) and answers the moment a message arrives. Nothing on the server is public: n8n reaches out, nothing reaches in.",
+      "position": [
+        440,
+        300
+      ],
       "parameters": {
         "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/getUpdates",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "timeout", "value": "8" },
-            { "name": "allowed_updates", "value": "[\"message\"]" }
+            {
+              "name": "timeout",
+              "value": "8"
+            },
+            {
+              "name": "allowed_updates",
+              "value": "[\"message\"]"
+            }
           ]
         },
-        "options": { "timeout": 15000 }
-      }
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "notes": "Long polling: Telegram holds the request up to 8 s (checks start every 10 s) and answers the moment a message arrives. Nothing on the server is public.",
+      "onError": "continueErrorOutput"
     },
     {
       "id": "6b1f2a10-0011-4a3e-9c01-000000000011",
       "name": "If polling failed: remove old webhook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 500],
-      "notes": "Polling fails while a webhook is set on the bot (e.g. from an earlier setup). This removes it, so the next check works. Also fails, visibly, if the token is wrong.",
+      "position": [
+        660,
+        520
+      ],
       "parameters": {
         "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/deleteWebhook",
-        "options": { "timeout": 15000 }
-      }
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "notes": "Polling fails while a webhook is set on the bot (e.g. from an earlier setup). This removes it, so the next check works."
     },
     {
       "id": "6b1f2a10-0003-4a3e-9c01-000000000003",
       "name": "Keep only my messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 300],
-      "notes": "Ignores everyone except the owner. Returning nothing stops the run quietly when there are no new messages.",
+      "position": [
+        660,
+        300
+      ],
       "parameters": {
         "jsCode": "// Telegram's answer: { ok, result: [ update, update, ... ] }\nconst updates = $input.first().json.result || [];\nif (updates.length === 0) return [];   // nothing new: stop here\n\nconst OWNER_ID = $('Settings').first().json.owner_id;\nconst lastId = Math.max(...updates.map(u => u.update_id));\nconst mine = updates\n  .map(u => u.message)\n  .filter(m => m && m.from && !m.from.is_bot && m.chat && m.chat.type === 'private')\n  .filter(m => OWNER_ID === 0 || m.from.id === OWNER_ID);   // 0 = setup mode: Jarvis only tells you your ID\n\n// One item: the offset that confirms these updates, plus my messages\nreturn [{ json: { offset: lastId + 1, messages: mine } }];"
-      }
+      },
+      "notes": "Ignores everyone except the owner. Returning nothing stops the run quietly when there are no new messages."
     },
     {
       "id": "6b1f2a10-0004-4a3e-9c01-000000000004",
       "name": "Confirm received",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [880, 300],
-      "notes": "Tells Telegram these messages arrived, BEFORE asking the AI, so a slow or failed answer can never make Jarvis reply twice.",
+      "position": [
+        880,
+        300
+      ],
       "parameters": {
         "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/getUpdates",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "offset", "value": "={{ $json.offset }}" },
-            { "name": "timeout", "value": "0" }
+            {
+              "name": "offset",
+              "value": "={{ $json.offset }}"
+            },
+            {
+              "name": "timeout",
+              "value": "0"
+            }
           ]
         },
-        "options": { "timeout": 15000 }
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "notes": "Tells Telegram these messages arrived, BEFORE anything slow happens, so Jarvis can never reply twice."
+    },
+    {
+      "id": "6b1f2a10-0012-4a3e-9c01-000000000012",
+      "name": "One item per message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// One item per message, with what kind it is\nconst MAX_VOICE_SECONDS = 120;   // longer voice notes are refused (saves free credits)\nreturn $('Keep only my messages').first().json.messages.map(m => {\n  const base = { chat_id: m.chat.id, from_id: m.from.id, name: m.from.first_name || 'friend' };\n  if (m.text) return { json: { ...base, kind: 'text', text: m.text.trim() } };\n  if (m.voice) {\n    if ((m.voice.duration || 0) > MAX_VOICE_SECONDS) return { json: { ...base, kind: 'too_long' } };\n    return { json: { ...base, kind: 'voice', file_id: m.voice.file_id } };\n  }\n  return { json: { ...base, kind: 'other' } };\n});"
+      }
+    },
+    {
+      "id": "6b1f2a10-0013-4a3e-9c01-000000000013",
+      "name": "Voice note?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "6b1f2a10-0013-4a3e-9c01-000000000613",
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "voice",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6b1f2a10-0014-4a3e-9c01-000000000014",
+      "name": "Find the voice file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/getFile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "file_id",
+              "value": "={{ $json.file_id }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      }
+    },
+    {
+      "id": "6b1f2a10-0015-4a3e-9c01-000000000015",
+      "name": "Download the voice note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        100
+      ],
+      "parameters": {
+        "url": "=https://api.telegram.org/file/bot{{ $('Settings').first().json.bot_token }}/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "6b1f2a10-0016-4a3e-9c01-000000000016",
+      "name": "Name it .ogg",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// Telegram calls voice files \".oga\"; speech-to-text services expect \".ogg\" (same format)\nconst item = $input.item;\nif (item.binary && item.binary.data) {\n  item.binary.data.fileName = 'voice.ogg';\n  item.binary.data.mimeType = 'audio/ogg';\n}\nreturn item;",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "6b1f2a10-0017-4a3e-9c01-000000000017",
+      "name": "Listen (speech to text)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://litellm:4000/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "listen"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "notes": "The gateway's 'listen' alias: ElevenLabs Scribe, Groq Whisper as backup. Pick your OpenAI-type credential here.",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6b1f2a10-0018-4a3e-9c01-000000000018",
+      "name": "Use what I heard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// Turn the transcript into a normal message, marked as \"came in by voice\"\nconst msg = $('One item per message').item.json;\nconst heard = ($input.item.json.text || '').trim();\nif (!heard) return { json: { ...msg, kind: 'voice_failed' } };\nreturn { json: { ...msg, kind: 'text', text: heard, voice_in: true } };",
+        "mode": "runOnceForEachItem"
       }
     },
     {
@@ -89,27 +287,41 @@
       "name": "Prepare each message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 300],
-      "notes": "Setup mode, commands (/start, /new) and non-text messages get a direct reply. Text gets the conversation history and goes to the brain.",
+      "position": [
+        2640,
+        300
+      ],
       "parameters": {
-        "jsCode": "const messages = $('Keep only my messages').first().json.messages;\nconst OWNER_ID = $('Settings').first().json.owner_id;\nconst memory = $getWorkflowStaticData('global');   // survives between runs of this published workflow\nmemory.chats = memory.chats || {};\n\nconst out = [];\nfor (const m of messages) {\n  const chat_id = m.chat.id;\n  const key = String(chat_id);\n  const name = m.from.first_name || 'friend';\n  const text = (m.text || '').trim();\n\n  if (OWNER_ID === 0) {\n    out.push({ json: { chat_id, skip_ai: true, reply:\n      `Setup: your Telegram user ID is ${m.from.id}.\\n\\nIn n8n, open the Settings node, set OWNER_ID = ${m.from.id}, then click Publish. After that, only you can talk to me.` } });\n    continue;\n  }\n  if (!m.text) {\n    const reply = m.voice\n      ? 'I got your voice note. I can only read text for now; I learn to listen in Lesson 10.'\n      : 'I can only read text messages for now.';\n    out.push({ json: { chat_id, reply, skip_ai: true } });\n    continue;\n  }\n  if (text === '/start' || text === '/new') {\n    memory.chats[key] = [];\n    const reply = text === '/start'\n      ? `Hi ${name}, I'm Jarvis. Write to me any time. Send /new to start a fresh conversation.`\n      : 'OK, fresh start. I forgot our earlier conversation.';\n    out.push({ json: { chat_id, reply, skip_ai: true } });\n    continue;\n  }\n\n  const system = `You are Jarvis, the personal assistant of ${name}. ` +\n    'Reply in the same language the user writes in (Urdu in Urdu script, English, Arabic...). ' +\n    'Be warm, clear and brief: this is a Telegram chat on a phone. Plain text, short paragraphs, no tables. ' +\n    'You cannot take actions yet (no calendar, reminders or PC control): if asked, say honestly that this skill is coming.';\n  const history = memory.chats[key] || [];\n  out.push({ json: {\n    chat_id, text, skip_ai: false,\n    body: { model: 'smart', messages: [ { role: 'system', content: system }, ...history, { role: 'user', content: text } ] }\n  } });\n}\nreturn out;"
-      }
+        "jsCode": "const OWNER_ID = $('Settings').first().json.owner_id;\nconst memory = $getWorkflowStaticData('global');   // survives between runs of this published workflow\nmemory.chats = memory.chats || {};\n\nreturn $input.all().map(({ json: m }) => {\n  const key = String(m.chat_id);\n  const direct = reply => ({ json: { chat_id: m.chat_id, reply, skip_ai: true, voice_in: false } });\n\n  if (OWNER_ID === 0) return direct(\n    `Setup: your Telegram user ID is ${m.from_id}.\\n\\nIn n8n, open the Settings node, set OWNER_ID = ${m.from_id}, then click Publish. After that, only you can talk to me.`);\n  if (m.kind === 'too_long')     return direct('That voice note is too long for me. Please keep it under 2 minutes.');\n  if (m.kind === 'voice_failed') return direct(\"Sorry, I couldn't understand that voice note. Please try again, or type it.\");\n  if (m.kind === 'other')        return direct('I can read text and listen to voice notes. Other kinds of messages come later.');\n\n  if (m.text === '/start' || m.text === '/new') {\n    memory.chats[key] = [];\n    return direct(m.text === '/start'\n      ? `Hi ${m.name}, I'm Jarvis. Write or send me a voice note any time. Send /new to start a fresh conversation.`\n      : 'OK, fresh start. I forgot our earlier conversation.');\n  }\n\n  let system = `You are Jarvis, the personal assistant of ${m.name}. ` +\n    'Reply in the same language the user writes or speaks in (Urdu in Urdu script, English, Arabic...). ' +\n    'Be warm, clear and brief: this is a Telegram chat on a phone. Plain text, short paragraphs, no tables. ' +\n    'You cannot take actions yet (no calendar, reminders or PC control): if asked, say honestly that this skill is coming.';\n  if (m.voice_in) system += ' The user spoke to you, and your answer will also be read aloud: keep it under 60 words, no lists, no symbols.';\n\n  return { json: {\n    chat_id: m.chat_id, text: m.text, voice_in: !!m.voice_in, skip_ai: false,\n    body: { model: 'smart', messages: [ { role: 'system', content: system }, ...(memory.chats[key] || []), { role: 'user', content: m.text } ] }\n  } };\n});"
+      },
+      "notes": "Setup mode, commands (/start, /new) and problems get a direct reply. Text (typed or heard) gets the conversation history and goes to the brain."
     },
     {
       "id": "6b1f2a10-0006-4a3e-9c01-000000000006",
       "name": "Direct reply?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1320, 300],
+      "position": [
+        2860,
+        300
+      ],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
-              "id": "6b1f2a10-0601-4a3e-9c01-000000000601",
+              "id": "6b1f2a10-0006-4a3e-9c01-000000000606",
               "leftValue": "={{ $json.skip_ai }}",
               "rightValue": "",
-              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "and"
@@ -122,9 +334,10 @@
       "name": "Ask Jarvis's brain",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1540, 420],
-      "onError": "continueRegularOutput",
-      "notes": "The gateway (Lesson 06), alias 'smart': best free model, automatic fallback. Pick your OpenAI-type credential (Base URL http://litellm:4000/v1) here: no key is written in the workflow.",
+      "position": [
+        3080,
+        420
+      ],
       "parameters": {
         "method": "POST",
         "url": "http://litellm:4000/v1/chat/completions",
@@ -133,18 +346,39 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.body) }}",
-        "options": { "timeout": 120000 }
-      }
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "notes": "The gateway's 'smart' alias: best free model, automatic fallback. Pick your OpenAI-type credential here: no key is written in the workflow.",
+      "onError": "continueRegularOutput"
     },
     {
       "id": "6b1f2a10-0008-4a3e-9c01-000000000008",
       "name": "Remember the answer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1760, 420],
+      "position": [
+        3300,
+        420
+      ],
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const asked = $('Prepare each message').item.json;   // the message this answer belongs to\nconst r = $input.item.json;\nlet reply = r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content;\nreply = (reply || '').trim();\nif (!reply) reply = \"Sorry, my brain didn't answer just now. Please try again in a minute.\";\n\n// Keep the last 10 exchanges (20 messages) per chat\nconst memory = $getWorkflowStaticData('global');\nmemory.chats = memory.chats || {};\nconst key = String(asked.chat_id);\nmemory.chats[key] = (memory.chats[key] || [])\n  .concat([ { role: 'user', content: asked.text }, { role: 'assistant', content: reply } ])\n  .slice(-20);\n\nreturn { json: { chat_id: asked.chat_id, reply } };"
+        "jsCode": "const asked = $('Prepare each message').item.json;   // the message this answer belongs to\nconst r = $input.item.json;\nlet reply = r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content;\nreply = (reply || '').trim();\nif (!reply) reply = \"Sorry, my brain didn't answer just now. Please try again in a minute.\";\n\n// Keep the last 10 exchanges (20 messages) per chat\nconst memory = $getWorkflowStaticData('global');\nmemory.chats = memory.chats || {};\nconst key = String(asked.chat_id);\nmemory.chats[key] = (memory.chats[key] || [])\n  .concat([ { role: 'user', content: asked.text }, { role: 'assistant', content: reply } ])\n  .slice(-20);\n\nreturn { json: { chat_id: asked.chat_id, reply, voice_in: asked.voice_in, heard: asked.voice_in ? asked.text : '' } };",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "6b1f2a10-0019-4a3e-9c01-000000000019",
+      "name": "Final reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Same shape for every answer: text to show, text to speak, and whether to speak it\nconst a = $input.item.json;\nconst shown = a.heard ? `🎙️ \"${a.heard}\"\\n\\n${a.reply}` : a.reply;   // voice in: show what Jarvis heard\nreturn { json: { chat_id: a.chat_id, text: String(shown).slice(0, 4000), speak: a.reply, voice_in: !!a.voice_in } };",
+        "mode": "runOnceForEachItem"
       }
     },
     {
@@ -152,39 +386,363 @@
       "name": "Send reply on Telegram",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1980, 300],
+      "position": [
+        3740,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ chat_id: $json.chat_id, text: String($json.reply).slice(0, 4000) }) }}",
-        "options": { "timeout": 30000 }
+        "jsonBody": "={{ JSON.stringify({ chat_id: $json.chat_id, text: $json.text }) }}",
+        "options": {
+          "timeout": 30000
+        }
       }
+    },
+    {
+      "id": "6b1f2a10-0020-4a3e-9c01-000000000020",
+      "name": "Spoken to? Answer by voice too",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3960,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "6b1f2a10-0020-4a3e-9c01-000000000620",
+              "leftValue": "={{ $('Final reply').item.json.voice_in }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6b1f2a10-0021-4a3e-9c01-000000000021",
+      "name": "Speak (text to speech)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4180,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://voice:5000/speak",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Final reply').item.json.speak }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 90000
+        }
+      },
+      "notes": "The voice service (Lesson 10): ElevenLabs first, local Piper when free credits run out. Returns a Telegram voice note (OGG).",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6b1f2a10-0022-4a3e-9c01-000000000022",
+      "name": "Send voice note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4400,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/sendVoice",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Final reply').item.json.chat_id }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "voice",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "notes": "If speaking failed there is no audio: this step fails quietly and you still have the text reply.",
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
-    "Every 10 seconds": { "main": [ [ { "node": "Settings", "type": "main", "index": 0 } ] ] },
-    "Settings": { "main": [ [ { "node": "Ask Telegram for new messages", "type": "main", "index": 0 } ] ] },
+    "Every 10 seconds": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Ask Telegram for new messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Ask Telegram for new messages": {
       "main": [
-        [ { "node": "Keep only my messages", "type": "main", "index": 0 } ],
-        [ { "node": "If polling failed: remove old webhook", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Keep only my messages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If polling failed: remove old webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Keep only my messages": { "main": [ [ { "node": "Confirm received", "type": "main", "index": 0 } ] ] },
-    "Confirm received": { "main": [ [ { "node": "Prepare each message", "type": "main", "index": 0 } ] ] },
-    "Prepare each message": { "main": [ [ { "node": "Direct reply?", "type": "main", "index": 0 } ] ] },
+    "Keep only my messages": {
+      "main": [
+        [
+          {
+            "node": "Confirm received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm received": {
+      "main": [
+        [
+          {
+            "node": "One item per message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per message": {
+      "main": [
+        [
+          {
+            "node": "Voice note?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice note?": {
+      "main": [
+        [
+          {
+            "node": "Find the voice file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare each message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the voice file": {
+      "main": [
+        [
+          {
+            "node": "Download the voice note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the voice note": {
+      "main": [
+        [
+          {
+            "node": "Name it .ogg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Name it .ogg": {
+      "main": [
+        [
+          {
+            "node": "Listen (speech to text)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listen (speech to text)": {
+      "main": [
+        [
+          {
+            "node": "Use what I heard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use what I heard": {
+      "main": [
+        [
+          {
+            "node": "Prepare each message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare each message": {
+      "main": [
+        [
+          {
+            "node": "Direct reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Direct reply?": {
       "main": [
-        [ { "node": "Send reply on Telegram", "type": "main", "index": 0 } ],
-        [ { "node": "Ask Jarvis's brain", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Final reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ask Jarvis's brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Ask Jarvis's brain": { "main": [ [ { "node": "Remember the answer", "type": "main", "index": 0 } ] ] },
-    "Remember the answer": { "main": [ [ { "node": "Send reply on Telegram", "type": "main", "index": 0 } ] ] }
+    "Ask Jarvis's brain": {
+      "main": [
+        [
+          {
+            "node": "Remember the answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remember the answer": {
+      "main": [
+        [
+          {
+            "node": "Final reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final reply": {
+      "main": [
+        [
+          {
+            "node": "Send reply on Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reply on Telegram": {
+      "main": [
+        [
+          {
+            "node": "Spoken to? Answer by voice too",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spoken to? Answer by voice too": {
+      "main": [
+        [
+          {
+            "node": "Speak (text to speech)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Speak (text to speech)": {
+      "main": [
+        [
+          {
+            "node": "Send voice note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "active": false,
   "pinData": {}
 }

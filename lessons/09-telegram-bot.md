@@ -60,7 +60,8 @@ Everything happens **in the n8n UI**. You import a ready-made workflow, **Jarvis
 | **If polling failed: remove old webhook** | Polling can't work while a bot has a webhook (e.g. from an earlier setup). This removes it, so the next check works |
 | **Keep only my messages** | Drops anything not from **you**. Stops quietly when there's nothing new |
 | **Confirm received** | Tells Telegram "got them" **before** the AI answers, so a slow or failed answer can never cause a double reply |
-| **Prepare each message** | `/start` and `/new` get a direct reply and reset memory; voice notes get "coming in Lesson 10"; text gets the conversation history |
+| **Prepare each message** | `/start` and `/new` get a direct reply and reset memory; text gets the conversation history |
+| *(voice steps)* | The template also contains the voice steps from Lesson 10. Until then, voice notes may get a text answer only; Lesson 10 explains them |
 | **Direct reply?** | Commands go straight to Telegram; questions go to the brain |
 | **Ask Jarvis's brain** | The gateway's `smart` alias, using your OpenAI-type credential from Lesson 08 (no key written in the workflow) |
 | **Remember the answer** | Keeps the last 10 exchanges per chat, inside n8n |
@@ -98,6 +99,7 @@ Open n8n (`https://free-ai-lab.<your-tailnet>.ts.net:9443`).
 **3. Ask Jarvis's brain: pick the credential**
 
 - Double-click **Ask Jarvis's brain** → **Credential for OpenAI** → choose your OpenAI-type credential from Lesson 08 (Base URL `http://litellm:4000/v1`). Its name doesn't matter here; `Jarvis brain` is just tidy.
+- Do the same in **Listen (speech to text)** (used from Lesson 10).
 
 **4. Publish, and find your user ID**
 

@@ -74,8 +74,8 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | # | Lesson | Status |
 |---|---|---|
 | 08 | [n8n: the engine behind every Jarvis skill](lessons/08-n8n.md) | ✅ Tested |
-| 09 | [Telegram: talk to Jarvis from your phone](lessons/09-telegram-bot.md) | ✅ Written |
-| 10 | Voice in, voice out | ⏳ Next |
+| 09 | [Telegram: talk to Jarvis from your phone](lessons/09-telegram-bot.md) | ✅ Tested |
+| 10 | [Voice: talk to Jarvis, and hear it answer](lessons/10-voice.md) | ✅ Written |
 
 **Part 4 — Jarvis's hands (my Windows laptop)**
 

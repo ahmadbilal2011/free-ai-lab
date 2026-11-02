@@ -27,7 +27,9 @@ Newest entries at the top.
 - Asked: why set up Telegram from the shell? n8n already runs permanently in Docker; **everything inside n8n should happen in its UI**. Agreed: removed `09-install-telegram.sh`. Lesson 09 is now UI-only: Import from URL → token in one **Settings** node → pick the credential → Publish → `/start` tells me my user ID → set it → Publish. Old webhooks are removed automatically by the workflow. Rule from now on: shell only for installing/updating containers on the server
 - ✅ Lesson 09 in the UI: imported, token in Settings, published; `/start` answered with my user ID → polling, sending and setup mode work for real
 - Replies felt slow: checks every 30 s with a 20 s wait left gaps of up to 10 s. Now every 10 s with an 8 s wait: listening 80% of the time, typical reply 1–4 s. Truly instant needs a webhook = public door → no
-- **Next:** set OWNER_ID, test a real conversation, then Lesson 10 (voice)
+- Wanted my **2 WhatsApp accounts** connected so Jarvis reads and replies to my chats. Compared: unofficial QR bridges (free, all chats, but break WhatsApp's terms: permanent bans) vs. the official Cloud API (Business numbers only, public webhook, no groups, per-message pricing). **Postponed**: later Jarvis will use the WhatsApp desktop app on my laptop (Part 4)
+- Wrote [Lesson 10 — Voice](lessons/10-voice.md): [`10-install-voice.sh`](scripts/10-install-voice.sh) (server: ElevenLabs key, `listen` / `speak` aliases, voice service, Piper backups, round-trip test) and a new version of the [Telegram workflow](stacks/jarvis/workflows/telegram-chat.json) with a voice path, imported in the n8n UI. All Code steps tested with Node.js (text, Urdu voice note, failed transcript, too long, other)
+- **Next:** run Lesson 10, then Part 4 (the laptop)
 
 ---
 
