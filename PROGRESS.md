@@ -19,7 +19,8 @@ Newest entries at the top.
 - `ask: command not found` right after install: `~/.local/bin` only joins the PATH at login if it already exists → `source ~/.profile` once
 - Wrote [Lesson 07 — Backups and monitoring](lessons/07-backups-monitoring.md): v1's restic + healthchecks.io scripts adapted to `~/lab/brain`; n8n is the app paused during backups; restore test checks whatever exists on the server; new `lab-heartbeat` reads the private model from `.env`; the bucket script reuses the v1 bucket, offers to delete its unusable old backups and replaces the old access key
 - Wrote [Lesson 08 — n8n](lessons/08-n8n.md) and [`08-install-n8n.sh`](scripts/08-install-n8n.sh): joins the `jarvis` network, private editor on Tailscale `:9443`, time zone from the server, only failed runs stored (Telegram polling will run thousands of times a day), checks it can reach the gateway; credential renamed `Jarvis brain`
-- **Next:** run Lessons 07 and 08, then Lesson 09 (Telegram)
+- ✅ Ran Lesson 08: n8n 2.45.7 healthy, reaches the gateway, editor private on `:9443`. Two problems: the time zone came out `Etc/UTC` (the script only recognised `UTC`; fixed, default is now Asia/Riyadh) and I pasted the installer output, **encryption key included**, into a chat → started n8n fresh with a new key while it was still empty. The installer now says to delete the key line before sharing output
+- **Next:** Lesson 07 (backups) still to run, then Lesson 09 (Telegram)
 
 ---
 

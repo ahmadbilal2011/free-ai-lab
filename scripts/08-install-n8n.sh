@@ -56,9 +56,15 @@ if [ -z "$(env_get N8N_ENCRYPTION_KEY)" ]; then
   env_set N8N_ENCRYPTION_KEY "$NEW_KEY"
 fi
 env_set TS_NAME "$TS_NAME"
-TZ_NOW=$(timedatectl show -p Timezone --value 2>/dev/null || echo UTC)
-[ -n "$(env_get TZ_NAME)" ] || env_set TZ_NAME "$([ "$TZ_NOW" = UTC ] || [ -z "$TZ_NOW" ] && echo Asia/Riyadh || echo "$TZ_NOW")"
-echo "Time zone for schedules: $(env_get TZ_NAME)   (change TZ_NAME in ~/lab/jarvis/.env if needed)"
+# Oracle servers run on UTC; Jarvis's schedules should follow YOUR clock. Default: Asia/Riyadh.
+# Choose another with:  TZ_NAME=Europe/London bash 08-install-n8n.sh
+is_utc() { case "${1:-}" in ""|UTC|Etc/UTC|Etc/Universal|Universal|Zulu|Etc/Zulu|GMT|Etc/GMT) return 0 ;; *) return 1 ;; esac; }
+if [ -n "${TZ_NAME:-}" ]; then env_set TZ_NAME "$TZ_NAME"
+elif is_utc "$(env_get TZ_NAME)"; then
+  TZ_NOW=$(timedatectl show -p Timezone --value 2>/dev/null || true)
+  if is_utc "$TZ_NOW"; then env_set TZ_NAME Asia/Riyadh; else env_set TZ_NAME "$TZ_NOW"; fi
+fi
+echo "Time zone for schedules: $(env_get TZ_NAME)   (another one: TZ_NAME=Area/City bash $0)"
 
 # ---------- 3. start ----------
 step "3/6  Starting n8n (first download is a few hundred MB)"
@@ -105,6 +111,7 @@ if [ -n "$NEW_KEY" ]; then
   echo "  n8n encrypts every saved credential (keys, bot tokens) with it."
   echo "  It's in ~/lab/jarvis/.env and in the nightly backup; keep a copy"
   echo "  in your password manager too. NOT on GitHub, not in a chat."
+  echo "  Sharing this output to get help? Delete the key line first."
   echo -e "${c_warn}=====================================================${c_off}"
 fi
 unset NEW_KEY
