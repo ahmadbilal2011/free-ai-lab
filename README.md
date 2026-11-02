@@ -67,7 +67,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 |---|---|---|
 | 05 | [Free AI API keys: Jarvis's brain at $0](lessons/05-free-ai-keys.md) | ✅ Tested |
 | 06 | [The AI gateway: one address, free models, automatic fallback](lessons/06-ai-gateway.md) | ✅ Tested |
-| 07 | [Backups and monitoring](lessons/07-backups-monitoring.md) | ✅ Done |
+| 07 | [Backups and monitoring](lessons/07-backups-monitoring.md) | ⚠️ Not installed yet |
 
 **Part 3 — Jarvis's front door (my phone)**
 
@@ -81,7 +81,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 
 | # | Lesson | Status |
 |---|---|---|
-| 11 | [Prepare the Windows laptop](lessons/11-prepare-windows-laptop.md) | ✅ Written |
+| 11 | [Prepare the Windows laptop](lessons/11-prepare-windows-laptop.md) | ⏳ Now |
 | 12 | OpenJarvis on the laptop, thinking through the server's gateway | ⬜ |
 | 13 | PC jobs from my phone, with Yes / No first | ⬜ |
 | 14 | Talk to Jarvis at the desk | ⬜ |
