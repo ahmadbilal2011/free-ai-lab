@@ -51,7 +51,7 @@ Rules for the whole course:
 | 13 | **PC jobs from my phone**: n8n → OpenJarvis over Tailscale with a key, **Yes / No** on Telegram first | "Open my QA report", "zip yesterday's screenshots" from Telegram |
 | 14 | **Talk to Jarvis at the desk**: microphone in, spoken replies out | Voice control on the PC itself |
 | 15 | **Hard jobs**: hand off to Gemini CLI / Claude Code (my subscriptions), only when asked | Coding and big automations without API bills |
-| later | **WhatsApp through the laptop**: Jarvis uses the WhatsApp desktop app for my 2 accounts, drafts → I approve → it sends (postponed, see decisions) | Replies on WhatsApp without risky unofficial bridges |
+| later | **WhatsApp and Messenger through the laptop**: from Telegram ("check my unread messages"), Jarvis uses the WhatsApp desktop app (2 accounts) and Messenger in my logged-in browser, summarises unread chats, drafts → I approve → it sends | Replies on WhatsApp and Messenger without risky unofficial bridges or giving the server my logins |
 
 ## Part 5 — Jarvis does things
 
