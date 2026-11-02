@@ -44,12 +44,19 @@ step "1/5  Checking n8n and the 'Jarvis brain' credential"
 [ "$(id -u)" -ne 0 ] || die "Run WITHOUT sudo, as ubuntu:  bash $0"
 [ "$(health n8n)" = "healthy" ] || die "n8n isn't healthy. Do Lesson 08 first (bash 08-install-n8n.sh)."
 docker exec n8n n8n export:credentials --all --output=/tmp/creds.json >/dev/null 2>&1
-CRED_ID=$(docker exec n8n cat /tmp/creds.json 2>/dev/null | jget '
-creds = d if isinstance(d, list) else [d] if d else []
-ids = [c.get("id","") for c in creds if c.get("name") == "Jarvis brain" and c.get("type") == "openAiApi"]
-print(ids[0] if ids else "")')
+CREDS=$(docker exec n8n cat /tmp/creds.json 2>/dev/null)
 docker exec n8n rm -f /tmp/creds.json >/dev/null 2>&1
-[ -n "$CRED_ID" ] || die "No OpenAI-type credential named exactly 'Jarvis brain' in n8n. Create it first (Lesson 08, Part D)."
+CRED_ID=$(echo "$CREDS" | jget '
+creds = d if isinstance(d, list) else [d] if d else []
+ids = [c.get("id","") for c in creds if (c.get("name") or "").strip() == "Jarvis brain" and c.get("type") == "openAiApi"]
+print(ids[0] if ids else "")')
+if [ -z "$CRED_ID" ]; then
+  echo "  Credentials n8n has now (name | type):"
+  echo "$CREDS" | jget '
+creds = d if isinstance(d, list) else [d] if d else []
+print("\n".join("    " + str(c.get("name")) + "  |  " + str(c.get("type")) for c in creds) or "    (none)")'
+  die "Need an OpenAI-type credential named exactly 'Jarvis brain'. Create it in n8n (Lesson 08, Part D), then run this again."
+fi
 echo "Found the 'Jarvis brain' credential."
 
 # ---------- 2. token ----------
