@@ -112,6 +112,7 @@ jarvis chat -e ollama -m qwen3.5:4b     # offline: the laptop's own model, no se
 |---|---|
 | Installer: `MSVC build tools not found` | Install the C++ Build Tools (Lesson 11, row 5), restart, run the installer again |
 | Installer: `Python 3.10 - 3.13 not found` | Lesson 11: Python 3.13 on PATH (`-Fix`), new PowerShell window |
+| Installer: `Rust not found, installing into a temporary directory` … `could not read downloaded file` | Windows Security blocked the temporary Rust download. Don't turn protection off: delete `%LOCALAPPDATA%\puccinialin`, install Rust from [rustup.rs](https://rustup.rs) (Lesson 11, row 6), open a new PowerShell, run the installer again. Check **Windows Security → Protection history** to see what was blocked |
 | Installer: `uv sync failed` | Scroll up for the first red error. Often a network hiccup: run the installer again. Send me the error if it repeats |
 | `jarvis` not recognized | Open a **new** PowerShell window (the installer added it to PATH) |
 | `No answer from https://…:4443` | Did you run Part B on the server? Is Tailscale connected on the laptop (tray icon)? |

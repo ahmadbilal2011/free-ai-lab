@@ -75,6 +75,7 @@ Do these in order. After each install, **close PowerShell and open a new (normal
 | 3 | **Ollama** | Runs small AI models on the laptop: the offline fallback | [ollama.com/download/windows](https://ollama.com/download/windows). After install, a llama icon sits in the tray |
 | 4 | **Tailscale** | The private link the server uses to reach the laptop (Lesson 13). Same app you put on your phone in Lesson 04 | [tailscale.com/download/windows](https://tailscale.com/download/windows), log in with the **same account** as the server |
 | 5 | **Microsoft C++ Build Tools** | OpenJarvis compiles a small part of itself (written in Rust) on Windows, and that needs Microsoft's C++ linker. The installer stops without it | [visualstudio.microsoft.com/downloads](https://visualstudio.microsoft.com/downloads/) → *Tools for Visual Studio* → **Build Tools for Visual Studio** → tick **Desktop development with C++** → Install. About **7 GB** and 20–40 minutes; restart the laptop afterwards |
+| 6 | **Rust** | That part of OpenJarvis is written in Rust. Without Rust installed, the OpenJarvis installer downloads a temporary copy, and **Windows Security blocked that download** on my laptop (`could not read downloaded file`). The official installer avoids it | [rustup.rs](https://rustup.rs) → **rustup-init.exe (64-bit)** → press Enter for the defaults (install the C++ Build Tools first) → new PowerShell → `cargo --version` |
 
 Quick self-checks (each in a new window):
 
@@ -86,7 +87,7 @@ ollama list       # a table (even empty) means Ollama is running
 
 ## Part E — One check that says "ready" or what's wrong
 
-This script only **looks**: Windows build, admin window, Python versions and PATH, git, the C++ build tools, Ollama (and which models you have), leftovers from old installs, disk space, RAM/GPU, and Tailscale. It never deletes anything and never asks for keys.
+This script only **looks**: Windows build, admin window, Python versions and PATH, git, the C++ build tools, Rust, Ollama (and which models you have), leftovers from old installs, disk space, RAM/GPU, and Tailscale. It never deletes anything and never asks for keys.
 
 ```powershell
 irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/11-check-laptop.ps1 | iex
@@ -134,6 +135,7 @@ Either way, the **thinking** normally happens on the server's free cloud models 
 - [ ] `python --version` shows 3.13 in a new, normal window
 - [ ] `git --version` works
 - [ ] Microsoft C++ Build Tools installed (the check says `C++ build tools present`)
+- [ ] Rust installed from rustup.rs (`cargo --version` works)
 - [ ] `ollama list` shows a table
 - [ ] Tailscale connected with the same account as the server
 - [ ] `11-check-laptop.ps1` says **ready for Lesson 12**

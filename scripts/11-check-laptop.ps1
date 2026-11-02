@@ -117,6 +117,19 @@ else {
 }
 
 # ---------------------------------------------------------------------------
+Step "3c   Rust (OpenJarvis's native part is written in Rust)"
+$cargo = Get-Command cargo -ErrorAction SilentlyContinue
+if (-not $cargo -and (Test-Path "$HOME\.cargo\bin\cargo.exe")) { $cargo = "$HOME\.cargo\bin\cargo.exe" }
+if ($cargo) { Ok ((& $cargo --version) 2>&1 | Out-String).Trim() }
+else {
+    Bad "Rust isn't installed. Without it, OpenJarvis downloads a temporary copy, which Windows Security may block."
+    Info "Install it from https://rustup.rs (rustup-init.exe, 64-bit, press Enter for the defaults), then open a NEW PowerShell."
+}
+if (Test-Path "$env:LOCALAPPDATA\puccinialin") {
+    Warn "Leftover temporary Rust from a failed install: $env:LOCALAPPDATA\puccinialin (safe to delete)"
+}
+
+# ---------------------------------------------------------------------------
 Step "4/8  Ollama (local models, the laptop's offline fallback)"
 if (Get-Command ollama -ErrorAction SilentlyContinue) {
     Ok ((& ollama --version) 2>&1 | Out-String).Trim()
