@@ -37,6 +37,7 @@ Newest entries at the top.
 - Writing Lesson 12, found in OpenJarvis's Windows installer source: it compiles a Rust extension and **stops without Microsoft C++ Build Tools** (probably part of why my first install failed). Added to Lesson 11 and its check script
 - Wrote [Lesson 12 — OpenJarvis on the laptop](lessons/12-openjarvis-laptop.md): gateway published on the tailnet at `:4443`; OpenJarvis installed without the background service; [`12-connect-laptop.ps1`](scripts/12-connect-laptop.ps1) finds the server, tests the gateway key (hidden), saves it for my Windows user and points OpenJarvis at `smart`. No provider keys on the laptop
 - Lesson 12, first install: Python, git, uv and C++ Build Tools passed, then `uv sync` failed: with no Rust installed, maturin downloads a temporary Rust into `%LOCALAPPDATA%\puccinialin`, and **Windows Security blocked it** (`could not read downloaded file`). Fix without disabling protection: delete that folder, install Rust from rustup.rs, re-run. Added Rust to Lesson 11 and its check
+- Even with official Rust, Windows Security kept blocking one download: `Trojan:Win32/Suschil!rfn` (a machine-learning guess). Verified before allowing anything: rustup names downloads by SHA-256, and the fingerprint is in Rust's official 1.89.0 release list as `rustfmt-1.89.0-x86_64-pc-windows-msvc.tar.xz` → false alarm → allowed only that detection. (A first check wrongly said "not found": PowerShell 5.1 returned the list as raw bytes.) Method added to Lesson 12
 - **Next:** run Lesson 12; Lesson 07 (backups) still to install
 
 ---

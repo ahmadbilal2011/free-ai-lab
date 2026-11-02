@@ -52,6 +52,35 @@ When it finishes, **close PowerShell and open a new one**, then:
 jarvis --version
 ```
 
+### If Windows Security says "Threats found" during the install
+
+This happened on my laptop: **`Trojan:Win32/Suschil!rfn`** on a file in `C:\Users\<you>\.rustup\downloads\`, every time the installer fetched Rust. `!rfn` means a guess by Windows' machine-learning scanner, not a known virus. **Never click "Allow" on a guess: prove the file is genuine first.**
+
+1. **See what was blocked** (PowerShell **as administrator**, read-only):
+   ```powershell
+   Get-MpThreatDetection | Sort-Object InitialDetectionTime -Descending | Select-Object -First 3 InitialDetectionTime, Resources | Format-List; Get-MpThreat | Select-Object ThreatName
+   ```
+2. **Check it against Rust's official release list.** rustup names each download after its SHA-256 fingerprint, so the file name *is* the fingerprint. Put it in `$h` (normal PowerShell):
+   ```powershell
+   $h = '<the long file name from step 1>'
+   foreach ($c in '1.89.0', 'stable') {
+     $f = "$env:TEMP\rust-$c.toml"
+     Invoke-WebRequest -UseBasicParsing "https://static.rust-lang.org/dist/channel-rust-$c.toml" -OutFile $f
+     $hit = Select-String -Path $f -Pattern $h -SimpleMatch
+     if ($hit) { "FOUND in Rust $c list:"; (Get-Content $f)[($hit.LineNumber - 4)..($hit.LineNumber - 1)] } else { "not in Rust $c list" }
+   }
+   ```
+   Mine said: **FOUND** → `rustfmt-1.89.0-x86_64-pc-windows-msvc.tar.xz`, Rust's official code-formatting tool. (Use a file and `Select-String` as above: my first try read the list with `.Content`, which Windows PowerShell 5.1 returns as raw bytes, and wrongly said "not found".)
+3. **Only if FOUND:** Windows Security → **Protection history** → that entry → **Actions → Allow on device**. Then:
+   ```powershell
+   Remove-Item -Recurse -Force "$HOME\.rustup\downloads" -ErrorAction SilentlyContinue
+   powershell -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\OpenJarvis\src\deploy\windows\install.ps1" -SkipService
+   ```
+   **If NOT found: allow nothing**, and ask for help.
+4. Optional: report the false alarm at [microsoft.com/wdsi/filesubmission](https://www.microsoft.com/wdsi/filesubmission).
+
+Don't turn Windows Security off, and don't exclude whole folders: allow only the one detection you verified.
+
 ## Part D — Laptop: connect it to the server's brain
 
 1. On the **server**, show the gateway key (paste it **only** into the next step, never into a chat):
