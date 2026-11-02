@@ -33,7 +33,10 @@ Newest entries at the top.
 - ✅ Lesson 10, server side: ElevenLabs key kept, gateway got `listen` (Scribe, backup Groq Whisper) and `speak` (eleven_v3); voice **Sarah** (pre-made); local Piper voices en / ar / **ur**; n8n reaches the voice service; round trip: cloud and local voices work, both ears heard the test sentence correctly
 - Asked: can a Telegram voice command check my unread **Facebook Messenger** and reply? Not from the server for free and safely: the official API is for Pages only; unofficial libraries log in as me (terms, ban risk, my login on the server). Added to Part 4 with WhatsApp: the laptop does it in my own browser, with my approval
 - Voice workflow testing in Urdu and Messenger left for later; moving on to **Part 4: the laptop** (Lesson 11)
-- **Next:** Lesson 11 on the laptop; Lesson 07 (backups) still to install
+- ✅ Lesson 11: laptop check says ready
+- Writing Lesson 12, found in OpenJarvis's Windows installer source: it compiles a Rust extension and **stops without Microsoft C++ Build Tools** (probably part of why my first install failed). Added to Lesson 11 and its check script
+- Wrote [Lesson 12 — OpenJarvis on the laptop](lessons/12-openjarvis-laptop.md): gateway published on the tailnet at `:4443`; OpenJarvis installed without the background service; [`12-connect-laptop.ps1`](scripts/12-connect-laptop.ps1) finds the server, tests the gateway key (hidden), saves it for my Windows user and points OpenJarvis at `smart`. No provider keys on the laptop
+- **Next:** run Lesson 12; Lesson 07 (backups) still to install
 
 ---
 

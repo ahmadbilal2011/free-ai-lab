@@ -96,6 +96,27 @@ else {
 }
 
 # ---------------------------------------------------------------------------
+Step "3b   Microsoft C++ Build Tools (OpenJarvis compiles part of itself on Windows)"
+function Test-MsvcLinker {
+    foreach ($cmd in @(Get-Command link.exe -All -CommandType Application -ErrorAction SilentlyContinue)) {
+        $item = Get-Item -LiteralPath $cmd.Source -ErrorAction SilentlyContinue
+        if ($item -and $item.VersionInfo.CompanyName -match '^Microsoft' -and $item.VersionInfo.OriginalFilename -ieq 'link.exe') { return $true }
+    }
+    if (-not ${env:ProgramFiles(x86)}) { return $false }
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (-not (Test-Path -LiteralPath $vswhere)) { return $false }
+    $found = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'VC\Tools\MSVC\**\bin\Host*\*\link.exe' 2>$null
+    foreach ($linker in $found) { if (Test-Path -LiteralPath $linker -PathType Leaf) { return $true } }
+    return $false
+}
+if (Test-MsvcLinker) { Ok "C++ build tools present" }
+else {
+    Bad "Microsoft C++ Build Tools not found (the OpenJarvis installer stops without them)."
+    Info "Download 'Build Tools for Visual Studio' from https://visualstudio.microsoft.com/downloads/ (scroll to 'Tools for Visual Studio'),"
+    Info "tick 'Desktop development with C++', Install (about 7 GB, 20-40 minutes), then restart the laptop."
+}
+
+# ---------------------------------------------------------------------------
 Step "4/8  Ollama (local models, the laptop's offline fallback)"
 if (Get-Command ollama -ErrorAction SilentlyContinue) {
     Ok ((& ollama --version) 2>&1 | Out-String).Trim()

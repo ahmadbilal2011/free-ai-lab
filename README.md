@@ -81,8 +81,8 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 
 | # | Lesson | Status |
 |---|---|---|
-| 11 | [Prepare the Windows laptop](lessons/11-prepare-windows-laptop.md) | ⏳ Now |
-| 12 | OpenJarvis on the laptop, thinking through the server's gateway | ⬜ |
+| 11 | [Prepare the Windows laptop](lessons/11-prepare-windows-laptop.md) | ✅ Tested |
+| 12 | [OpenJarvis on the laptop, thinking with the server's brain](lessons/12-openjarvis-laptop.md) | ✅ Written |
 | 13 | PC jobs from my phone, with Yes / No first | ⬜ |
 | 14 | Talk to Jarvis at the desk | ⬜ |
 | 15 | Hard jobs: Gemini CLI / Claude Code | ⬜ |

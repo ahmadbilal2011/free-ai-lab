@@ -21,6 +21,8 @@ Connection (checked in OpenJarvis's source, v1.0): OpenJarvis serves an **OpenAI
 
 Why OpenJarvis on the laptop, not on the server: it's built for on-device AI (GPU / Apple Silicon); on a 2-CPU server its strengths sit idle. On the laptop they fit: PC tools, approval queue, voice, an OpenAI-compatible API.
 
+**How the laptop reaches the brain (Lesson 12):** the gateway is published to the tailnet with `tailscale serve` on HTTPS **:4443** (Funnel can't publish that port). OpenJarvis uses its generic OpenAI-compatible connector (registered as `vllm`: `engine.default = vllm`, `engine.vllm.host = https://<server>:4443`, key in the Windows user variable `VLLM_API_KEY`), model `smart`. Its built-in "cloud" engine was not used: it only routes genuine OpenAI model names (`gpt-*`) to a custom base URL. The native Windows install compiles a Rust extension and **needs Microsoft C++ Build Tools** (~7 GB); Lesson 11's check now tests for it.
+
 Native Windows, not WSL2: WSL2 is smoother to install but can't easily drive Windows apps. Native needs Python **3.10–3.13** (3.14+ has no numpy wheels yet) and **git**.
 
 Sources: [OpenJarvis](https://github.com/open-jarvis/OpenJarvis), [native Windows guide](https://github.com/open-jarvis/OpenJarvis/blob/main/docs/getting-started/windows-native.md)
