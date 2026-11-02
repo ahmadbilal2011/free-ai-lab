@@ -73,8 +73,8 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 
 | # | Lesson | Status |
 |---|---|---|
-| 08 | n8n: the automation engine | ⏳ Next |
-| 09 | Telegram bot, by polling (no public door) | ⬜ |
+| 08 | [n8n: the engine behind every Jarvis skill](lessons/08-n8n.md) | ✅ Written |
+| 09 | Telegram bot, by polling (no public door) | ⏳ Next |
 | 10 | Voice in, voice out | ⬜ |
 
 **Part 4 — Jarvis's hands (my Windows laptop)**

@@ -18,7 +18,8 @@ Newest entries at the top.
 - Every alias said `FELL BACK` although nothing failed: newer LiteLLM returns the **alias** as the model name, so comparing names no longer works. Fixed: the test now reads LiteLLM's `x-litellm-attempted-fallbacks` header
 - `ask: command not found` right after install: `~/.local/bin` only joins the PATH at login if it already exists → `source ~/.profile` once
 - Wrote [Lesson 07 — Backups and monitoring](lessons/07-backups-monitoring.md): v1's restic + healthchecks.io scripts adapted to `~/lab/brain`; n8n is the app paused during backups; restore test checks whatever exists on the server; new `lab-heartbeat` reads the private model from `.env`; the bucket script reuses the v1 bucket, offers to delete its unusable old backups and replaces the old access key
-- **Next:** run Lesson 07, then Lesson 08 (n8n)
+- Wrote [Lesson 08 — n8n](lessons/08-n8n.md) and [`08-install-n8n.sh`](scripts/08-install-n8n.sh): joins the `jarvis` network, private editor on Tailscale `:9443`, time zone from the server, only failed runs stored (Telegram polling will run thousands of times a day), checks it can reach the gateway; credential renamed `Jarvis brain`
+- **Next:** run Lessons 07 and 08, then Lesson 09 (Telegram)
 
 ---
 
