@@ -37,7 +37,7 @@ USER_HOME=$(getent passwd "$LAB_USER" | cut -d: -f6)
 LAB="$USER_HOME/lab"
 echo "Cleaning the lab of user: $LAB_USER  ($LAB)"
 UNITS="lab-backup.timer lab-backup.service lab-heartbeat.timer lab-heartbeat.service"
-BINS="/usr/local/bin/lab-backup /usr/local/bin/lab-restore-test /usr/local/bin/lab-status"
+BINS="/usr/local/bin/lab-backup /usr/local/bin/lab-restore-test /usr/local/bin/lab-status /usr/local/bin/lab-heartbeat"
 have_docker=0; command -v docker >/dev/null 2>&1 && have_docker=1
 
 # ---------------------------------------------------------------------------

@@ -17,7 +17,8 @@ Newest entries at the top.
 - ✅ Ran Lessons 05 + 06 for real: 4 keys saved; picker chose Groq `gpt-oss-120b` (smart) / `gpt-oss-20b` (fast), NVIDIA and OpenRouter `nemotron-3-ultra-550b-a55b` as backups, Gemini `gemini-3.5-flash` for `general` (2.5 Flash models failed their test); private `llama3.2:3b` answered in 14 s; memory 4 GB used of 11
 - Every alias said `FELL BACK` although nothing failed: newer LiteLLM returns the **alias** as the model name, so comparing names no longer works. Fixed: the test now reads LiteLLM's `x-litellm-attempted-fallbacks` header
 - `ask: command not found` right after install: `~/.local/bin` only joins the PATH at login if it already exists → `source ~/.profile` once
-- **Next:** Lesson 07 (backups)
+- Wrote [Lesson 07 — Backups and monitoring](lessons/07-backups-monitoring.md): v1's restic + healthchecks.io scripts adapted to `~/lab/brain`; n8n is the app paused during backups; restore test checks whatever exists on the server; new `lab-heartbeat` reads the private model from `.env`; the bucket script reuses the v1 bucket, offers to delete its unusable old backups and replaces the old access key
+- **Next:** run Lesson 07, then Lesson 08 (n8n)
 
 ---
 
