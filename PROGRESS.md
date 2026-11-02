@@ -24,7 +24,8 @@ Newest entries at the top.
 - Lesson 07: marked done on my side (I'll confirm `sudo lab-status` shows backups)
 - Wrote [Lesson 09 — Telegram](lessons/09-telegram-bot.md): [`09-install-telegram.sh`](scripts/09-install-telegram.sh) imports a ready-made polling workflow ([template](stacks/jarvis/workflows/telegram-chat.json)), finds my user ID from `/start`, removes old webhooks, links `Jarvis brain` and publishes. Memory of the last 10 exchanges, `/new` resets, strangers ignored. Couldn't run n8n in the build sandbox (npm blocked), so the Code steps were tested with Node.js and n8n's docs checked for 2.x changes: **"Active" is now "Publish"** (Lesson 08 updated)
 - Lesson 09, first run: `No credential named 'Jarvis brain'` → I had typed the name into **Organization ID** instead of the credential's title (the connection test still passes, so it's easy to miss). Lesson 08 now points at the title; the installer lists the credentials it finds
-- **Next:** run Lesson 09 for real, then Lesson 10 (voice)
+- Asked: why set up Telegram from the shell? n8n already runs permanently in Docker; **everything inside n8n should happen in its UI**. Agreed: removed `09-install-telegram.sh`. Lesson 09 is now UI-only: Import from URL → token in one **Settings** node → pick the credential → Publish → `/start` tells me my user ID → set it → Publish. Old webhooks are removed automatically by the workflow. Rule from now on: shell only for installing/updating containers on the server
+- **Next:** do Lesson 09 in the n8n UI, then Lesson 10 (voice)
 
 ---
 

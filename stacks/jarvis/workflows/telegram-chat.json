@@ -1,5 +1,4 @@
 {
-  "id": "JarvisTelegram01",
   "name": "Jarvis — Telegram chat",
   "nodes": [
     {
@@ -13,14 +12,26 @@
       }
     },
     {
+      "id": "6b1f2a10-0010-4a3e-9c01-000000000010",
+      "name": "Settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "notes": "The only node you edit: your bot token and your Telegram user ID. Never share this workflow while the token is in it.",
+      "parameters": {
+        "jsCode": "// ===== Jarvis settings: edit these two lines, then click Publish =====\n\nconst BOT_TOKEN = 'PASTE_YOUR_BOT_TOKEN_HERE';  // from @BotFather: /mybots → your bot → API Token\nconst OWNER_ID  = 0;                            // your Telegram user ID (a number). Leave 0 at first:\n                                                // send /start to your bot and Jarvis tells you your ID.\n\n// ===== nothing to change below =====\nif (!/^\\d{5,}:[A-Za-z0-9_-]{30,}$/.test(BOT_TOKEN)) {\n  throw new Error('Settings: paste your bot token into BOT_TOKEN (it looks like 123456789:AAF...)');\n}\nreturn [{ json: { bot_token: BOT_TOKEN, owner_id: Number(OWNER_ID) || 0 } }];"
+      }
+    },
+    {
       "id": "6b1f2a10-0002-4a3e-9c01-000000000002",
       "name": "Ask Telegram for new messages",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [220, 300],
+      "position": [440, 300],
+      "onError": "continueErrorOutput",
       "notes": "Long polling: Telegram holds the request up to 20 s and answers as soon as a message arrives. Nothing on the server is public: n8n reaches out, nothing reaches in.",
       "parameters": {
-        "url": "https://api.telegram.org/bot__BOT_TOKEN__/getUpdates",
+        "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/getUpdates",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -32,14 +43,26 @@
       }
     },
     {
+      "id": "6b1f2a10-0011-4a3e-9c01-000000000011",
+      "name": "If polling failed: remove old webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 500],
+      "notes": "Polling fails while a webhook is set on the bot (e.g. from an earlier setup). This removes it, so the next check works. Also fails, visibly, if the token is wrong.",
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/deleteWebhook",
+        "options": { "timeout": 15000 }
+      }
+    },
+    {
       "id": "6b1f2a10-0003-4a3e-9c01-000000000003",
       "name": "Keep only my messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 300],
+      "position": [660, 300],
       "notes": "Ignores everyone except the owner. Returning nothing stops the run quietly when there are no new messages.",
       "parameters": {
-        "jsCode": "// Telegram's answer: { ok, result: [ update, update, ... ] }\nconst updates = $input.first().json.result || [];\nif (updates.length === 0) return [];   // nothing new: stop here\n\nconst OWNER_ID = __OWNER_ID__;           // only YOUR Telegram account may talk to Jarvis\nconst lastId = Math.max(...updates.map(u => u.update_id));\nconst mine = updates\n  .map(u => u.message)\n  .filter(m => m && m.from && !m.from.is_bot && m.from.id === OWNER_ID && m.chat && m.chat.type === 'private');\n\n// One item: the offset that confirms these updates, plus my messages\nreturn [{ json: { offset: lastId + 1, messages: mine } }];"
+        "jsCode": "// Telegram's answer: { ok, result: [ update, update, ... ] }\nconst updates = $input.first().json.result || [];\nif (updates.length === 0) return [];   // nothing new: stop here\n\nconst OWNER_ID = $('Settings').first().json.owner_id;\nconst lastId = Math.max(...updates.map(u => u.update_id));\nconst mine = updates\n  .map(u => u.message)\n  .filter(m => m && m.from && !m.from.is_bot && m.chat && m.chat.type === 'private')\n  .filter(m => OWNER_ID === 0 || m.from.id === OWNER_ID);   // 0 = setup mode: Jarvis only tells you your ID\n\n// One item: the offset that confirms these updates, plus my messages\nreturn [{ json: { offset: lastId + 1, messages: mine } }];"
       }
     },
     {
@@ -47,10 +70,10 @@
       "name": "Confirm received",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 300],
+      "position": [880, 300],
       "notes": "Tells Telegram these messages arrived, BEFORE asking the AI, so a slow or failed answer can never make Jarvis reply twice.",
       "parameters": {
-        "url": "https://api.telegram.org/bot__BOT_TOKEN__/getUpdates",
+        "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/getUpdates",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -66,10 +89,10 @@
       "name": "Prepare each message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 300],
-      "notes": "Commands (/start, /new) and non-text messages get a direct reply. Text gets the conversation history and goes to the brain.",
+      "position": [1100, 300],
+      "notes": "Setup mode, commands (/start, /new) and non-text messages get a direct reply. Text gets the conversation history and goes to the brain.",
       "parameters": {
-        "jsCode": "const messages = $('Keep only my messages').first().json.messages;\nconst memory = $getWorkflowStaticData('global');   // survives between runs of this published workflow\nmemory.chats = memory.chats || {};\n\nconst out = [];\nfor (const m of messages) {\n  const chat_id = m.chat.id;\n  const key = String(chat_id);\n  const name = m.from.first_name || 'friend';\n  const text = (m.text || '').trim();\n\n  if (!m.text) {\n    const reply = m.voice\n      ? 'I got your voice note. I can only read text for now; I learn to listen in Lesson 10.'\n      : 'I can only read text messages for now.';\n    out.push({ json: { chat_id, reply, skip_ai: true } });\n    continue;\n  }\n  if (text === '/start' || text === '/new') {\n    memory.chats[key] = [];\n    const reply = text === '/start'\n      ? `Hi ${name}, I'm Jarvis. Write to me any time. Send /new to start a fresh conversation.`\n      : 'OK, fresh start. I forgot our earlier conversation.';\n    out.push({ json: { chat_id, reply, skip_ai: true } });\n    continue;\n  }\n\n  const system = `You are Jarvis, the personal assistant of ${name}. ` +\n    'Reply in the same language the user writes in (Urdu in Urdu script, English, Arabic...). ' +\n    'Be warm, clear and brief: this is a Telegram chat on a phone. Plain text, short paragraphs, no tables. ' +\n    'You cannot take actions yet (no calendar, reminders or PC control): if asked, say honestly that this skill is coming.';\n  const history = memory.chats[key] || [];\n  out.push({ json: {\n    chat_id, text, skip_ai: false,\n    body: { model: 'smart', messages: [ { role: 'system', content: system }, ...history, { role: 'user', content: text } ] }\n  } });\n}\nreturn out;"
+        "jsCode": "const messages = $('Keep only my messages').first().json.messages;\nconst OWNER_ID = $('Settings').first().json.owner_id;\nconst memory = $getWorkflowStaticData('global');   // survives between runs of this published workflow\nmemory.chats = memory.chats || {};\n\nconst out = [];\nfor (const m of messages) {\n  const chat_id = m.chat.id;\n  const key = String(chat_id);\n  const name = m.from.first_name || 'friend';\n  const text = (m.text || '').trim();\n\n  if (OWNER_ID === 0) {\n    out.push({ json: { chat_id, skip_ai: true, reply:\n      `Setup: your Telegram user ID is ${m.from.id}.\\n\\nIn n8n, open the Settings node, set OWNER_ID = ${m.from.id}, then click Publish. After that, only you can talk to me.` } });\n    continue;\n  }\n  if (!m.text) {\n    const reply = m.voice\n      ? 'I got your voice note. I can only read text for now; I learn to listen in Lesson 10.'\n      : 'I can only read text messages for now.';\n    out.push({ json: { chat_id, reply, skip_ai: true } });\n    continue;\n  }\n  if (text === '/start' || text === '/new') {\n    memory.chats[key] = [];\n    const reply = text === '/start'\n      ? `Hi ${name}, I'm Jarvis. Write to me any time. Send /new to start a fresh conversation.`\n      : 'OK, fresh start. I forgot our earlier conversation.';\n    out.push({ json: { chat_id, reply, skip_ai: true } });\n    continue;\n  }\n\n  const system = `You are Jarvis, the personal assistant of ${name}. ` +\n    'Reply in the same language the user writes in (Urdu in Urdu script, English, Arabic...). ' +\n    'Be warm, clear and brief: this is a Telegram chat on a phone. Plain text, short paragraphs, no tables. ' +\n    'You cannot take actions yet (no calendar, reminders or PC control): if asked, say honestly that this skill is coming.';\n  const history = memory.chats[key] || [];\n  out.push({ json: {\n    chat_id, text, skip_ai: false,\n    body: { model: 'smart', messages: [ { role: 'system', content: system }, ...history, { role: 'user', content: text } ] }\n  } });\n}\nreturn out;"
       }
     },
     {
@@ -77,7 +100,7 @@
       "name": "Direct reply?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1100, 300],
+      "position": [1320, 300],
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
@@ -99,9 +122,9 @@
       "name": "Ask Jarvis's brain",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1320, 420],
+      "position": [1540, 420],
       "onError": "continueRegularOutput",
-      "notes": "The gateway (Lesson 06), alias 'smart': best free model, automatic fallback. Uses the 'Jarvis brain' credential, so no key is written in this workflow.",
+      "notes": "The gateway (Lesson 06), alias 'smart': best free model, automatic fallback. Pick your OpenAI-type credential (Base URL http://litellm:4000/v1) here: no key is written in the workflow.",
       "parameters": {
         "method": "POST",
         "url": "http://litellm:4000/v1/chat/completions",
@@ -111,9 +134,6 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.body) }}",
         "options": { "timeout": 120000 }
-      },
-      "credentials": {
-        "openAiApi": { "id": "__CRED_ID__", "name": "Jarvis brain" }
       }
     },
     {
@@ -121,7 +141,7 @@
       "name": "Remember the answer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1540, 420],
+      "position": [1760, 420],
       "parameters": {
         "mode": "runOnceForEachItem",
         "jsCode": "const asked = $('Prepare each message').item.json;   // the message this answer belongs to\nconst r = $input.item.json;\nlet reply = r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content;\nreply = (reply || '').trim();\nif (!reply) reply = \"Sorry, my brain didn't answer just now. Please try again in a minute.\";\n\n// Keep the last 10 exchanges (20 messages) per chat\nconst memory = $getWorkflowStaticData('global');\nmemory.chats = memory.chats || {};\nconst key = String(asked.chat_id);\nmemory.chats[key] = (memory.chats[key] || [])\n  .concat([ { role: 'user', content: asked.text }, { role: 'assistant', content: reply } ])\n  .slice(-20);\n\nreturn { json: { chat_id: asked.chat_id, reply } };"
@@ -132,10 +152,10 @@
       "name": "Send reply on Telegram",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1760, 300],
+      "position": [1980, 300],
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot__BOT_TOKEN__/sendMessage",
+        "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $json.chat_id, text: String($json.reply).slice(0, 4000) }) }}",
@@ -144,8 +164,14 @@
     }
   ],
   "connections": {
-    "Every 30 seconds": { "main": [ [ { "node": "Ask Telegram for new messages", "type": "main", "index": 0 } ] ] },
-    "Ask Telegram for new messages": { "main": [ [ { "node": "Keep only my messages", "type": "main", "index": 0 } ] ] },
+    "Every 30 seconds": { "main": [ [ { "node": "Settings", "type": "main", "index": 0 } ] ] },
+    "Settings": { "main": [ [ { "node": "Ask Telegram for new messages", "type": "main", "index": 0 } ] ] },
+    "Ask Telegram for new messages": {
+      "main": [
+        [ { "node": "Keep only my messages", "type": "main", "index": 0 } ],
+        [ { "node": "If polling failed: remove old webhook", "type": "main", "index": 0 } ]
+      ]
+    },
     "Keep only my messages": { "main": [ [ { "node": "Confirm received", "type": "main", "index": 0 } ] ] },
     "Confirm received": { "main": [ [ { "node": "Prepare each message", "type": "main", "index": 0 } ] ] },
     "Prepare each message": { "main": [ [ { "node": "Direct reply?", "type": "main", "index": 0 } ] ] },

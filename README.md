@@ -132,3 +132,4 @@ Progress log: [PROGRESS.md](PROGRESS.md)
 - Every lesson explains **why** before **how**.
 - Every command is recorded with what it does.
 - Every lesson is tested for real before it's marked ✅ Tested.
+- The terminal is only for installing or updating apps on the server. **Inside n8n, everything happens in its web UI.**
