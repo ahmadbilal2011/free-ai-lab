@@ -67,15 +67,15 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 |---|---|---|
 | 05 | [Free AI API keys: Jarvis's brain at $0](lessons/05-free-ai-keys.md) | ✅ Tested |
 | 06 | [The AI gateway: one address, free models, automatic fallback](lessons/06-ai-gateway.md) | ✅ Tested |
-| 07 | [Backups and monitoring](lessons/07-backups-monitoring.md) | ✅ Written |
+| 07 | [Backups and monitoring](lessons/07-backups-monitoring.md) | ✅ Done |
 
 **Part 3 — Jarvis's front door (my phone)**
 
 | # | Lesson | Status |
 |---|---|---|
-| 08 | [n8n: the engine behind every Jarvis skill](lessons/08-n8n.md) | ✅ Written |
-| 09 | Telegram bot, by polling (no public door) | ⏳ Next |
-| 10 | Voice in, voice out | ⬜ |
+| 08 | [n8n: the engine behind every Jarvis skill](lessons/08-n8n.md) | ✅ Tested |
+| 09 | [Telegram: talk to Jarvis from your phone](lessons/09-telegram-bot.md) | ✅ Written |
+| 10 | Voice in, voice out | ⏳ Next |
 
 **Part 4 — Jarvis's hands (my Windows laptop)**
 

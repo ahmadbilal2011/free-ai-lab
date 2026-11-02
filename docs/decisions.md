@@ -42,7 +42,9 @@ Only SSH is public. Server, laptop and phone share a Tailscale tailnet; apps are
 
 ## Telegram by polling: n8n reaches out, nothing reaches in
 
-Telegram can **push** (call a webhook on our server, which needs a public door) or be **pulled** (`getUpdates`). v1 first built push through a Funnel door (and found Telegram only delivers to ports 443/80/88/8443), then withdrew it. **Decision: pull.** n8n long-polls (20 s wait, every 30 s), **confirms** each batch (`offset = last update_id + 1`) *before* calling the AI so nothing is answered twice, and only accepts the owner's user ID. Built entirely in the n8n UI. Trade-off: the bot token sits in HTTP node URLs, so that workflow is never shared with the token in it.
+Telegram can **push** (call a webhook on our server, which needs a public door) or be **pulled** (`getUpdates`). v1 first built push through a Funnel door (and found Telegram only delivers to ports 443/80/88/8443), then withdrew it. **Decision: pull.** n8n long-polls (20 s wait, every 30 s), **confirms** each batch (`offset = last update_id + 1`) *before* calling the AI so nothing is answered twice, and only accepts the owner's user ID. Trade-off: n8n's Telegram nodes can't poll, so the two Telegram requests are HTTP nodes and the bot token sits in their URLs (inside n8n's database, never in a file); that workflow is never shared with the token in it.
+
+**v2 (2026-11-02):** instead of building the workflow by hand node by node, an installer imports a ready-made template (`stacks/jarvis/workflows/telegram-chat.json`, placeholders instead of secrets), finds the owner's user ID from a `/start` message, removes any old webhook, links the `Jarvis brain` credential by ID and publishes it. The workflow still lives and is edited in the n8n UI. The AI call is an HTTP node using the credential (no key in the workflow); conversation memory is the workflow's own static data (last 10 exchanges per chat, `/new` resets). n8n 2.x renamed "Active" to **Publish**.
 
 ## Hybrid AI: free cloud models first, private model last
 
