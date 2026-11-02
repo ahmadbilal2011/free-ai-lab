@@ -30,7 +30,8 @@ Newest entries at the top.
 - Wanted my **2 WhatsApp accounts** connected so Jarvis reads and replies to my chats. Compared: unofficial QR bridges (free, all chats, but break WhatsApp's terms: permanent bans) vs. the official Cloud API (Business numbers only, public webhook, no groups, per-message pricing). **Postponed**: later Jarvis will use the WhatsApp desktop app on my laptop (Part 4)
 - Wrote [Lesson 10 — Voice](lessons/10-voice.md): [`10-install-voice.sh`](scripts/10-install-voice.sh) (server: ElevenLabs key, `listen` / `speak` aliases, voice service, Piper backups, round-trip test) and a new version of the [Telegram workflow](stacks/jarvis/workflows/telegram-chat.json) with a voice path, imported in the n8n UI. All Code steps tested with Node.js (text, Urdu voice note, failed transcript, too long, other)
 - **Lost all n8n work** (workflow, credential, account) after a "redeploy by mistake". The design keeps n8n's data on the server's disk (`~/lab/jarvis/n8n`), so recreating the container can't lose it; the likely cause is the one-time "fresh key" one-liner (`rm -rf n8n .env`) being re-run from shell history. Fixes: removed that one-liner from the lessons; deleting n8n only via `08-install-n8n.sh --reset` (type `RESET`, safety copy first); the installer refuses to start with data but no encryption key; Lesson 08 explains what survives what. Also: check that backups really run (`sudo lab-status`)
-- **Next:** run Lesson 10, then Part 4 (the laptop)
+- ✅ Lesson 10, server side: ElevenLabs key kept, gateway got `listen` (Scribe, backup Groq Whisper) and `speak` (eleven_v3); voice **Sarah** (pre-made); local Piper voices en / ar / **ur**; n8n reaches the voice service; round trip: cloud and local voices work, both ears heard the test sentence correctly
+- **Next:** rebuild n8n in the UI (owner, credential, voice workflow), test a voice note, check backups, then Part 4 (the laptop)
 
 ---
 
