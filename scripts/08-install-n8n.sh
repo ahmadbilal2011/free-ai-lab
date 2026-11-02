@@ -13,7 +13,12 @@
 #   5. Checks it's in the nightly backup (Lesson 07)
 #   6. Shows how to connect n8n to the gateway
 #
-# Safe to re-run (that's also how you update n8n).
+# Safe to re-run (that's also how you update n8n): your workflows, credentials and
+# account live in ~/lab/jarvis/n8n on the server's disk and are never touched.
+#
+# Start n8n completely fresh (deletes workflows, credentials, account, encryption key):
+#   bash 08-install-n8n.sh --reset
+# It first saves a copy to ~/lab/n8n-safety-copies/ and asks you to type RESET.
 # =============================================================================
 set -euo pipefail
 
@@ -32,6 +37,25 @@ env_set() { local t="$ENVF.tmp"; grep -v "^$1=" "$ENVF" > "$t" 2>/dev/null || tr
 health() { docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$1" 2>/dev/null || echo missing; }
 dc() { docker compose -f "$DIR/compose.yaml" --project-directory "$DIR" "$@"; }
 
+# ---------- optional: reset (the ONLY way this script deletes n8n data) ----------
+if [ "${1:-}" = "--reset" ]; then
+  [ "$(id -u)" -ne 0 ] || die "Run WITHOUT sudo, as ubuntu:  bash $0 --reset"
+  sudo -n true 2>/dev/null || die "Your user needs passwordless sudo."
+  echo -e "${c_warn}This deletes ALL of n8n: workflows, credentials, owner account and the encryption key.${c_off}"
+  [ -d "$DIR/n8n" ] && echo "  Data now: $(sudo -n du -sh "$DIR/n8n" 2>/dev/null | cut -f1) in $DIR/n8n"
+  read -r -p "  Type RESET (capital letters) to continue, anything else cancels: " ans
+  [ "$ans" = "RESET" ] || { echo "Cancelled. Nothing was changed."; exit 0; }
+  SAFE="$HOME/lab/n8n-safety-copies"; mkdir -p "$SAFE"; chmod 700 "$SAFE"
+  COPY="$SAFE/n8n-$(date +%Y%m%d-%H%M%S).tgz"
+  [ -f "$DIR/compose.yaml" ] && dc down >/dev/null 2>&1 || true
+  sudo -n tar -czf "$COPY" -C "$DIR" n8n .env 2>/dev/null && sudo -n chown "$(id -u):$(id -g)" "$COPY" && chmod 600 "$COPY" \
+    && echo "  Safety copy: $COPY (restore: see Lesson 08, 'If something goes wrong')" \
+    || warn "No safety copy made (nothing to copy?)"
+  ls -1t "$SAFE"/n8n-*.tgz 2>/dev/null | tail -n +4 | xargs -r rm -f      # keep the newest 3
+  sudo -n rm -rf "$DIR/n8n" "$ENVF"
+  echo "  n8n data deleted. Installing fresh..."
+fi
+
 # ---------- 1. checks ----------
 step "1/6  Checking the server"
 [ "$(id -u)" -ne 0 ] || die "Run WITHOUT sudo, as ubuntu:  bash $0"
@@ -49,6 +73,9 @@ step "2/6  Preparing ~/lab/jarvis"
 mkdir -p "$DIR/n8n"
 sudo -n chown -R 1000:1000 "$DIR/n8n"        # the n8n container runs as user 'node' (uid 1000)
 curl -fsSL "$RAW/stacks/jarvis/compose.yaml" -o "$DIR/compose.yaml"
+if [ ! -s "$ENVF" ] && [ -n "$(sudo -n ls -A "$DIR/n8n" 2>/dev/null | grep -v '^\.' )" ]; then
+  die "n8n data exists but ~/lab/jarvis/.env (with its encryption key) is missing. Starting with a NEW key would make every saved credential unreadable. Restore .env from your backup or password manager (N8N_ENCRYPTION_KEY=...), or start fresh on purpose: bash $0 --reset"
+fi
 umask 077; touch "$ENVF"; chmod 600 "$ENVF"; umask 022
 NEW_KEY=""
 if [ -z "$(env_get N8N_ENCRYPTION_KEY)" ]; then
