@@ -25,7 +25,9 @@ Newest entries at the top.
 - Wrote [Lesson 09 — Telegram](lessons/09-telegram-bot.md): `09-install-telegram.sh` (later removed, see below) imported a ready-made polling workflow ([template](stacks/jarvis/workflows/telegram-chat.json)), finds my user ID from `/start`, removes old webhooks, links `Jarvis brain` and publishes. Memory of the last 10 exchanges, `/new` resets, strangers ignored. Couldn't run n8n in the build sandbox (npm blocked), so the Code steps were tested with Node.js and n8n's docs checked for 2.x changes: **"Active" is now "Publish"** (Lesson 08 updated)
 - Lesson 09, first run: `No credential named 'Jarvis brain'` → I had typed the name into **Organization ID** instead of the credential's title (the connection test still passes, so it's easy to miss). Lesson 08 now points at the title; the installer lists the credentials it finds
 - Asked: why set up Telegram from the shell? n8n already runs permanently in Docker; **everything inside n8n should happen in its UI**. Agreed: removed `09-install-telegram.sh`. Lesson 09 is now UI-only: Import from URL → token in one **Settings** node → pick the credential → Publish → `/start` tells me my user ID → set it → Publish. Old webhooks are removed automatically by the workflow. Rule from now on: shell only for installing/updating containers on the server
-- **Next:** do Lesson 09 in the n8n UI, then Lesson 10 (voice)
+- ✅ Lesson 09 in the UI: imported, token in Settings, published; `/start` answered with my user ID → polling, sending and setup mode work for real
+- Replies felt slow: checks every 30 s with a 20 s wait left gaps of up to 10 s. Now every 10 s with an 8 s wait: listening 80% of the time, typical reply 1–4 s. Truly instant needs a webhook = public door → no
+- **Next:** set OWNER_ID, test a real conversation, then Lesson 10 (voice)
 
 ---
 

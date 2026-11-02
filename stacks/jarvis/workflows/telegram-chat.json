@@ -3,12 +3,12 @@
   "nodes": [
     {
       "id": "6b1f2a10-0001-4a3e-9c01-000000000001",
-      "name": "Every 30 seconds",
+      "name": "Every 10 seconds",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [0, 300],
       "parameters": {
-        "rule": { "interval": [ { "field": "seconds", "secondsInterval": 30 } ] }
+        "rule": { "interval": [ { "field": "seconds", "secondsInterval": 10 } ] }
       }
     },
     {
@@ -29,17 +29,17 @@
       "typeVersion": 4.2,
       "position": [440, 300],
       "onError": "continueErrorOutput",
-      "notes": "Long polling: Telegram holds the request up to 20 s and answers as soon as a message arrives. Nothing on the server is public: n8n reaches out, nothing reaches in.",
+      "notes": "Long polling: Telegram holds the request up to 8 s (checks start every 10 s) and answers the moment a message arrives. Nothing on the server is public: n8n reaches out, nothing reaches in.",
       "parameters": {
         "url": "=https://api.telegram.org/bot{{ $('Settings').first().json.bot_token }}/getUpdates",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "timeout", "value": "20" },
+            { "name": "timeout", "value": "8" },
             { "name": "allowed_updates", "value": "[\"message\"]" }
           ]
         },
-        "options": { "timeout": 30000 }
+        "options": { "timeout": 15000 }
       }
     },
     {
@@ -164,7 +164,7 @@
     }
   ],
   "connections": {
-    "Every 30 seconds": { "main": [ [ { "node": "Settings", "type": "main", "index": 0 } ] ] },
+    "Every 10 seconds": { "main": [ [ { "node": "Settings", "type": "main", "index": 0 } ] ] },
     "Settings": { "main": [ [ { "node": "Ask Telegram for new messages", "type": "main", "index": 0 } ] ] },
     "Ask Telegram for new messages": {
       "main": [

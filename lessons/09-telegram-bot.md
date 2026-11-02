@@ -37,14 +37,16 @@ A bot can get messages two ways:
 | Needs a public door on the server | **Yes** | **No** |
 
 ```
- You ──► Telegram ◄── n8n: "anything new?" (every 30 s, waits up to 20 s)
+ You ──► Telegram ◄── n8n: "anything new?" (every 10 s, waits up to 8 s)
                         │
                         ├──► brain (smart) ──► answer
                         ▼
  You ◄── Telegram ◄── n8n: "here's Jarvis's reply"
 ```
 
-**Long polling** keeps it fast: n8n asks *"anything new? I'll wait up to 20 seconds"*. If you write during those seconds, Telegram answers **at once**. So replies usually take a few seconds, sometimes up to ~10, and the server is idle almost all the time.
+**Long polling** keeps it fast: every 10 seconds n8n asks *"anything new? I'll wait up to 8 seconds"*. So someone is listening 80% of the time, and if you write then, Telegram hands the message over **at once**. Typical reply: **1–4 seconds** (mostly the AI thinking); worst case about 10. The server is idle almost all the time.
+
+> **Why not truly instant?** That needs Telegram to *push* messages to the server (a webhook), which means a public door on the server. We chose no public doors, and 1–4 seconds is close enough. A first version checked every 30 s with a 20 s wait: it left gaps of up to 10 s with nobody listening, which felt slow.
 
 ## Part C — How the workflow works
 
@@ -52,7 +54,7 @@ Everything happens **in the n8n UI**. You import a ready-made workflow, **Jarvis
 
 | Node | Job |
 |---|---|
-| **Every 30 seconds** | Starts a check |
+| **Every 10 seconds** | Starts a check |
 | **Settings** | The **only node you edit**: your bot token and your Telegram user ID |
 | **Ask Telegram for new messages** | Long-polls Telegram |
 | **If polling failed: remove old webhook** | Polling can't work while a bot has a webhook (e.g. from an earlier setup). This removes it, so the next check works |
@@ -126,7 +128,7 @@ Ask a friend to message your bot: they get **no answer**.
 
 ### Look inside
 
-**Executions** lists **failed** runs only (successful ones aren't stored: this runs about 2,900 times a day). To watch one live: **Unpublish**, click **Execute workflow**, write to the bot within 20 seconds, and click through each node's data. **Publish** again afterwards.
+**Executions** lists **failed** runs only (successful ones aren't stored: this runs about 8,600 times a day). To watch one live: **Unpublish**, click **Execute workflow**, write to the bot within 8 seconds, and click through each node's data. **Publish** again afterwards.
 
 ## Useful actions (all in the n8n UI)
 
@@ -136,6 +138,7 @@ Ask a friend to message your bot: they get **no answer**.
 | Pause Jarvis on Telegram | **Unpublish** |
 | Talk from a different Telegram account | **Settings** → `OWNER_ID = 0` → Publish → `/start` from the new account → put its ID in → Publish |
 | Change how Jarvis speaks | **Prepare each message** → edit the `system` text |
+| Imported the first version (every 30 s)? | **Every 30 seconds** node → *Seconds Between Triggers* = `10`; **Ask Telegram for new messages** → query `timeout` = `8` → Save → Publish |
 
 ## If something goes wrong
 
