@@ -52,6 +52,20 @@ When it finishes, **close PowerShell and open a new one**, then:
 jarvis --version
 ```
 
+### Build with your stable Rust (avoids the blocked download)
+
+OpenJarvis's `rust/rust-toolchain.toml` asks for Rust **1.89 plus `rustfmt` and `clippy`** (a code formatter and a style checker). Neither is needed to *build* it, and on my laptop Windows Security blocked the `rustfmt` download every time. OpenJarvis only needs Rust **1.89 or newer**, so tell Rust to use the **stable** version you installed from rustup.rs (Lesson 11):
+
+```powershell
+rustup toolchain list            # should list stable-x86_64-pc-windows-msvc
+cargo +stable --version          # 1.89 or newer
+[Environment]::SetEnvironmentVariable('RUSTUP_TOOLCHAIN', 'stable', 'User'); $env:RUSTUP_TOOLCHAIN = 'stable'
+Remove-Item -Recurse -Force "$HOME\.rustup\downloads" -ErrorAction SilentlyContinue
+powershell -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\OpenJarvis\src\deploy\windows\install.ps1" -SkipService
+```
+
+`RUSTUP_TOOLCHAIN=stable` overrides the project's version file for your Windows user (also for later updates). Delete the variable to undo it.
+
 ### If Windows Security says "Threats found" during the install
 
 This happened on my laptop: **`Trojan:Win32/Suschil!rfn`** on a file in `C:\Users\<you>\.rustup\downloads\`, every time the installer fetched Rust. `!rfn` means a guess by Windows' machine-learning scanner, not a known virus. **Never click "Allow" on a guess: prove the file is genuine first.**
