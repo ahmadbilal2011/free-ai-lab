@@ -91,6 +91,8 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - The SAR→PKR calculator stays live as is on the same VM (Apache on 80/443). The AI lab runs beside it.
 - Tailscale is skipped for now; n8n is published through the **existing Apache** on its own name
   (`n8n-<ip>.sslip.io` by default), so no new ports and the SAR site's config isn't touched.
-- Four locks: HTTPS (Let's Encrypt), Apache Basic Auth (except `/webhook*`), n8n login + 2FA, fail2ban.
+- Locks: HTTPS (Let's Encrypt), n8n login created from the server (public owner-setup blocked), 2FA, fail2ban on `/rest/login` 401s.
+- **Apache Basic Auth was dropped the same day:** the browser kept asking for it again and again, because n8n loads some
+  files (manifest, live-update connection) without the saved credentials. n8n was redeployed fresh (`--fresh`); old data moved aside.
 - n8n still binds to `127.0.0.1:5678`; public settings live in `compose.public.yaml`, switched on by
   `COMPOSE_FILE` in `.env` and off with `public-n8n.sh --off`.
