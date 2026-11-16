@@ -1,0 +1,13 @@
+# Lesson 08b: extra settings used ONLY when n8n is published through Apache (scripts/public-n8n.sh).
+# Turned on by COMPOSE_FILE=compose.yaml:compose.public.yaml in ~/lab/jarvis/.env, off by removing it.
+# n8n itself still listens on 127.0.0.1:5678 only; Apache is the single public door.
+
+services:
+  n8n:
+    environment:
+      N8N_HOST: "${N8N_PUBLIC_HOST:?Missing N8N_PUBLIC_HOST in .env}"
+      N8N_PROTOCOL: "https"
+      N8N_EDITOR_BASE_URL: "https://${N8N_PUBLIC_HOST}/"
+      WEBHOOK_URL: "https://${N8N_PUBLIC_HOST}/"   # Telegram & other apps call https://<name>/webhook/...
+      N8N_SECURE_COOKIE: "true"                    # login cookie only travels over HTTPS
+      N8N_PROXY_HOPS: "1"                          # trust exactly one proxy (Apache) for client IPs

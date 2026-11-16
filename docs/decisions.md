@@ -85,3 +85,12 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - **RSA 4096 key, created in Cloud Shell:** Oracle Cloud Shell runs in FIPS mode, which forbids ED25519 keys.
 - **No UFW:** Oracle advises against it on its Ubuntu images; we keep Oracle's iptables rules.
 - **Swap 4 GB:** safety net when the private model loads.
+
+## 2026-11-16 — n8n public through Apache (Tailscale paused)
+
+- The SAR→PKR calculator stays live as is on the same VM (Apache on 80/443). The AI lab runs beside it.
+- Tailscale is skipped for now; n8n is published through the **existing Apache** on its own name
+  (`n8n-<ip>.sslip.io` by default), so no new ports and the SAR site's config isn't touched.
+- Four locks: HTTPS (Let's Encrypt), Apache Basic Auth (except `/webhook*`), n8n login + 2FA, fail2ban.
+- n8n still binds to `127.0.0.1:5678`; public settings live in `compose.public.yaml`, switched on by
+  `COMPOSE_FILE` in `.env` and off with `public-n8n.sh --off`.
