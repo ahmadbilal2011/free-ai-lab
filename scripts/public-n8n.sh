@@ -6,6 +6,7 @@
 #   bash public-n8n.sh --fresh   # remove the old n8n + old public setup, deploy a brand-new n8n (recommended)
 #   bash public-n8n.sh           # publish the n8n you already have (keeps its workflows)
 #   bash public-n8n.sh --off     # take n8n off the internet again
+#   bash public-n8n.sh --owner   # create the n8n login from the server (if it wasn't created yet)
 #   N8N_DOMAIN=n8n.example.org bash public-n8n.sh --fresh   # use your own name instead of sslip.io
 #
 # Locks: HTTPS (Let's Encrypt) · n8n login (owner created from the server, never via a public page)
@@ -43,10 +44,42 @@ up_n8n() {
   echo "n8n is running and healthy."
 }
 
+create_owner() {
+  local st; st=$(curl -s http://127.0.0.1:5678/rest/settings | python3 -c 'import sys,json
+try:
+    d=json.load(sys.stdin); d=d.get("data",d); print(d["userManagement"]["showSetupOnFirstLoad"])
+except Exception: print("unknown")' 2>/dev/null || true)
+  if [ "$st" = "False" ]; then echo "  An owner already exists. Log in at https://$(env_get N8N_PUBLIC_HOST)"; return 0; fi
+  echo
+  echo "Create YOUR n8n login now (typed here on the server, never on a public page)."
+  read -r -p "  Email: " OEMAIL
+  read -r -p "  First name: " OFIRST; read -r -p "  Last name: " OLAST
+  while :; do
+    read -r -s -p "  Password (8+ chars, 1 capital, 1 number; hidden): " P1; echo
+    read -r -s -p "  Same password again: " P2; echo
+    if [ "$P1" = "$P2" ] && [ ${#P1} -ge 8 ] && [[ "$P1" =~ [A-Z] ]] && [[ "$P1" =~ [0-9] ]]; then break; fi
+    warn "Didn't match the rules, try again."
+  done
+  local BODY OUT code
+  BODY=$(OE="$OEMAIL" OF="$OFIRST" OL="$OLAST" OP="$P1" python3 -c 'import json,os;print(json.dumps({"email":os.environ["OE"],"firstName":os.environ["OF"],"lastName":os.environ["OL"],"password":os.environ["OP"]}))')
+  unset P1 P2
+  OUT=$(mktemp)
+  code=$(curl -s -o "$OUT" -w '%{http_code}' -X POST http://127.0.0.1:5678/rest/owner/setup \
+          -H 'Content-Type: application/json' -H 'browser-id: free-ai-lab-setup' --data-binary @- <<<"$BODY")
+  unset BODY
+  if [ "$code" = 200 ]; then echo -e "  ${c_ok}Owner account created.${c_off} Log in at https://$(env_get N8N_PUBLIC_HOST)"
+  else warn "Owner setup answered HTTP $code: $(head -c 400 "$OUT")"; warn "Send me this line (it contains no password)."; fi
+  rm -f "$OUT"
+}
+
 [ "$(id -u)" -ne 0 ] || die "Run WITHOUT sudo:  bash $0 $MODE"
 command -v docker >/dev/null || die "Docker isn't installed (Lesson 03)."
 systemctl is-active --quiet apache2 || die "Apache isn't running; this script adds n8n next to your Apache site."
-case "$MODE" in ""|--fresh|--off) ;; *) die "Unknown option '$MODE'. Use --fresh, --off or nothing." ;; esac
+case "$MODE" in ""|--fresh|--off|--owner) ;; *) die "Unknown option '$MODE'. Use --fresh, --off, --owner or nothing." ;; esac
+if [ "$MODE" = "--owner" ]; then
+  [ "$(health)" = healthy ] || die "n8n isn't running. Run: bash $0 --fresh"
+  create_owner; exit 0
+fi
 
 # ---------- clean the previous public setup (all modes) ----------
 step "Removing the previous public n8n setup (the SAR site is not touched)"
@@ -184,27 +217,7 @@ else warn "fail2ban jail didn't start; check: sudo fail2ban-client status"; fi
 # ---------- 7. start n8n + owner ----------
 step "7/7  Starting n8n"
 up_n8n
-if [ "$MODE" = "--fresh" ]; then
-  echo
-  echo "Create YOUR n8n login now (typed here on the server, never on a public page)."
-  read -r -p "  Email: " OEMAIL
-  read -r -p "  First name: " OFIRST; read -r -p "  Last name: " OLAST
-  while :; do
-    read -r -s -p "  Password (8+ chars, 1 capital, 1 number; hidden): " P1; echo
-    read -r -s -p "  Same password again: " P2; echo
-    if [ "$P1" = "$P2" ] && [ ${#P1} -ge 8 ] && [[ "$P1" =~ [A-Z] ]] && [[ "$P1" =~ [0-9] ]]; then break; fi
-    warn "Didn't match the rules, try again."
-  done
-  BODY=$(OE="$OEMAIL" OF="$OFIRST" OL="$OLAST" OP="$P1" python3 -c 'import json,os;print(json.dumps({"email":os.environ["OE"],"firstName":os.environ["OF"],"lastName":os.environ["OL"],"password":os.environ["OP"]}))')
-  unset P1 P2
-  OUT=$(mktemp)
-  code=$(curl -s -o "$OUT" -w '%{http_code}' -X POST http://127.0.0.1:5678/rest/owner/setup \
-          -H 'Content-Type: application/json' --data-binary @- <<<"$BODY"); unset BODY
-  if [ "$code" = 200 ]; then echo "  Owner account created."; else
-    warn "Owner setup answered HTTP $code: $(head -c 300 "$OUT")"
-    warn "Nobody else can create it (blocked from the internet). Send me this output."; fi
-  rm -f "$OUT"
-fi
+[ "$MODE" = "--fresh" ] && create_owner
 
 step "Tests"
 c1=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$DOMAIN/healthz" || true)
