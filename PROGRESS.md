@@ -2,6 +2,13 @@
 
 Newest entries at the top.
 
+## 2026-11-16 — n8n public, next to the SAR calculator
+
+- The SAR→PKR calculator stays live on the same VM (Apache, 80/443), untouched
+- Tailscale paused; n8n published through Apache on its own HTTPS name (sslip.io) — [Lesson 08b](lessons/08b-public-n8n.md)
+- First try with an Apache password box kept re-prompting → removed; n8n redeployed fresh (`--fresh`), login created from the server (`--owner`) ✅ logged in
+- Next: 2FA, free AI keys as n8n credentials, first workflows
+
 ## 2026-11-01 — Course v2: restart around one goal
 
 - Wanted Jarvis to also **control my Windows PC** by voice. Tried Stanford's **OpenJarvis** on the laptop: the native Windows installer failed (I had **Python 3.15**; it needs 3.10–3.13, no numpy wheels for 3.14+), `winget` was missing, and the desktop app needed **Ollama** first
