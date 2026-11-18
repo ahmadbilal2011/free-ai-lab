@@ -96,3 +96,13 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   files (manifest, live-update connection) without the saved credentials. n8n was redeployed fresh (`--fresh`); old data moved aside.
 - n8n still binds to `127.0.0.1:5678`; public settings live in `compose.public.yaml`, switched on by
   `COMPOSE_FILE` in `.env` and off with `public-n8n.sh --off`.
+
+## 2026-11-18 — Bifrost replaces LiteLLM as the AI switchboard
+
+- Wanted: add many free AI providers/models **in a web page**, with n8n using them automatically. LiteLLM needed config
+  files (its web admin needs Postgres) → **Bifrost** (open source, Go, one container ~160 MB, built-in web page and login).
+- n8n uses one address on the private network (`http://bifrost:8080/v1`). Levels of work = Bifrost virtual keys
+  (`quick`, `smart`, `code`), one n8n credential each. Bifrost handles fallback between providers.
+- Web page public over HTTPS with Bifrost's own login + fail2ban; locked to the installer's IP until the admin exists.
+  AI endpoints blocked from the internet so nobody can spend the free quotas.
+- Old LiteLLM stack stopped and its folder renamed (`~/lab/brain.retired-<date>`), nothing deleted.

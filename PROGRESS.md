@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-11-18 — AI switchboard (Bifrost)
+
+- Decided: free AI providers are added in a web page (Bifrost), and n8n uses them through one private address — [Lesson 13](lessons/13-ai-switchboard.md)
+- LiteLLM retired (folder kept). n8n Assistant left off (needs a privileged sandbox)
+- Next: install, add free providers, create quick/smart/code keys, connect n8n
+
 ## 2026-11-16 — n8n public, next to the SAR calculator
 
 - The SAR→PKR calculator stays live on the same VM (Apache, 80/443), untouched

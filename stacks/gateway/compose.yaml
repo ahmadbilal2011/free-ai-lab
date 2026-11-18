@@ -1,0 +1,35 @@
+# Lesson 13: Bifrost — the AI switchboard, managed from a web page
+#
+# Add free AI providers, keys and models in Bifrost's web page; n8n reaches every model through ONE
+# address on the private Docker network:  http://bifrost:8080/v1  (OpenAI-compatible).
+# - Port 8080 is server-only (127.0.0.1). Apache publishes ONLY the web page (scripts/install-gateway.sh);
+#   the AI endpoints (/v1 ...) are blocked from the internet, so only n8n inside the server can use them.
+# - Keys and settings live in ./data (in ~/lab, so the nightly backup includes them).
+# - BIFROST_SETUP_TOKEN (from .env, never committed) is needed once, to create the admin login.
+
+name: gateway
+
+services:
+  bifrost:
+    image: ${BIFROST_IMAGE:-maximhq/bifrost:latest}
+    container_name: bifrost
+    restart: unless-stopped
+    environment:
+      BIFROST_SETUP_TOKEN: "${BIFROST_SETUP_TOKEN:?Missing BIFROST_SETUP_TOKEN in .env}"
+      APP_PORT: "8080"
+      APP_HOST: "0.0.0.0"
+      LOG_LEVEL: "info"
+    volumes:
+      - ./data:/app/data                 # config, keys (encrypted store), logs; runs as uid 1000
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - jarvis
+    mem_limit: 512m                      # measured ~160 MB; can't eat n8n's or the site's RAM
+    labels:
+      autoheal: "false"                  # no in-container healthcheck; Docker restarts it if it exits
+
+networks:
+  jarvis:
+    external: true
+    name: jarvis
