@@ -2,6 +2,11 @@
 
 Newest entries at the top.
 
+## 2026-11-19 — Jarvis on Telegram with voice, built in n8n's web page
+
+- Telegram Trigger (instant, no polling) → only-me check → voice notes heard by ElevenLabs Scribe → AI Agent via Bifrost with memory → text reply, plus a spoken reply for voice notes — [Lesson 14](lessons/14-telegram-jarvis-voice.md)
+- Next: free listening backup (Gemini) for when ElevenLabs credits run out
+
 ## 2026-11-18 — AI switchboard (Bifrost)
 
 - Decided: free AI providers are added in a web page (Bifrost), and n8n uses them through one private address — [Lesson 13](lessons/13-ai-switchboard.md)
