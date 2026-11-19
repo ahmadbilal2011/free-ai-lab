@@ -2,14 +2,19 @@
 
 Newest entries at the top.
 
-## 2026-11-19 — Jarvis on Telegram with voice, built in n8n's web page
+## 2026-11-19 — Jarvis on Telegram with voice, built in n8n's web page; course updated
 
-- Telegram Trigger (instant, no polling) → only-me check → voice notes heard by ElevenLabs Scribe → AI Agent via Bifrost with memory → text reply, plus a spoken reply for voice notes — [Lesson 14](lessons/14-telegram-jarvis-voice.md)
-- Next: free listening backup (Gemini) for when ElevenLabs credits run out
+- ✅ Tested: typed and voice messages, only-me check, memory, spoken replies (ElevenLabs), and the free **Gemini listening backup** (ElevenLabs key switched off on purpose)
+- Written, not yet tested: free **Gemini speaking backup** (Gemini TTS → WAV)
+- Decided: real-time talk ("Jarvis Live") later, with the Gemini Live API and n8n workflows as its tools — [Lesson 10c plan](lessons/10c-jarvis-live-plan.md)
+- Course restructured: 06b (Bifrost) replaces 06, 08b (public n8n) added, 10b replaces 09–10, Tailscale (04) paused
+
+- Telegram Trigger (instant, no polling) → only-me check → voice notes heard by ElevenLabs Scribe → AI Agent via Bifrost with memory → text reply, plus a spoken reply for voice notes — [Lesson 10b](lessons/10b-telegram-jarvis-voice.md)
+- Next: test the Gemini speaking backup, then pick: SAR→PKR rate alert, new SAR request alert, or morning summary
 
 ## 2026-11-18 — AI switchboard (Bifrost)
 
-- Decided: free AI providers are added in a web page (Bifrost), and n8n uses them through one private address — [Lesson 13](lessons/13-ai-switchboard.md)
+- Decided: free AI providers are added in a web page (Bifrost), and n8n uses them through one private address — [Lesson 06b](lessons/06b-ai-switchboard.md)
 - LiteLLM retired (folder kept). n8n Assistant left off (needs a privileged sandbox)
 - Next: install, add free providers, create quick/smart/code keys, connect n8n
 

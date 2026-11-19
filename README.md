@@ -17,20 +17,23 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 ## The design: one brain, two hands
 
 ```
- 📱 Phone ── Telegram (text + voice notes) ──┐      nothing reaches in: n8n reaches OUT to Telegram
+ 📱 Phone ── Telegram (text + voice notes) ──► https://n8n-<ip>.sslip.io/webhook/…  (instant)
+ 🌐 Browser ─► n8n editor and Bifrost page, each on its own HTTPS name with its own login
                                              ▼
  ☁️  Oracle VM (Ubuntu, Arm, 2 OCPU / 12 GB — Always Free, on 24/7) — BRAIN + FRONT DOOR
+      ├── Apache ........ the only public door (80/443): Let's Encrypt HTTPS, fail2ban on logins
+      │                   also serves my separate SAR→PKR calculator site, untouched
       ├── Docker ........ every app in its own container (autoheal restarts frozen ones)
-      ├── LiteLLM ....... AI gateway: free cloud models → private model, automatic fallback
-      ├── Ollama ........ small private model on the server (last fallback, stays private)
-      ├── n8n ........... Jarvis's skills and routines (editor private on Tailscale)
-      ├── voice ......... ears + voice: ElevenLabs, with free backups
+      ├── n8n ........... Jarvis's skills and routines (owner login + 2FA)
+      ├── Bifrost ....... AI switchboard: free providers and models added in a web page,
+      │                   automatic fallback; n8n reaches it privately at http://bifrost:8080/v1
       └── restic ........ encrypted nightly backups → Oracle Object Storage (+ healthchecks.io)
+      Voice: ElevenLabs (ears + voice) with free Gemini backups, all inside n8n
                                              │
-                     Tailscale (private network: server + laptop + phone), with a key
+                     Tailscale (paused for now; returns for the laptop part)
                                              ▼
  💻 Windows laptop (when it's on) — HANDS
-      ├── OpenJarvis .... acts on the PC (apps, files, scripts), asks before risky steps; thinks via the gateway
+      ├── OpenJarvis .... acts on the PC (apps, files, scripts), asks before risky steps
       ├── Ollama ........ offline fallback on the laptop
       └── Gemini CLI / Claude Code ... hard jobs, with subscriptions I already have
 ```
@@ -38,16 +41,16 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | Component | What it is | Cost |
 |---|---|---|
 | Oracle Cloud Always Free | The server | $0 within limits |
-| Ubuntu, Docker | Operating system, containers | Free, open source |
-| Tailscale | Private network for all my devices | Free personal plan |
-| LiteLLM | AI gateway with fallback | Free, open source |
-| Groq / NVIDIA Build / OpenRouter (+ Gemini optional) | Cloud AI models | Free tiers, no credit card |
-| Ollama | Runs small AI models locally | Free, open source |
+| Ubuntu, Docker, Apache | Operating system, containers, web front door | Free, open source |
+| Let's Encrypt + sslip.io | HTTPS certificates and free names that point at the server | Free |
+| Bifrost | AI switchboard with a web page and fallback | Free, open source (Apache 2.0) |
+| Groq / Gemini / OpenRouter / Mistral / Cohere / NVIDIA / Cloudflare / SambaNova | Cloud AI models | Free tiers, no credit card |
 | n8n | Automation engine (self-hosted) | Free to self-host (fair-code licence) |
-| Telegram Bot API | Jarvis's front door | Free |
-| ElevenLabs (+ Groq Whisper, Piper as backups) | Ears and voice | Free plan / free tier / open source |
+| Telegram Bot API | Jarvis's front door on the phone | Free |
+| ElevenLabs (+ Gemini as free backup) | Ears and voice | Free plan / free tier |
 | restic + Oracle Object Storage + healthchecks.io | Backups and alerts | Free |
 | OpenJarvis | Jarvis's hands on the Windows PC | Free, open source (Apache 2.0) |
+| Tailscale | Private network for my devices (paused) | Free personal plan |
 
 ## Lessons
 
@@ -59,14 +62,15 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | 01 | [Create the Oracle VM safely](lessons/01-create-vm.md) | ✅ Tested |
 | 02 | [Secure SSH access, updates and firewall](lessons/02-secure-server.md) | ✅ Tested |
 | 03 | [Install and understand Docker](lessons/03-docker.md) | ✅ Tested |
-| 04 | [Tailscale: one private network for server, laptop and phone](lessons/04-tailscale.md) | ✅ Written |
+| 04 | [Tailscale: one private network for server, laptop and phone](lessons/04-tailscale.md) | ⏸ Paused (back for the laptop part) |
 
 **Part 2 — Jarvis's brain (free AI on the server)**
 
 | # | Lesson | Status |
 |---|---|---|
 | 05 | [Free AI API keys: Jarvis's brain at $0](lessons/05-free-ai-keys.md) | ✅ Tested |
-| 06 | [The AI gateway: one address, free models, automatic fallback](lessons/06-ai-gateway.md) | ✅ Tested |
+| 06 | [The AI gateway (LiteLLM)](lessons/06-ai-gateway.md) | 🔁 Replaced by 06b |
+| 06b | [The AI switchboard: add free AI models in a web page (Bifrost)](lessons/06b-ai-switchboard.md) | ✅ Tested |
 | 07 | [Backups and monitoring](lessons/07-backups-monitoring.md) | ⚠️ Not installed yet |
 
 **Part 3 — Jarvis's front door (my phone)**
@@ -74,8 +78,11 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | # | Lesson | Status |
 |---|---|---|
 | 08 | [n8n: the engine behind every Jarvis skill](lessons/08-n8n.md) | ✅ Tested |
-| 09 | [Telegram: talk to Jarvis from your phone](lessons/09-telegram-bot.md) | ✅ Tested |
-| 10 | [Voice: talk to Jarvis, and hear it answer](lessons/10-voice.md) | ✅ Server tested |
+| 08b | [Put n8n on the internet safely, next to an existing website](lessons/08b-public-n8n.md) | ✅ Tested |
+| 09 | [Telegram by polling (private setups)](lessons/09-telegram-bot.md) | 🔁 Replaced by 10b |
+| 10 | [Voice with a separate voice service](lessons/10-voice.md) | 🔁 Replaced by 10b |
+| 10b | [Jarvis on Telegram: text and voice in, text and voice out, free backups](lessons/10b-telegram-jarvis-voice.md) | ✅ Tested (Gemini voice backup: Written) |
+| 10c | [Jarvis Live: talk in real time, like a call](lessons/10c-jarvis-live-plan.md) | ⬜ Planned |
 
 **Part 4 — Jarvis's hands (my Windows laptop)**
 
@@ -107,12 +114,12 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 
 | # | Lesson | Status |
 |---|---|---|
-| 22 | Routines: morning briefing, reminders, "call me" alerts | ⬜ |
+| 22 | Routines: morning briefing, SAR→PKR rate alert, new SAR request alert, reminders | ⬜ Next candidates |
 | 23 | Security review | ⬜ |
 
 **Later (optional):** Jarvis phone app · Kubernetes (K3s) track
 
-Status: **Tested** = run for real and working · **Written** = ready to run · **Next** = being written
+Status: **Tested** = run for real and working · **Written** = ready to run · **Planned** = design decided · **Replaced** = kept for reference
 
 ## Restarting on a server from the first version?
 
@@ -129,6 +136,7 @@ Progress log: [PROGRESS.md](PROGRESS.md)
 ## Ground rules for this repo
 
 - **No secrets ever**: no passwords, SSH private keys, API tokens or real IP addresses are committed.
+- **Public only behind locks**: anything published gets HTTPS, its own login, fail2ban, and nothing else from the server is exposed.
 - Every lesson explains **why** before **how**.
 - Every command is recorded with what it does.
 - Every lesson is tested for real before it's marked ✅ Tested.

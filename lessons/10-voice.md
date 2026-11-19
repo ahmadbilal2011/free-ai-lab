@@ -1,5 +1,7 @@
 # Lesson 10 — Voice: talk to Jarvis, and hear it answer
 
+> **🔁 Replaced (2026-11-19)** by [Lesson 10b](10b-telegram-jarvis-voice.md): voice in and out built entirely in n8n's web page, with free Gemini backups for listening and speaking. Kept for reference.
+
 **Goal:** send Jarvis a **voice note** on Telegram (Urdu, English or Arabic). It understands it, answers in text **and** sends a **voice note** back. Type, and it answers in text only.
 
 **Time:** about 30 minutes: one installer on the server (the voice service), then the rest in the n8n UI.

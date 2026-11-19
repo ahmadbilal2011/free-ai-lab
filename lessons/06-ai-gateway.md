@@ -1,5 +1,7 @@
 # Lesson 06 — The AI gateway: one address, free models, automatic fallback
 
+> **🔁 Replaced (2026-11-18)** by [Lesson 06b — the AI switchboard (Bifrost)](06b-ai-switchboard.md): providers and models are now added in a web page. This lesson is kept for reference.
+
 **Goal:** give Jarvis one **brain address** on the server. Every part of Jarvis (n8n, the voice service, the laptop) asks it for simple names like `smart`, and it keeps answering even when a free provider runs out, by falling back to the next one and finally to a **private model** running on the server itself.
 
 **Time:** about 20 minutes (mostly downloads).

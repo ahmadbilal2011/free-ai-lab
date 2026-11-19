@@ -1,10 +1,12 @@
-# Lesson 13 — The AI switchboard: add free AI models in a web page, n8n uses them all
+# Lesson 06b — The AI switchboard: add free AI models in a web page, n8n uses them all
 
 **Goal:** one place, a web page, where you add free AI providers and models. n8n connects to that one
 place and can use every model in it, switching automatically when one is busy or out of free quota.
 
 We use **Bifrost**, a small open-source AI gateway (one container, about 160 MB RAM) with its own web page.
-It replaces the old LiteLLM gateway from Lesson 06, which needed config files.
+It replaces the LiteLLM gateway from Lesson 06, which needed config files.
+
+**Status:** ✅ Installed and used by n8n (2026-11-18/19).
 
 ```
 n8n ──► http://bifrost:8080/v1  (inside the server only)

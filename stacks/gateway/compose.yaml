@@ -1,4 +1,4 @@
-# Lesson 13: Bifrost — the AI switchboard, managed from a web page
+# Lesson 06b: Bifrost — the AI switchboard, managed from a web page
 #
 # Add free AI providers, keys and models in Bifrost's web page; n8n reaches every model through ONE
 # address on the private Docker network:  http://bifrost:8080/v1  (OpenAI-compatible).

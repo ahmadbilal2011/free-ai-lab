@@ -106,3 +106,13 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - Web page public over HTTPS with Bifrost's own login + fail2ban; locked to the installer's IP until the admin exists.
   AI endpoints blocked from the internet so nobody can spend the free quotas.
 - Old LiteLLM stack stopped and its folder renamed (`~/lab/brain.retired-<date>`), nothing deleted.
+
+## 2026-11-19 — Telegram by Trigger, voice with free backups, live talk planned
+
+- n8n is public, so Telegram uses n8n's **Telegram Trigger** (instant webhook) instead of polling every 10 s. Token in an
+  encrypted credential. Only-me check = sender ID **equals** my ID ("is not empty" would let anyone in).
+- Listening: ElevenLabs Scribe first; on error → **Gemini** transcription (free). Speaking: ElevenLabs first; on error →
+  **Gemini TTS** (free) turned into WAV by a Code node. Both voices failing still leaves a text reply.
+- Real-time talk: **Jarvis Live** later, with the Gemini Live API (free tier) and n8n webhooks as tools. ElevenLabs
+  Agents rejected (only ~15 free minutes a month). The Gemini app's Live mode covers general chat meanwhile.
+- No customer (SAR) data goes to free AI tiers that may train on it.

@@ -7,7 +7,7 @@ Design: [decisions.md](decisions.md). The server is Jarvis's always-on **brain a
 Rules for the whole course:
 
 - **$0, no credit card.** Any provider that starts asking for one is dropped.
-- **Private by default.** Only SSH is public; everything else sits behind Tailscale. Nothing reaches in from the internet.
+- **Public only behind locks.** Since 2026-11-16 n8n and Bifrost are published through Apache (HTTPS, own login, fail2ban); AI endpoints and app ports stay private. Tailscale returns for the laptop part.
 - **Jarvis asks before acting.** Sending, posting, deleting, anything irreversible needs my "Yes". No payments, ever.
 - **Privacy rule:** personal data only goes to AI providers that don't train on it, or stays on my machines.
 - **Secrets never touch GitHub.** Keys live in `.env` files or app settings.
@@ -31,7 +31,8 @@ Rules for the whole course:
 | # | Lesson | What I get |
 |---|---|---|
 | 05 | **Free AI API keys** (Groq, NVIDIA, OpenRouter; Gemini optional), tested and kept in one private file | Access to strong free models |
-| 06 | **The AI gateway**: LiteLLM + a small private model (Ollama), models discovered and tested automatically | One address, aliases `smart` / `fast` / `private`, automatic fallback |
+| 06 | ~~The AI gateway: LiteLLM~~ (replaced) | — |
+| 06b | **The AI switchboard (Bifrost)**: add free providers and models in a web page; levels `quick` / `smart` / `code` as virtual keys | n8n uses many free AIs through one private address, with fallback |
 | 07 | **Backups and monitoring**: restic → Oracle Object Storage, healthchecks.io | Keys and workflows safe before Jarvis gets my data |
 
 ## Part 3 — Jarvis's front door (my phone)
@@ -39,8 +40,9 @@ Rules for the whole course:
 | # | Lesson | What I get |
 |---|---|---|
 | 08 | **n8n**: the automation engine, private editor, connected to the gateway | The engine every Jarvis skill runs on |
-| 09 | **Telegram bot** by polling (no public door) | Text Jarvis from my phone, anywhere |
-| 10 | **Voice in, voice out**: ElevenLabs first, free backups automatic | Send a voice note → Jarvis understands and answers with a voice |
+| 08b | **n8n on the internet, safely**, next to the SAR calculator site | n8n reachable anywhere; webhooks work |
+| 10b | **Telegram + voice, built in n8n's web page**: instant Telegram Trigger, ElevenLabs ears and voice, free Gemini backups | Text or voice → Jarvis answers in text, and in voice when spoken to |
+| 10c | **Jarvis Live** (planned): real-time talk with the Gemini Live API, n8n workflows as tools | Talk to Jarvis like a call |
 
 ## Part 4 — Jarvis's hands (my Windows laptop)
 

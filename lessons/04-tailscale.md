@@ -1,5 +1,7 @@
 # Lesson 04 — Tailscale: one private network for the server, laptop and phone
 
+> **⏸ Paused (2026-11-16):** Tailscale isn't installed on the current server. n8n and Bifrost are published through Apache with HTTPS and logins instead (Lessons 08b, 06b). Tailscale comes back when the laptop part (Lessons 11–13) needs a private link.
+
 **Goal:** your server, your Windows laptop and your phone join **one private network** that only your devices can see. Every later lesson uses it: the laptop reaches the server's AI, the server sends PC jobs to the laptop, and you open n8n's editor from anywhere. **Nothing gets a public port.**
 
 **Time:** about 20 minutes.

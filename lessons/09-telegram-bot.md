@@ -1,5 +1,7 @@
 # Lesson 09 — Telegram: talk to Jarvis from your phone, anywhere
 
+> **🔁 Replaced (2026-11-19)** by [Lesson 10b](10b-telegram-jarvis-voice.md): now that n8n is public (Lesson 08b), Telegram delivers messages instantly via n8n's Telegram Trigger, and the token lives in an encrypted credential. This polling version is kept for setups that stay fully private.
+
 **Goal:** message your own Jarvis bot on Telegram (phone or PC, home or away). It answers with the free cloud models through the gateway, remembers the conversation, and ignores everyone except you. **Nothing on the server becomes public.**
 
 **Time:** about 20 minutes, all in the n8n web UI (no terminal).
