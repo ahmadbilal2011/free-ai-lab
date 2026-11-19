@@ -1,6 +1,6 @@
 # Lesson 04 — Tailscale: one private network for the server, laptop and phone
 
-> **⏸ Paused (2026-11-16):** Tailscale isn't installed on the current server. n8n and Bifrost are published through Apache with HTTPS and logins instead (Lessons 08b, 06b). Tailscale comes back when the laptop part (Lessons 11–13) needs a private link.
+> **⏸ Paused (2026-11-16):** Tailscale isn't installed on the current server. n8n and Bifrost are published through Apache with HTTPS and logins instead (Lessons 05, 06). Tailscale comes back when the laptop part (Lessons 10–12) needs a private link.
 
 **Goal:** your server, your Windows laptop and your phone join **one private network** that only your devices can see. Every later lesson uses it: the laptop reaches the server's AI, the server sends PC jobs to the laptop, and you open n8n's editor from anywhere. **Nothing gets a public port.**
 
@@ -35,7 +35,7 @@ Two Tailscale words you'll meet later:
 
 | Word | Meaning | Do we use it? |
 |---|---|---|
-| **serve** | Publish one app with HTTPS **inside your tailnet only** | ✅ Yes, from Lesson 08 (n8n editor) |
+| **serve** | Publish one app with HTTPS **inside your tailnet only** | Was used for the n8n editor; now Apache publishes it (Lesson 06) |
 | **funnel** | Publish an app **to the whole internet** | ❌ Never. Jarvis reaches out; nothing reaches in |
 
 ## Part B — Put the server on the tailnet
@@ -57,7 +57,7 @@ Script source: [`scripts/04-install-tailscale.sh`](../scripts/04-install-tailsca
 | Windows laptop | [tailscale.com/download/windows](https://tailscale.com/download/windows) | Log in with the **same** account |
 | Phone | Tailscale app from the Play Store / App Store | Log in with the **same** account |
 
-You don't need Tailscale on the phone for Telegram (Lesson 09), but you will for opening n8n's editor and other private pages from the phone.
+You don't need Tailscale on the phone for Telegram (Lesson 07), but you will for opening n8n's editor and other private pages from the phone.
 
 ## Part D — Two settings in the admin console
 
@@ -105,4 +105,4 @@ That's the key you saved in Lesson 01. If it logs in, the private network works.
 
 ## Next
 
-**Lesson 05 — Free AI API keys: Jarvis's brain at $0.**
+**Lesson 05 — The AI switchboard: free AI keys, added in a web page.**

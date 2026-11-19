@@ -1,4 +1,4 @@
-# Lesson 10c — Jarvis Live: talk in real time, like a phone call (PLANNED)
+# Lesson 09 — Jarvis Live: talk in real time, like a phone call (PLANNED)
 
 **Status:** ⬜ Planned. This page records the options and the chosen direction (2026-11-19). It will be built and tested later.
 
@@ -11,7 +11,7 @@ Telegram voice notes work like a walkie-talkie: record, send, wait. Can I **talk
 | Option | Free? | Connected to my Jarvis / n8n? | Notes |
 |---|---|---|---|
 | **Gemini Live in the Gemini app** | Yes (also in my Gemini Pro) | ❌ Google's assistant, not mine | Use it today for general conversation |
-| **Telegram voice notes** (Lesson 10b) | Yes | ✅ | Walkie-talkie style, already working |
+| **Telegram voice notes** (Lesson 07) | Yes | ✅ | Walkie-talkie style, already working |
 | **Own "Jarvis Live" web page** with the **Gemini Live API** | Yes, free tier (rate-limited) | ✅ calls n8n workflows as tools | **Chosen** for later |
 | **ElevenLabs Agents** | Only ~15 call minutes a month free | ✅ via webhooks | Too few minutes for daily use |
 

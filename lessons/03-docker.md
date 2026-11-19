@@ -192,10 +192,9 @@ cd ~
 ```
 /home/ubuntu/lab/
 ├── hello/        ← this lesson's practice
-├── autoheal/     ← Lesson 06: restarts frozen apps
-├── brain/        ← Lesson 06: AI gateway (LiteLLM) + private model (Ollama)
-├── jarvis/       ← Lesson 08+: n8n
-└── voice/        ← Lesson 10: Jarvis's voice
+├── autoheal/     ← restarts frozen apps
+├── gateway/      ← Lesson 05: Bifrost, the AI switchboard
+└── jarvis/       ← Lesson 06+: n8n
 ```
 
 Each folder holds one `compose.yaml`. The same files live in this repo under [`stacks/`](../stacks/), so the whole lab can be rebuilt from GitHub.

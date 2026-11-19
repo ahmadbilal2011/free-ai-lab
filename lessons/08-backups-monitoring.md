@@ -1,4 +1,4 @@
-# Lesson 07 — Backups and monitoring
+# Lesson 08 — Backups and monitoring
 
 **Goal:** never lose Jarvis's keys, settings and (soon) workflows, and get an **email** if the server or a backup stops working.
 
@@ -6,13 +6,15 @@
 
 **Cost:** $0. Oracle Always Free Object Storage (20 GB), restic (open source), healthchecks.io free plan.
 
-**Before you start:** Lesson 06 is done (`docker ps` shows `ollama`, `litellm`, `autoheal`).
+**Before you start:** Lessons 05–07 are done (`docker ps` shows `bifrost`, `n8n`, `autoheal`).
+
+**Status:** ⚠️ Written, not installed on the current server yet. **Do this next**: the server now holds n8n workflows, credentials and Bifrost's keys.
 
 ---
 
 ## Part A — Why now?
 
-Everything Jarvis has lives on **one** server. If it breaks, gets deleted by mistake, or Oracle reclaims it, you lose your API keys and gateway settings now, and from the next lessons on: n8n workflows, the Telegram bot setup, voice settings, everything Jarvis learns. Before Jarvis gets more of your life, we protect it.
+Everything Jarvis has lives on **one** server. If it breaks, gets deleted by mistake, or Oracle reclaims it, you lose Bifrost's provider keys, every n8n workflow and credential, the Telegram bot setup, everything Jarvis learns. Before Jarvis gets more of your life, we protect it.
 
 Backups must be:
 
@@ -30,14 +32,10 @@ Backups must be:
 
 | Included | Why |
 |---|---|
-| `~/lab/` (compose files, gateway config, **`.env` keys**, and n8n's data from Lesson 08) | Rebuild every app exactly as it was |
+| `~/lab/` (compose files, **`.env` keys**, Bifrost's data, n8n's data) | Rebuild every app exactly as it was |
 | Every Docker volume, including future ones | Picked up automatically, nothing to remember |
 
-| Excluded | Why |
-|---|---|
-| `brain_ollama` (the private AI model, ~2 GB) | Downloadable again any time; saves our 20 GB |
-
-**Consistency:** n8n (from Lesson 08) keeps its data in a SQLite database file, and copying it while it's being written can give a broken copy. So the backup **pauses n8n for a few seconds** at 03:30 and starts it again right after, even if the backup fails. (Telegram messages sent in those seconds simply wait and arrive a moment later.)
+**Consistency:** n8n and Bifrost keep their data in SQLite database files, and copying one while it's being written can give a broken copy. So the backup **pauses them for a few seconds** at 03:30 and starts it again right after, even if the backup fails. (Telegram retries webhook messages, so nothing sent in those seconds is lost.)
 
 **Retention:** 7 daily + 4 weekly + 6 monthly snapshots. restic stores only what changed (**deduplication**), so it stays small.
 
@@ -55,7 +53,7 @@ Both are stored on the server in `/etc/free-ai-lab/backup.env` (root only). **Bu
 Open **Cloud Shell** in the Oracle Console (as in Lesson 01), then:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/07-create-backup-bucket.sh -o 07-create-backup-bucket.sh && bash 07-create-backup-bucket.sh
+curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/08-create-backup-bucket.sh -o 08-create-backup-bucket.sh && bash 08-create-backup-bucket.sh
 ```
 
 It creates a **private** bucket `free-ai-lab-backups` and an **S3-compatible key pair** ("Customer Secret Key"), then prints:
@@ -79,7 +77,7 @@ Copy the **Secret key** into your password manager now, then type `clear`.
 On the server:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/07-install-backup.sh -o 07-install-backup.sh && sudo bash 07-install-backup.sh
+curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/08-install-backup.sh -o 08-install-backup.sh && sudo bash 08-install-backup.sh
 ```
 
 1. Installs **restic**.
@@ -95,13 +93,13 @@ You should end with:
 Backup OK
 ...
   OK    /home/ubuntu/lab/autoheal/compose.yaml
-  OK    /home/ubuntu/lab/brain/compose.yaml
-  OK    /home/ubuntu/lab/brain/.env
-  OK    /home/ubuntu/lab/brain/config.yaml
+  OK    /home/ubuntu/lab/gateway/compose.yaml
+  OK    /home/ubuntu/lab/jarvis/.env
+  OK    /home/ubuntu/lab/jarvis/n8n/database.sqlite
 RESTORE TEST PASSED
 ```
 
-Sources: [`07-create-backup-bucket.sh`](../scripts/07-create-backup-bucket.sh), [`07-install-backup.sh`](../scripts/07-install-backup.sh)
+Sources: [`08-create-backup-bucket.sh`](../scripts/08-create-backup-bucket.sh), [`08-install-backup.sh`](../scripts/08-install-backup.sh)
 
 ### Your new commands
 
@@ -122,7 +120,7 @@ A monitor running *on* the server can't tell you the server is down. So we use a
 1. Sign up at <https://healthchecks.io> (email only). Coming from v1? Reuse your account and the two old checks: just **resume** them.
 2. Check **`jarvis heartbeat`**: **Period 5 minutes**, **Grace 10 minutes**. Copy its ping URL (`https://hc-ping.com/…`).
 3. Check **`jarvis backup`**: **Period 1 day**, **Grace 2 hours**. Copy its ping URL.
-4. On the server, run `sudo bash 07-install-backup.sh` again. Press **Enter** to keep everything else and paste the two URLs.
+4. On the server, run `sudo bash 08-install-backup.sh` again. Press **Enter** to keep everything else and paste the two URLs.
 
 | Event | What you get |
 |---|---|
@@ -132,42 +130,44 @@ A monitor running *on* the server can't tell you the server is down. So we use a
 
 > A ping URL works like a password for that check (anyone with it could send fake "I'm alive" pings). Keep it off GitHub.
 
-Later (Lesson 22) these alerts also reach you on **Telegram**.
+Later (Lesson 18) these alerts also reach you on **Telegram**.
 
 ## Part F — Staying clear of Oracle's idle rule
 
 Oracle may **reclaim** an Always Free VM it considers idle. An A1 VM counts as idle if, over **7 days**, CPU (95th percentile), network **and** memory all stay below 20% ([Oracle's Always Free docs](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm)). All three must be true, so keeping **memory above 20%** with real work protects us.
 
-That's already done honestly: the **private model stays loaded** in memory (Lesson 06), and the heartbeat reloads it after a reboot. Check:
+Check where you stand:
 
 ```bash
-sudo lab-status      # "Memory used" above 20%, no yellow warning
+sudo lab-status      # "Memory used": a yellow warning appears below 20%
 ```
 
-> We don't run fake "busy" programs to trick Oracle. A loaded model and real services are honest usage, and Jarvis only gets busier from here.
+Real services (the SAR site, n8n, Bifrost, Telegram traffic, scheduled workflows) are the honest way to stay above
+the line. As of 2026-11 memory use was around 11%, so network and CPU activity from real work matter too, and the
+server should keep doing useful, scheduled jobs. We don't run fake "busy" programs to trick Oracle.
 
 ## Part G — Restoring for real (if disaster happens)
 
 If the server is ever lost:
 
-1. Create a new server (Lesson 01) and run Lessons 02, 03, 04.
+1. Create a new server (Lesson 01) and run Lessons 02 and 03.
 2. **First** put your saved encryption password on the new server, so the installer reuses the existing backups instead of creating a new, empty repository:
    ```bash
    sudo install -d -m 700 /etc/free-ai-lab
    sudo sh -c 'umask 077; echo RESTIC_PASSWORD=\"YOUR-SAVED-PASSWORD\" >> /etc/free-ai-lab/backup.env'
    ```
-   Then `sudo bash 07-install-backup.sh` with the **same** endpoint, bucket and keys. It should say *"Repository already exists and the password matches."*
+   Then `sudo bash 08-install-backup.sh` with the **same** endpoint, bucket and keys. It should say *"Repository already exists and the password matches."*
 3. Restore everything to its original place:
    ```bash
    sudo sh -c 'set -a; . /etc/free-ai-lab/backup.env; restic -o s3.region=$S3_REGION restore latest --target /'
    ```
-4. Start the apps again: `bash 06-install-brain.sh` (it finds your keys and re-downloads the model), then later lessons' installers.
+4. Start the apps again: `bash 05-install-gateway.sh`, then `bash 06-install-n8n.sh` (without `--fresh`: the restored data and keys are reused).
 
 ## If something goes wrong
 
 | Problem | Fix |
 |---|---|
-| `No .../lab/brain found` | Do Lesson 06 first |
+| `No .../lab/jarvis found` | Do Lessons 05–06 first |
 | `Could not create the repository` | Re-check endpoint, bucket, region and both keys. The region must be your **home region** |
 | `wrong password or no key found` | The password in `backup.env` doesn't match the repository. Use the saved one (Part G) |
 | `403 Forbidden` from Object Storage | The secret key is wrong or deleted. Run Part C again for a new one |
@@ -178,10 +178,10 @@ If the server is ever lost:
 ## Checklist
 
 - [ ] Bucket and key created in Cloud Shell; secret key in a password manager
-- [ ] `07-install-backup.sh` finished with **Backup OK** and **RESTORE TEST PASSED**
+- [ ] `08-install-backup.sh` finished with **Backup OK** and **RESTORE TEST PASSED**
 - [ ] Backup encryption password in a password manager
 - [ ] Two healthchecks.io checks created, URLs added; `sudo lab-status` shows alerts **on**
-- [ ] Memory above 20% in `sudo lab-status`
+- [ ] Checked memory in `sudo lab-status` (see Part F)
 
 ## Check your understanding
 
@@ -189,8 +189,8 @@ If the server is ever lost:
 2. Why does the backup pause n8n for a few seconds?
 3. What happens if you lose the backup encryption password?
 4. How does a dead man's switch tell you the server is down, when the server itself can't?
-5. Which three conditions make Oracle treat an A1 VM as idle, and which one do we keep above 20%?
+5. Which three conditions make Oracle treat an A1 VM as idle?
 
 ## Next
 
-**Lesson 08 — n8n**: the automation engine that runs every Jarvis skill.
+**Lesson 09 — Jarvis Live** (planned), or the next automation: SAR→PKR rate alert, new SAR request alert, morning summary.

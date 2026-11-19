@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — publish n8n on the internet, safely, next to an existing Apache site
+# free-ai-lab — Lesson 06: install n8n and publish it safely, next to an existing Apache site
 #
 # Run ON THE VM as ubuntu:
-#   bash public-n8n.sh --fresh   # remove the old n8n + old public setup, deploy a brand-new n8n (recommended)
-#   bash public-n8n.sh           # publish the n8n you already have (keeps its workflows)
-#   bash public-n8n.sh --off     # take n8n off the internet again
-#   bash public-n8n.sh --owner   # create the n8n login from the server (if it wasn't created yet)
-#   N8N_DOMAIN=n8n.example.org bash public-n8n.sh --fresh   # use your own name instead of sslip.io
+#   bash 06-install-n8n.sh --fresh   # remove the old n8n + old public setup, deploy a brand-new n8n (recommended)
+#   bash 06-install-n8n.sh           # publish the n8n you already have (keeps its workflows)
+#   bash 06-install-n8n.sh --off     # take n8n off the internet again
+#   bash 06-install-n8n.sh --owner   # create the n8n login from the server (if it wasn't created yet)
+#   N8N_DOMAIN=n8n.example.org bash 06-install-n8n.sh --fresh   # use your own name instead of sslip.io
 #
 # Locks: HTTPS (Let's Encrypt) · n8n login (owner created from the server, never via a public page)
 #        · 2FA (you switch it on) · fail2ban bans IPs that keep failing the login
@@ -92,8 +92,7 @@ echo "Old browser password box, old n8n site and old jail removed."
 
 if [ "$MODE" = "--off" ]; then
   sudo rm -f "$JAIL" "$FILTER"; sudo systemctl restart fail2ban 2>/dev/null || true
-  if [ -f "$ENVF" ]; then env_del "COMPOSE_FILE|N8N_PUBLIC_HOST"; up_n8n; fi
-  echo "Done. n8n is server-only again (127.0.0.1:5678)."; exit 0
+  echo "Done. n8n's web page is offline; n8n keeps running on the server (127.0.0.1:5678)."; exit 0
 fi
 
 # ---------- 1. name ----------
@@ -124,14 +123,18 @@ fi
 
 # ---------- 3. n8n files ----------
 step "3/7  n8n settings"
-curl -fsSL "$RAW/stacks/jarvis/compose.yaml"        -o "$DIR/compose.yaml"
-curl -fsSL "$RAW/stacks/jarvis/compose.public.yaml" -o "$DIR/compose.public.yaml"
+curl -fsSL "$RAW/stacks/jarvis/compose.yaml" -o "$DIR/compose.yaml"
+rm -f "$DIR/compose.public.yaml"                                # older two-file layout
 [ -n "$(env_get N8N_ENCRYPTION_KEY)" ] || die "N8N_ENCRYPTION_KEY missing in $ENVF"
-[ -n "$(env_get TS_NAME)" ] || env_set TS_NAME localhost        # Tailscale setting, unused while public
 [ -n "$(env_get TZ_NAME)" ] || env_set TZ_NAME Asia/Riyadh
 env_set N8N_PUBLIC_HOST "$DOMAIN"
-env_set COMPOSE_FILE "compose.yaml:compose.public.yaml"
+env_del "COMPOSE_FILE|TS_NAME"                                  # settings from older layouts
 docker network inspect jarvis >/dev/null 2>&1 || docker network create jarvis >/dev/null
+if ! docker ps --format '{{.Names}}' | grep -qx autoheal; then          # restarts frozen (unhealthy) apps
+  mkdir -p "$HOME/lab/autoheal"
+  curl -fsSL "$RAW/stacks/autoheal/compose.yaml" -o "$HOME/lab/autoheal/compose.yaml"
+  (cd "$HOME/lab/autoheal" && docker compose up -d >/dev/null) && echo "autoheal started." || warn "autoheal didn't start (n8n still works)."
+fi
 sudo install -d -o 1000 -g 1000 "$DIR/n8n"                     # n8n runs as user 1000 inside the container
 echo "Saved in $DIR/.env (private, never on GitHub)."
 

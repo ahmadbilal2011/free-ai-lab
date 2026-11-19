@@ -1,8 +1,8 @@
 # =============================================================================
-# free-ai-lab - Lesson 12: make OpenJarvis on the laptop think with the SERVER's brain
+# free-ai-lab - Lesson 11: make OpenJarvis on the laptop think with the SERVER's brain
 #
 # Run in a NORMAL PowerShell (not "Run as administrator"), after installing OpenJarvis:
-#   irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/12-connect-laptop.ps1 | iex
+#   irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/11-connect-laptop.ps1 | iex
 #
 # What it does:
 #   1. Finds your server on Tailscale and checks the gateway answers (https://<server>:4443)
@@ -27,11 +27,11 @@ $Port = 4443
 # ---------------------------------------------------------------------------
 Step "1/4  Finding the server's gateway on Tailscale"
 if (-not (Get-Command jarvis -ErrorAction SilentlyContinue)) {
-    Fail "The 'jarvis' command isn't found. Install OpenJarvis first (Lesson 12, Part C), then open a NEW PowerShell window."
+    Fail "The 'jarvis' command isn't found. Install OpenJarvis first (Lesson 11, Part C), then open a NEW PowerShell window."
 }
 $ts = Get-Command tailscale -ErrorAction SilentlyContinue
 if (-not $ts -and (Test-Path "$env:ProgramFiles\Tailscale\tailscale.exe")) { $ts = "$env:ProgramFiles\Tailscale\tailscale.exe" }
-if (-not $ts) { Fail "Tailscale isn't installed on this laptop (Lesson 11)." }
+if (-not $ts) { Fail "Tailscale isn't installed on this laptop (Lesson 10)." }
 $server = $null
 try {
     $st = (& $ts status --json) -join "`n" | ConvertFrom-Json -ErrorAction Stop
@@ -50,7 +50,7 @@ try {
     $null = Invoke-WebRequest -UseBasicParsing -Uri "$base/health/liveliness" -TimeoutSec 15 -ErrorAction Stop
     Ok "The gateway answers over Tailscale"
 } catch {
-    Fail "No answer from $base. On the SERVER run:  sudo tailscale serve --bg --https=$Port http://127.0.0.1:4000   (Lesson 12, Part B). Is Tailscale connected on this laptop?"
+    Fail "No answer from $base. On the SERVER run:  sudo tailscale serve --bg --https=$Port http://127.0.0.1:4000   (Lesson 11, Part B). Is Tailscale connected on this laptop?"
 }
 
 # ---------------------------------------------------------------------------

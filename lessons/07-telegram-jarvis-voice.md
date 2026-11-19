@@ -1,7 +1,7 @@
-# Lesson 10b — Jarvis on Telegram: text and voice in, text and voice out (built in n8n's web page)
+# Lesson 07 — Jarvis on Telegram: text and voice in, text and voice out (built in n8n's web page)
 
-**Replaces the polling versions of Lessons 09–10.** n8n is now public (Lesson 08b), and its AI goes through
-Bifrost (Lesson 06b), so the setup is simpler:
+**Before you start:** Lessons 05 (Bifrost) and 06 (n8n online) are done. Because n8n is online and its AI goes
+through Bifrost, this is simple:
 - Telegram delivers each message to n8n **instantly**, using n8n's built-in Telegram Trigger. No polling every 10 seconds.
 - The bot token sits in an **encrypted n8n credential**, never inside a node.
 - Every paid-by-credits step has a **free backup**, so Jarvis keeps working when ElevenLabs credits run out.
@@ -135,5 +135,6 @@ Then **Publish** the workflow.
 
 ## Next
 
-- **Jarvis Live** (Lesson 10c, planned): talk in real time, like a call.
+- **Lesson 08 — Backups**: protect everything built so far.
+- **Jarvis Live** (Lesson 09, planned): talk in real time, like a call.
 - Automations: SAR→PKR rate alert, new SAR request alert, morning summary.

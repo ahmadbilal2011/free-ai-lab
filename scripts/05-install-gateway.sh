@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — Lesson 06b: install Bifrost (AI switchboard with a web page) next to n8n
+# free-ai-lab — Lesson 05: install Bifrost (AI switchboard with a web page) next to n8n
 #
 # Run ON THE VM as ubuntu:
 #   bash install-gateway.sh          # install / update (web page locked to YOUR IP until you create the admin)
@@ -201,5 +201,5 @@ echo -e "       ${c_warn}$(env_get BIFROST_SETUP_TOKEN)${c_off}"
 echo "  3) Workspace → Config → Security: turn on 'Password protect the dashboard',"
 echo "     username + strong password (12+ chars, upper, lower, digit, symbol). Keep 'Enforce Virtual Keys' on."
 echo "  4) Back here run:  bash $0 --open   (removes the IP lock; refuses if the password isn't on)"
-echo "  Then follow Lesson 06b to add your free providers and connect n8n."
+echo "  Then follow Lesson 05 to add your free providers and connect n8n."
 echo "  Undo: bash $0 --off"

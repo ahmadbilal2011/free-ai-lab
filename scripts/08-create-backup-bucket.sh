@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — Lesson 07 (part 1): create free backup storage
+# free-ai-lab — Lesson 08 (part 1): create free backup storage
 #
 # Run in ORACLE CLOUD SHELL (not on the server):
-#   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/07-create-backup-bucket.sh -o 07-create-backup-bucket.sh && bash 07-create-backup-bucket.sh
+#   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/08-create-backup-bucket.sh -o 08-create-backup-bucket.sh && bash 08-create-backup-bucket.sh
 #
 # Creates, inside Always Free limits (20 GB Object Storage):
 #   - a PRIVATE bucket "free-ai-lab-backups"
@@ -73,7 +73,7 @@ if [ -z "$REUSE" ]; then
 fi
 
 ENDPOINT="https://${NS}.compat.objectstorage.${REGION}.oci.customer-oci.com"
-step "Done! The server's installer (07-install-backup.sh) asks for these 5 values:"
+step "Done! The server's installer (08-install-backup.sh) asks for these 5 values:"
 echo
 echo "  S3 endpoint : $ENDPOINT"
 echo "  Bucket      : $BUCKET"

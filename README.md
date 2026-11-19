@@ -64,74 +64,49 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | 03 | [Install and understand Docker](lessons/03-docker.md) | ✅ Tested |
 | 04 | [Tailscale: one private network for server, laptop and phone](lessons/04-tailscale.md) | ⏸ Paused (back for the laptop part) |
 
-**Part 2 — Jarvis's brain (free AI on the server)**
+**Part 2 — Jarvis's brain and front door**
 
 | # | Lesson | Status |
 |---|---|---|
-| 05 | [Free AI API keys: Jarvis's brain at $0](lessons/05-free-ai-keys.md) | ✅ Tested |
-| 06 | [The AI gateway (LiteLLM)](lessons/06-ai-gateway.md) | 🔁 Replaced by 06b |
-| 06b | [The AI switchboard: add free AI models in a web page (Bifrost)](lessons/06b-ai-switchboard.md) | ✅ Tested |
-| 07 | [Backups and monitoring](lessons/07-backups-monitoring.md) | ⚠️ Not installed yet |
+| 05 | [The AI switchboard: free AI keys, added in a web page (Bifrost)](lessons/05-ai-switchboard.md) | ✅ Tested |
+| 06 | [n8n: the engine behind every skill, online and safe](lessons/06-n8n.md) | ✅ Tested |
+| 07 | [Jarvis on Telegram: text and voice in and out, with free backups](lessons/07-telegram-jarvis-voice.md) | ✅ Tested (Gemini speaking backup: Written) |
+| 08 | [Backups and monitoring](lessons/08-backups-monitoring.md) | ⚠️ Written, not installed yet: **do next** |
+| 09 | [Jarvis Live: talk in real time, like a call](lessons/09-jarvis-live-plan.md) | ⬜ Planned |
 
-**Part 3 — Jarvis's front door (my phone)**
-
-| # | Lesson | Status |
-|---|---|---|
-| 08 | [n8n: the engine behind every Jarvis skill](lessons/08-n8n.md) | ✅ Tested |
-| 08b | [Put n8n on the internet safely, next to an existing website](lessons/08b-public-n8n.md) | ✅ Tested |
-| 09 | [Telegram by polling (private setups)](lessons/09-telegram-bot.md) | 🔁 Replaced by 10b |
-| 10 | [Voice with a separate voice service](lessons/10-voice.md) | 🔁 Replaced by 10b |
-| 10b | [Jarvis on Telegram: text and voice in, text and voice out, free backups](lessons/10b-telegram-jarvis-voice.md) | ✅ Tested (Gemini voice backup: Written) |
-| 10c | [Jarvis Live: talk in real time, like a call](lessons/10c-jarvis-live-plan.md) | ⬜ Planned |
-
-**Part 4 — Jarvis's hands (my Windows laptop)**
+**Part 3 — Jarvis's hands (my Windows laptop)**
 
 | # | Lesson | Status |
 |---|---|---|
-| 11 | [Prepare the Windows laptop](lessons/11-prepare-windows-laptop.md) | ✅ Tested |
-| 12 | [OpenJarvis on the laptop, thinking with the server's brain](lessons/12-openjarvis-laptop.md) | ✅ Written |
-| 13 | PC jobs from my phone, with Yes / No first | ⬜ |
-| 14 | Talk to Jarvis at the desk | ⬜ |
-| 15 | Hard jobs: Gemini CLI / Claude Code | ⬜ |
+| 10 | [Prepare the Windows laptop](lessons/10-prepare-windows-laptop.md) | ✅ Tested (on hold) |
+| 11 | [OpenJarvis on the laptop](lessons/11-openjarvis-laptop.md) | ⚠️ Needs update for Bifrost |
+| 12 | PC jobs from my phone, with Yes / No first | ⬜ |
+| 13 | Talk to Jarvis at the desk | ⬜ |
+| 14 | Hard jobs: Gemini CLI / Claude Code | ⬜ |
 
-**Part 5 — Jarvis does things**
+**Part 4 — Jarvis does things**
 
 | # | Lesson | Status |
 |---|---|---|
-| 16 | Agents and tools, with approval before actions | ⬜ |
-| 17 | My free cloud tools: calendar, reminders, email, web search | ⬜ |
-| 18 | Memory and knowledge (RAG) | ⬜ |
+| 15 | Agents and tools, with approval before actions | ⬜ |
+| 16 | My free cloud tools: calendar, reminders, email, web search | ⬜ |
+| 17 | Memory and knowledge (RAG) | ⬜ |
+| 18 | Routines: SAR→PKR rate alert, new SAR request alert, morning summary | ⬜ Next candidates |
 
-**Part 6 — Jarvis creates**
+**Part 5 — Jarvis creates**
 
 | # | Lesson | Status |
 |---|---|---|
 | 19 | Free image generation | ⬜ |
 | 20 | Video: what's honestly possible for free | ⬜ |
 | 21 | Social media posting with approval | ⬜ |
-
-**Part 7 — Jarvis complete**
-
-| # | Lesson | Status |
-|---|---|---|
-| 22 | Routines: morning briefing, SAR→PKR rate alert, new SAR request alert, reminders | ⬜ Next candidates |
-| 23 | Security review | ⬜ |
+| 22 | Security review | ⬜ |
 
 **Later (optional):** Jarvis phone app · Kubernetes (K3s) track
 
-Status: **Tested** = run for real and working · **Written** = ready to run · **Planned** = design decided · **Replaced** = kept for reference
+Status: **Tested** = run for real and working · **Written** = ready to run · **Planned** = design decided
 
-## Restarting on a server from the first version?
-
-The first version of this course installed different apps (Open WebUI and others). To start this version on the same server, wipe the apps but keep the server, SSH and Tailscale:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/wipe-apps.sh -o wipe-apps.sh && sudo bash wipe-apps.sh
-```
-
-It shows everything it will remove and asks you to type `WIPE` first. Then continue from Lesson 04 (re-run it to check Tailscale) and Lesson 05.
-
-Progress log: [PROGRESS.md](PROGRESS.md)
+Progress log: [PROGRESS.md](PROGRESS.md) · Replaced lessons and scripts were removed to keep the repo clean; they remain in the git history.
 
 ## Ground rules for this repo
 

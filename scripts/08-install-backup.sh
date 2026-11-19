@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — Lesson 07 (part 2): encrypted nightly backups + monitoring
+# free-ai-lab — Lesson 08 (part 2): encrypted nightly backups + monitoring
 #
 # Run ON THE SERVER:
-#   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/07-install-backup.sh -o 07-install-backup.sh && sudo bash 07-install-backup.sh
+#   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/08-install-backup.sh -o 08-install-backup.sh && sudo bash 08-install-backup.sh
 #
 # Installs:
 #   restic                 encrypted, deduplicated backups to Oracle Object Storage
@@ -29,7 +29,7 @@ warn() { echo -e "${c_warn}[!]${c_off} $*"; }
 die()  { echo -e "${c_err}[x] $*${c_off}" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "Run with sudo:  sudo bash $0"
-[ -d "$LAB_DIR/brain" ] || die "No $LAB_DIR/brain found. Do Lesson 06 first."
+[ -d "$LAB_DIR/jarvis" ] || die "No $LAB_DIR/jarvis found. Do Lessons 05-06 first."
 
 conf_get() { grep -E "^$1=" "$CONF" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//' || true; }
 conf_set() { local tmp; tmp=$(mktemp); grep -vE "^$1=" "$CONF" > "$tmp" 2>/dev/null || true
@@ -53,7 +53,7 @@ apt-get install -y -q restic curl >/dev/null
 echo "restic $(restic version | awk '{print $2}')"
 
 # ---------- 2. settings ----------
-step "2/6  Backup settings (from 07-create-backup-bucket.sh in Cloud Shell)"
+step "2/6  Backup settings (from 08-create-backup-bucket.sh in Cloud Shell)"
 install -d -m 700 "$CONF_DIR"; touch "$CONF"; chmod 600 "$CONF"
 ask S3_ENDPOINT "S3 endpoint (https://...customer-oci.com)"
 ask S3_BUCKET   "Bucket"
@@ -65,8 +65,8 @@ echo "  Monitoring (optional, free at https://healthchecks.io). Paste ping URLs,
 ask HC_BACKUP_URL    "Backup check URL"
 ask HC_HEARTBEAT_URL "Heartbeat check URL"
 conf_set LAB_DIR "$LAB_DIR"
-conf_set BACKUP_STOP "n8n"                        # apps with SQLite databases, paused a few seconds (n8n arrives in Lesson 08)
-conf_set BACKUP_EXCLUDE_VOLUMES "brain_ollama"    # AI models: big and re-downloadable
+conf_set BACKUP_STOP "n8n bifrost"                # apps with SQLite databases, paused a few seconds
+conf_set BACKUP_EXCLUDE_VOLUMES ""                # nothing big to skip
 conf_set RESTIC_REPOSITORY "s3:$(conf_get S3_ENDPOINT)/$(conf_get S3_BUCKET)/jarvis"
 
 NEW_PASSWORD=""
@@ -149,7 +149,7 @@ echo; echo "Restoring the latest snapshot into $DEST ..."
 check() { if [ -e "$DEST$1" ]; then echo "  OK    $1"; else echo "  MISSING $1"; FAIL=1; fi; }
 FAIL=0
 # Every important file that exists on the server right now must be in the backup
-for f in "$LAB_DIR"/*/compose.yaml "$LAB_DIR"/*/.env "$LAB_DIR"/brain/config.yaml "$LAB_DIR"/jarvis/n8n/database.sqlite; do
+for f in "$LAB_DIR"/*/compose.yaml "$LAB_DIR"/*/.env "$LAB_DIR"/jarvis/n8n/database.sqlite "$LAB_DIR"/gateway/data/config.db; do
   [ -e "$f" ] && check "$f"
 done
 echo "  Restored size: $(du -sh "$DEST" | cut -f1)"
@@ -168,7 +168,7 @@ docker ps -a --format '  {{.Names}}\t{{.Status}}' | sed -e "s/(healthy)/$(printf
 MEM=$(awk '/MemTotal/{t=$2}/MemAvailable/{a=$2}END{printf "%d", (t-a)*100/t}' /proc/meminfo)
 DISK=$(df --output=pcent / | tail -1 | tr -dc '0-9')
 echo; echo "Server:"
-echo "  Memory used : ${MEM}%  $([ "$MEM" -lt 20 ] && printf "$Y(below 20%%: Oracle may treat an idle A1 VM as reclaimable, see Lesson 07)$N")"
+echo "  Memory used : ${MEM}%  $([ "$MEM" -lt 20 ] && printf "$Y(below 20%%: Oracle may treat an idle A1 VM as reclaimable, see Lesson 08)$N")"
 echo "  Disk used   : ${DISK}%  $([ "$DISK" -gt 85 ] && printf "$Rd(getting full: docker image prune)$N")"
 echo "  Swap        : $(free -h | awk '/Swap/{print $3" / "$2}')"
 echo "  Load (1m)   : $(cut -d' ' -f1 /proc/loadavg) on $(nproc) CPUs"
@@ -186,10 +186,8 @@ fi
 EOF
 cat > /usr/local/bin/lab-heartbeat <<'HB'
 #!/usr/bin/env bash
-# Every 5 minutes: 1) keep the private model loaded (also after a reboot), 2) tell healthchecks.io we're alive.
+# Every 5 minutes: tell healthchecks.io we're alive.
 set -a; . /etc/free-ai-lab/backup.env; set +a
-M=$(grep -m1 '^PRIVATE_MODEL=' "$LAB_DIR/brain/.env" 2>/dev/null | cut -d= -f2-); M="${M:-llama3.2:3b}"
-curl -s -m 120 http://127.0.0.1:11434/api/generate -d "{\"model\":\"$M\",\"keep_alive\":-1}" -o /dev/null || true
 [ -z "${HC_HEARTBEAT_URL:-}" ] || curl -fsS -m 10 --retry 3 "$HC_HEARTBEAT_URL" >/dev/null
 HB
 chmod 755 /usr/local/bin/lab-backup /usr/local/bin/lab-restore-test /usr/local/bin/lab-status /usr/local/bin/lab-heartbeat
@@ -247,5 +245,5 @@ step "Done!"
 echo "  sudo lab-status        health of the whole lab"
 echo "  sudo lab-backup        back up right now"
 echo "  sudo lab-restore-test  prove the latest backup restores"
-[ -z "$(conf_get HC_HEARTBEAT_URL)" ] && warn "No healthchecks.io URLs set: nobody will email you if the server or a backup dies. See Lesson 07, Part E."
+[ -z "$(conf_get HC_HEARTBEAT_URL)" ] && warn "No healthchecks.io URLs set: nobody will email you if the server or a backup dies. See Lesson 08, Part E."
 true

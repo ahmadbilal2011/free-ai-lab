@@ -6,7 +6,7 @@ Short records of the choices behind this course: what we chose, what we didn't, 
 
 ## Course v2 (2026-11-01) — restart around one goal
 
-The first version grew lesson by lesson (local chat app first, Jarvis later, the PC added last). The goal is now clear, so the course was rewritten from Lesson 00: **one Jarvis, controlled by text and voice from the phone and the Windows PC, that does tasks only when asked, at $0.** The server's apps were wiped ([`scripts/wipe-apps.sh`](../scripts/wipe-apps.sh)); the server itself, its hardening and Tailscale were kept. Everything that worked in v1 (scripts, fixes) is reused as each new lesson is written and tested.
+The first version grew lesson by lesson (local chat app first, Jarvis later, the PC added last). The goal is now clear, so the course was rewritten from Lesson 00: **one Jarvis, controlled by text and voice from the phone and the Windows PC, that does tasks only when asked, at $0.** The server's apps were wiped (`scripts/wipe-apps.sh`); the server itself, its hardening and Tailscale were kept. Everything that worked in v1 (scripts, fixes) is reused as each new lesson is written and tested.
 
 ## One Jarvis, two machines: the server is the brain, the laptop is the hands
 
@@ -116,3 +116,10 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - Real-time talk: **Jarvis Live** later, with the Gemini Live API (free tier) and n8n webhooks as tools. ElevenLabs
   Agents rejected (only ~15 free minutes a month). The Gemini app's Live mode covers general chat meanwhile.
 - No customer (SAR) data goes to free AI tiers that may train on it.
+
+## 2026-11-19 — Repo cleanup
+
+- Replaced content removed instead of kept with "replaced" banners: LiteLLM gateway + model picker, polling Telegram,
+  the separate voice service, the old keys script and `wipe-apps.sh`. They remain in git history.
+- Lessons renumbered 00–11 in the order they're actually done; n8n's two lessons merged into one (06); the n8n stack
+  is now a single compose file (public settings built in). The n8n installer also starts autoheal.

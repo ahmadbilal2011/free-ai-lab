@@ -20,12 +20,12 @@ By the end of the course you have your own assistant, **Jarvis**:
  📱 Phone ── Telegram (text + voice notes) ──┐
                                              ▼
  ☁️  SERVER  (Oracle Always Free, on 24/7) — Jarvis's BRAIN and FRONT DOOR
+      • Apache ......... the one public door: HTTPS, logins, fail2ban
       • n8n ............ reads your messages, decides what to do, runs routines
-      • AI gateway ..... one door to many free AI models, with automatic fallback
-      • private model .. a small AI that runs on the server itself (backup + privacy)
-      • voice .......... understands voice notes, answers with a voice
+      • Bifrost ........ AI switchboard: many free AI models, added in a web page, automatic fallback
+      • voice .......... understands voice notes, answers with a voice (inside n8n)
                                              │
-                          private network (Tailscale), with a key
+                          private network (Tailscale, later), with a key
                                              ▼
  💻 WINDOWS LAPTOP (on when you're at it) — Jarvis's HANDS
       • OpenJarvis ..... acts on the PC: apps, files, scripts; asks before risky steps
@@ -39,7 +39,7 @@ Why split it this way:
 | The brain is on the server | It's on 24/7, so Jarvis answers your phone even when the laptop is off |
 | The thinking uses **free cloud AI** | Free cloud models are far smarter and faster than anything a free 2-CPU server can run |
 | The laptop is only the hands | Only your PC can act on your PC. It holds **no AI keys**; it borrows the server's |
-| Telegram is the front door | Free, phone + PC apps, voice notes built in, and it works without opening any port |
+| Telegram is the front door | Free, phone + PC apps, voice notes built in; Telegram delivers messages to n8n's HTTPS address instantly |
 
 **Honest limits, up front:**
 
@@ -105,8 +105,7 @@ A **container** packages an app with everything it needs, so it runs the same ev
 
 - An **LLM (Large Language Model)** is the "brain" behind chat AI. Some are open source and can run on your own machine; the best ones run in big data centres.
 - An **API** lets a program use a service. With a free **API key**, our server can ask cloud models (Groq, NVIDIA, OpenRouter, Google Gemini...) questions. Each has a free daily limit.
-- A **gateway** (LiteLLM) sits in front of all of them: apps ask the gateway for `smart` or `fast`, and the gateway picks a working free model, switching automatically when one hits its limit.
-- **Ollama** runs a small open model **on the server itself**: slower, but private and unlimited, and the last fallback.
+- A **gateway** (we use **Bifrost**) sits in front of all of them: you add providers and models in its web page, apps ask it for a level of work (`quick`, `smart`, `code`), and it picks a working free model, switching automatically when one hits its limit.
 - A **subscription** (Gemini Pro, Claude Pro) is not an API key. It powers command-line tools like Gemini CLI and Claude Code, which Jarvis can use on the laptop for hard jobs.
 
 ## 10. Automation and agents
