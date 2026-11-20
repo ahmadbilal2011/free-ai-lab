@@ -3,55 +3,236 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Jarvis agents (Lesson 09)\nJarvis Live asks this workflow two things:\n1. **Which agents exist?** (GET jarvis-agents) → the list in *Agent list*. It's empty until upcoming lessons add agents.\n2. **Do this task** (POST jarvis-live-tool) → each agent gets its own branch.\n\nTo add an agent later: add it to *Agent list*, route its tasks to its branch, and end the branch with *Respond to Webhook* returning `{ \"ok\": true, \"result\": \"…\" }`.",
-        "height": 300,
-        "width": 520
+        "content": "## Jarvis agents\nJarvis Live and the Telegram bot ask this workflow two things:\n1. **Which agents exist?** (GET jarvis-agents) → *Agent list*. Lesson 10 adds the first one: **Reminders**.\n2. **Do this task** (POST jarvis-live-tool) → *Run the agent* → the answer `{ ok, result }`.\n\n**Reminders** are kept inside this workflow (n8n saves them after every real run; test runs from the editor don't save).\nEvery minute *Every minute* hands due reminders to Telegram and Jarvis Live.\n\nNew agents later: add them to *Agent list* and give them a branch.",
+        "height": 340,
+        "width": 560
       },
       "id": "b2c0d1e2-0000-4a1b-9c01-000000000000",
       "name": "How this works",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-40, -360]
+      "position": [
+        -60,
+        -420
+      ]
     },
     {
-      "parameters": { "httpMethod": "GET", "path": "jarvis-agents", "authentication": "headerAuth", "responseMode": "responseNode", "options": {} },
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "jarvis-agents",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
       "id": "b2c0d1e2-0001-4a1b-9c01-000000000001",
       "name": "Jarvis asks: which agents?",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "webhookId": "jarvis-agents"
     },
     {
-      "parameters": { "respondWith": "json", "responseBody": "{ \"agents\": [] }", "options": {} },
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n \"agents\": [\n  {\n   \"id\": \"reminders\",\n   \"name\": \"Reminders\",\n   \"role\": \"sets, lists and cancels reminders; they arrive on Telegram and on Jarvis Live\",\n   \"color\": \"#FFC857\",\n   \"howTo\": \"a JSON text: {\\\"action\\\":\\\"add\\\",\\\"text\\\":\\\"what to remember\\\",\\\"at\\\":\\\"exact date-time with offset, e.g. 2026-11-21T09:00:00+03:00\\\"} or {\\\"action\\\":\\\"list\\\"} or {\\\"action\\\":\\\"cancel\\\",\\\"id\\\":3}. Work the exact time out from Now. If the time is unclear, ask first.\",\n   \"confirm\": \"cancel (say which reminder you will cancel)\"\n  }\n ]\n}",
+        "options": {}
+      },
       "id": "b2c0d1e2-0002-4a1b-9c01-000000000002",
       "name": "Agent list",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [260, 0]
+      "position": [
+        260,
+        0
+      ]
     },
     {
-      "parameters": { "httpMethod": "POST", "path": "jarvis-live-tool", "authentication": "headerAuth", "responseMode": "responseNode", "options": {} },
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "jarvis-live-tool",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
       "id": "b2c0d1e2-0003-4a1b-9c01-000000000003",
       "name": "Jarvis asks: do this task",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 260],
+      "position": [
+        0,
+        260
+      ],
       "webhookId": "jarvis-live-tool"
     },
     {
-      "parameters": { "respondWith": "json", "responseBody": "={{ JSON.stringify({ ok: false, error: 'No agent called \"' + $json.body.agent + '\" is set up in n8n yet.' }) }}", "options": {} },
+      "parameters": {
+        "jsCode": "// Jarvis agents → Reminders. Tasks arrive as JSON from Jarvis Live or Telegram.\nconst TZ = 'Asia/Riyadh';\nconst s = $getWorkflowStaticData('global');            // saved by n8n after each real (published) run\ns.reminders = s.reminders || []; s.nextId = s.nextId || 1;\nconst body = $input.first().json.body || {};\nconst say = (result) => [{ json: { ok: true, result } }];\nconst fail = (error) => [{ json: { ok: false, error } }];\n\nif (body.agent !== 'reminders') return fail(`No agent called \"${body.agent}\" is set up in n8n yet.`);\n\nlet cmd = body.task;\nif (typeof cmd === 'string') { try { cmd = JSON.parse(cmd); } catch { cmd = null; } }\nconst HOW = 'Send the task as JSON: {\"action\":\"add\",\"text\":\"call Usman\",\"at\":\"2026-11-21T09:00:00+03:00\"}, {\"action\":\"list\"} or {\"action\":\"cancel\",\"id\":3}';\nif (!cmd || typeof cmd !== 'object') return fail(HOW);\n\nconst offset = (d) => {                                  // \"+03:00\" for the time zone at that moment\n  const n = new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName: 'longOffset' }).formatToParts(d).find((p) => p.type === 'timeZoneName').value;\n  return n === 'GMT' ? '+00:00' : n.replace('GMT', '');\n};\nconst show = (iso) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));\nconst list = () => s.reminders.slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at));\n\nswitch (String(cmd.action || '').toLowerCase()) {\n  case 'add': {\n    const text = String(cmd.text || '').trim().slice(0, 300);\n    let at = String(cmd.at || '').trim();\n    if (!text) return fail('What should I remind about? ' + HOW);\n    if (/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$/.test(at)) at += offset(new Date());   // no zone given → owner's zone\n    const t = Date.parse(at);\n    if (!at || Number.isNaN(t)) return fail('\"at\" must be a date and time like 2026-11-21T09:00:00+03:00');\n    if (t < Date.now() - 60e3) return fail(`That time (${show(t)}) is already past.`);\n    if (t > Date.now() + 400 * 864e5) return fail('That is more than a year away.');\n    if (s.reminders.length >= 200) return fail('There are already 200 reminders. Cancel some first.');\n    const r = { id: s.nextId++, text, at: new Date(t).toISOString(), made: new Date().toISOString() };\n    s.reminders.push(r);\n    return say(`Reminder #${r.id} set for ${show(r.at)}: ${r.text}`);\n  }\n  case 'list': {\n    const all = list();\n    if (!all.length) return say('No reminders set.');\n    return say(all.map((r) => `#${r.id} ${show(r.at)}: ${r.text}`).join('\\n'));\n  }\n  case 'cancel': {\n    const id = Number(cmd.id);\n    const r = s.reminders.find((x) => x.id === id);\n    if (!r) return fail(`No reminder #${cmd.id}. Use {\"action\":\"list\"} to see the numbers.`);\n    s.reminders = s.reminders.filter((x) => x.id !== id);\n    return say(`Cancelled reminder #${r.id} (${show(r.at)}: ${r.text}).`);\n  }\n  default: return fail(HOW);\n}\n"
+      },
       "id": "b2c0d1e2-0004-4a1b-9c01-000000000004",
-      "name": "No agents yet",
+      "name": "Run the agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "b2c0d1e2-0005-4a1b-9c01-000000000005",
+      "name": "Answer Jarvis",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [260, 260]
+      "position": [
+        520,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "b2c0d1e2-0006-4a1b-9c01-000000000006",
+      "name": "Every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Every minute: take out the reminders that are due and pass them on (Telegram + Jarvis Live).\nconst s = $getWorkflowStaticData('global');\nconst now = Date.now();\nconst due = (s.reminders || []).filter((r) => Date.parse(r.at) <= now);\nif (!due.length) return [];                              // nothing due: the run stops here and saves nothing\ns.reminders = s.reminders.filter((r) => Date.parse(r.at) > now);\nreturn due.map((r) => {\n  const late = Math.round((now - Date.parse(r.at)) / 60e3);\n  return { json: { id: r.id, text: r.text, at: r.at, message: `⏰ Reminder: ${r.text}${late > 5 ? ` (due ${late} min ago)` : ''}` } };\n});\n"
+      },
+      "id": "b2c0d1e2-0007-4a1b-9c01-000000000007",
+      "name": "Due reminders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "b2c0d1e2-0008-4a1b-9c01-000000000008",
+      "name": "Remind me on Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        460
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://jarvis-live:8080/api/event",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ agent: 'reminders', type: 'alert', speak: true, text: $json.message }) }}",
+        "options": {}
+      },
+      "id": "b2c0d1e2-0009-4a1b-9c01-000000000009",
+      "name": "Tell Jarvis Live",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        640
+      ],
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
-    "Jarvis asks: which agents?": { "main": [[{ "node": "Agent list", "type": "main", "index": 0 }]] },
-    "Jarvis asks: do this task": { "main": [[{ "node": "No agents yet", "type": "main", "index": 0 }]] }
+    "Jarvis asks: which agents?": {
+      "main": [
+        [
+          {
+            "node": "Agent list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jarvis asks: do this task": {
+      "main": [
+        [
+          {
+            "node": "Run the agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run the agent": {
+      "main": [
+        [
+          {
+            "node": "Answer Jarvis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every minute": {
+      "main": [
+        [
+          {
+            "node": "Due reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Due reminders": {
+      "main": [
+        [
+          {
+            "node": "Remind me on Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tell Jarvis Live",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none"
+  },
   "pinData": {}
 }

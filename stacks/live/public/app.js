@@ -148,6 +148,7 @@ function connectEvents() {
   es.addEventListener('alert', (e) => {
     const a = JSON.parse(e.data); log('alert', `${state.byId[a.agent]?.name || a.agent}: ${a.text}`, a.ts); flash('pLog');
     if (a.speak && session.ws?.readyState === WebSocket.OPEN) sendText(`[EVENT from ${a.agent}] ${a.text}`, true);
+    else if (a.speak && state.speakReplies) speak(a.text);
   });
   es.onerror = () => { $('linkState').textContent = 'reconnecting…'; $('linkState').classList.remove('on'); fetch('/api/events', { method: 'HEAD' }).then((r) => { if (r.status === 401) location.reload(); }).catch(() => {}); };
 }

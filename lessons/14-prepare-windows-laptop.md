@@ -1,4 +1,4 @@
-# Lesson 10 — Prepare the Windows laptop
+# Lesson 14 — Prepare the Windows laptop
 
 > **⚠️ Laptop part on hold (2026-11-19):** written for the earlier design (Tailscale + LiteLLM). It will be updated to reach Bifrost when the laptop part restarts. The checks below are still valid.
 
@@ -19,7 +19,7 @@ Until now, Jarvis lived only on the Oracle server: you talk to it on Telegram, i
 ```
  Phone / PC ──► Telegram ◄── n8n (server, always on) ──► AI gateway (free models)
                                   │
-                                  │  Tailscale only, with a key   (Lesson 12)
+                                  │  Tailscale only, with a key   (Lesson 16)
                                   ▼
                  Windows laptop: OpenJarvis (acts on the PC, asks first)
 ```
@@ -64,7 +64,7 @@ $paths = @("$HOME\.openjarvis", "$HOME\OpenJarvis", "$env:LOCALAPPDATA\OpenJarvi
 foreach ($p in $paths) { if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue; "Removed: $p" } }
 ```
 
-**4. Revoke old keys.** Old tools keep API keys in files like `cloud-keys.env`, `.env` or `auth.json`. If you ever pasted a key into them, **revoke it in that provider's dashboard** and create a new one only when a lesson asks. From Lesson 12 on, the laptop holds **no provider keys at all**: it borrows the server's gateway.
+**4. Revoke old keys.** Old tools keep API keys in files like `cloud-keys.env`, `.env` or `auth.json`. If you ever pasted a key into them, **revoke it in that provider's dashboard** and create a new one only when a lesson asks. From Lesson 16 on, the laptop holds **no provider keys at all**: it borrows the server's gateway.
 
 ## Part D — Install the four prerequisites
 
@@ -75,7 +75,7 @@ Do these in order. After each install, **close PowerShell and open a new (normal
 | 1 | **Python 3.13 (64-bit)** | OpenJarvis is written in Python; 3.10–3.13 only | [python.org/downloads/windows](https://www.python.org/downloads/windows/) → latest **3.13.x** → *Windows installer (64-bit)*. On the first screen, tick **Add python.exe to PATH** |
 | 2 | **Git for Windows** | The installer downloads OpenJarvis's code with git | [git-scm.com/download/win](https://git-scm.com/download/win), default options |
 | 3 | **Ollama** | Runs small AI models on the laptop: the offline fallback | [ollama.com/download/windows](https://ollama.com/download/windows). After install, a llama icon sits in the tray |
-| 4 | **Tailscale** | The private link the server uses to reach the laptop (Lesson 12). Same app you put on your phone in Lesson 04 | [tailscale.com/download/windows](https://tailscale.com/download/windows), log in with the **same account** as the server |
+| 4 | **Tailscale** | The private link the server uses to reach the laptop (Lesson 16). Same app you put on your phone in Lesson 04 | [tailscale.com/download/windows](https://tailscale.com/download/windows), log in with the **same account** as the server |
 | 5 | **Microsoft C++ Build Tools** | OpenJarvis compiles a small part of itself (written in Rust) on Windows, and that needs Microsoft's C++ linker. The installer stops without it | [visualstudio.microsoft.com/downloads](https://visualstudio.microsoft.com/downloads/) → *Tools for Visual Studio* → **Build Tools for Visual Studio** → tick **Desktop development with C++** → Install. About **7 GB** and 20–40 minutes; restart the laptop afterwards |
 | 6 | **Rust** | That part of OpenJarvis is written in Rust. Without Rust installed, the OpenJarvis installer downloads a temporary copy, and **Windows Security blocked that download** on my laptop (`could not read downloaded file`). The official installer avoids it | [rustup.rs](https://rustup.rs) → **rustup-init.exe (64-bit)** → press Enter for the defaults (install the C++ Build Tools first) → new PowerShell → `cargo --version` |
 
@@ -92,22 +92,22 @@ ollama list       # a table (even empty) means Ollama is running
 This script only **looks**: Windows build, admin window, Python versions and PATH, git, the C++ build tools, Rust, Ollama (and which models you have), leftovers from old installs, disk space, RAM/GPU, and Tailscale. It never deletes anything and never asks for keys.
 
 ```powershell
-irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/10-check-laptop.ps1 | iex
+irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/14-check-laptop.ps1 | iex
 ```
 
 If it says `'python' is missing or not a supported version`, run it **with `-Fix`**. That puts your Python 3.13 first on **your user's** PATH (no admin needed, nothing else changed):
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/10-check-laptop.ps1))) -Fix
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/14-check-laptop.ps1))) -Fix
 ```
 
 Then open a **new** window and run the plain check again. You want:
 
 ```
-RESULT: ready for Lesson 11
+RESULT: ready for Lesson 15
 ```
 
-Script source: [`scripts/10-check-laptop.ps1`](../scripts/10-check-laptop.ps1)
+Script source: [`scripts/14-check-laptop.ps1`](../scripts/14-check-laptop.ps1)
 
 ### How to read the hardware line
 
@@ -140,8 +140,8 @@ Either way, the **thinking** normally happens on the server's free cloud models 
 - [ ] Rust installed from rustup.rs (`cargo --version` works)
 - [ ] `ollama list` shows a table
 - [ ] Tailscale connected with the same account as the server
-- [ ] `10-check-laptop.ps1` says **ready for Lesson 11**
+- [ ] `14-check-laptop.ps1` says **ready for Lesson 15**
 
 ## Next
 
-[Lesson 11](11-openjarvis-laptop.md) — install OpenJarvis on the laptop and make it think through the **server's** gateway, so the laptop needs no API keys of its own.
+[Lesson 15](15-openjarvis-laptop.md) — install OpenJarvis on the laptop and make it think through the **server's** gateway, so the laptop needs no API keys of its own.

@@ -75,24 +75,24 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | 08 | [Backups: nightly .zip files on the server](lessons/08-backups-monitoring.md) | ⚠️ Written, not installed yet: **do next** |
 | 09 | [Jarvis Live: the dashboard of your personal AI OS — your own AI providers, Gemini Live voice, AI sentinel, connected to n8n](lessons/09-jarvis-live.md) | ⚠️ Tested locally, first run on the server pending |
 
-**Part 3 — Jarvis's hands (my Windows laptop)**
+**Part 3 — Jarvis does things (agents in n8n)**
 
 | # | Lesson | Status |
 |---|---|---|
-| 10 | [Prepare the Windows laptop](lessons/10-prepare-windows-laptop.md) | ✅ Tested (on hold) |
-| 11 | [OpenJarvis on the laptop](lessons/11-openjarvis-laptop.md) | ⚠️ Needs update for Bifrost |
-| 12 | PC jobs from my phone, with Yes / No first | ⬜ |
-| 13 | Talk to Jarvis at the desk | ⬜ |
-| 14 | Hard jobs: Gemini CLI / Claude Code | ⬜ |
+| 10 | [First agent: Reminders — on the dashboard and Telegram, ask-first rule](lessons/10-first-agent-reminders.md) | ⚠️ Agent code tested; first run on the server pending |
+| 11 | Calendar, email and web search, with a real Yes / No before sending | ⬜ |
+| 12 | Memory and knowledge (RAG) | ⬜ |
+| 13 | Routines: SAR→PKR rate alert, new SAR request alert, morning summary | ⬜ |
 
-**Part 4 — Jarvis does things**
+**Part 4 — Jarvis's hands (my Windows laptop)**
 
 | # | Lesson | Status |
 |---|---|---|
-| 15 | Agents and tools, with approval before actions | ⬜ |
-| 16 | My free cloud tools: calendar, reminders, email, web search | ⬜ |
-| 17 | Memory and knowledge (RAG) | ⬜ |
-| 18 | Routines: SAR→PKR rate alert, new SAR request alert, morning summary | ⬜ Next candidates |
+| 14 | [Prepare the Windows laptop](lessons/14-prepare-windows-laptop.md) | ✅ Tested (on hold) |
+| 15 | [OpenJarvis on the laptop](lessons/15-openjarvis-laptop.md) | ⚠️ Needs update for Bifrost |
+| 16 | PC jobs from my phone, with Yes / No first | ⬜ |
+| 17 | Talk to Jarvis at the desk | ⬜ |
+| 18 | Hard jobs: Gemini CLI / Claude Code | ⬜ |
 
 **Part 5 — Jarvis creates**
 

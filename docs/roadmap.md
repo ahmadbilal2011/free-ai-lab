@@ -36,25 +36,25 @@ Rules for the whole course:
 | 08 | **Backups**: nightly .zip in `/data/backups` on the server, a copy on the laptop now and then | Undo any mistake; survive losing the VM |
 | 09 | **Jarvis Live**: holographic dashboard with an AI sentinel; brains: AI providers you add on the dashboard (any OpenAI-compatible, incl. Bifrost) and Gemini Live (voice calls); agents come from n8n (none yet) | Talk to Jarvis; every agent built later appears here by itself |
 
-## Part 3 — Jarvis's hands (my Windows laptop)
+## Part 3 — Jarvis does things (agents in n8n)
 
 | # | Lesson | What I get |
 |---|---|---|
-| 10 | **Prepare the Windows laptop** | A laptop ready for OpenJarvis |
-| 11 | **OpenJarvis on the laptop**, thinking through the server's switchboard | Jarvis on the PC, no AI keys on the laptop |
-| 12 | **PC jobs from my phone**, with **Yes / No** on Telegram first | "Open my QA report" from Telegram |
-| 13 | **Talk to Jarvis at the desk** | Voice control on the PC itself |
-| 14 | **Hard jobs**: Gemini CLI / Claude Code (my subscriptions), only when asked | Coding and big automations without API bills |
+| 10 | **First agent: Reminders**: the agent pattern (Agent list + branch + task format + ask-first), alerts pushed to Telegram and the dashboard | "Remind me tomorrow at 9" on the dashboard or Telegram |
+| 11 | **My free cloud tools**: calendar, email, web search; a real Yes / No button on Telegram before anything is sent | "What's on today?" |
+| 12 | **Memory and knowledge (RAG)**: vector database + embeddings, exposed as a `memory` agent | Jarvis remembers my preferences, past talks and documents |
+| 13 | **Routines**: SAR→PKR rate alert, new SAR request alert, morning summary | Jarvis works for me without being asked |
+
+## Part 4 — Jarvis's hands (my Windows laptop)
+
+| # | Lesson | What I get |
+|---|---|---|
+| 14 | **Prepare the Windows laptop** | A laptop ready for OpenJarvis |
+| 15 | **OpenJarvis on the laptop**, thinking through the server's models | Jarvis on the PC, no AI keys on the laptop |
+| 16 | **PC jobs from my phone**, with **Yes / No** on Telegram first | "Open my QA report" from Telegram |
+| 17 | **Talk to Jarvis at the desk** | Voice control on the PC itself |
+| 18 | **Hard jobs**: Gemini CLI / Claude Code (my subscriptions), only when asked | Coding and big automations without API bills |
 | later | **WhatsApp and Messenger through the laptop**, drafts I approve | Replies without risky unofficial bridges |
-
-## Part 4 — Jarvis does things
-
-| # | Lesson | What I get |
-|---|---|---|
-| 15 | **Agents and tools** (first agents in the n8n "Jarvis agents" workflow), approval before any action | Jarvis picks the right agent and asks before acting |
-| 16 | **My free cloud tools**: calendar, reminders, email, web search | "Remind me tomorrow at 9" |
-| 17 | **Memory and knowledge (RAG)**: vector database + embeddings, exposed as a `memory` agent | Jarvis remembers my preferences, past talks and documents |
-| 18 | **Routines**: SAR→PKR rate alert, new SAR request alert, morning summary | Jarvis works for me without being asked |
 
 ## Part 5 — Jarvis creates, and a final check
 

@@ -59,11 +59,11 @@ Real voice calls need your server and Google: the first call happens there.
 
 | Coming | What it adds | Where it plugs in |
 |---|---|---|
-| Lesson 15 · Agents and tools | First agents, with approval before any action | n8n *Agent list* + branches |
-| Lesson 16 · Calendar, reminders, email | "What's on today?", "Remind me at 9" | n8n agents |
-| Lesson 17 · Memory (RAG) | Jarvis remembers preferences, past talks, documents | a `memory` agent in n8n |
-| Lesson 18 · Routines | Morning briefing, SAR desk alerts, spoken by Jarvis | n8n schedules + events to the dashboard |
-| Lessons 10–12 · Laptop hands | "Open my QA report" on your PC | a `laptop` agent: n8n → OpenJarvis |
+| Lesson 10 · First agent: Reminders | "Remind me at 9", ask-first rule, alerts spoken here | n8n *Agent list* + branches |
+| Lesson 11 · Calendar, email, web search | "What's on today?" | n8n agents |
+| Lesson 12 · Memory (RAG) | Jarvis remembers preferences, past talks, documents | a `memory` agent in n8n |
+| Lesson 13 · Routines | Morning briefing, SAR desk alerts, spoken by Jarvis | n8n schedules + events to the dashboard |
+| Lessons 14–16 · Laptop hands | "Open my QA report" on your PC | a `laptop` agent: n8n → OpenJarvis |
 | Later · premium brain | Claude for hard jobs, only when you choose | add it under *AI providers* (Jarvis) or pick it in an n8n agent |
 
 ## Part B — The dashboard
@@ -250,4 +250,4 @@ The server also watches itself: memory above 85% or CPU above 90% for a minute �
 
 ## Next
 
-Agents, one lesson at a time, all in n8n. Each one appears on this dashboard by itself the moment you publish it.
+[Lesson 10 — First agent: Reminders](10-first-agent-reminders.md). Agents come one lesson at a time, all in n8n. Each one appears on this dashboard by itself the moment you publish it.

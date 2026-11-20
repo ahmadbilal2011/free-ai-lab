@@ -203,3 +203,15 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   migrated (the Bifrost key and chosen models become the first provider).
 - Keys are stored in `~/lab/live/data/providers.json` (mode 600) and never returned to the browser (last 4 only).
 - Addresses must be `https://`; `http://` only for single-name hosts inside the server (`http://bifrost:8080/v1`).
+
+## 2026-11-20 — First agent: Reminders (Lesson 10)
+
+- User chose agents before the laptop part, so the laptop lessons moved to 14–18.
+- **Reminders first**: needs no new account, key or OAuth, yet shows the whole pattern (registry, task, result, push alerts).
+- The **brain** turns "tomorrow at 9" into an exact ISO time (it now gets *Now* with the offset); the agent only
+  validates. No AI node inside n8n for this agent, so it can't misread times on its own.
+- Stored in the workflow's static data: no database to install; included in n8n's backup. Editor test runs don't save
+  it (documented). Successful executions aren't saved, so the every-minute check doesn't flood the list.
+- Registry gained `howTo` (task format) and `confirm` (ask-first actions). Ask-first is model-followed only; risky
+  agents (email, money) will get a Telegram Yes / No button the model can't skip.
+- Plain Code nodes instead of Switch/If nodes, whose JSON changes between n8n versions.

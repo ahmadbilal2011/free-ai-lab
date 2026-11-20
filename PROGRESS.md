@@ -2,6 +2,14 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Lesson 10: first agent (Reminders)
+
+- Lessons reordered: agents come first (Part 3, Lessons 10–13); the laptop part moved to Lessons 14–18
+- **Reminders agent** in the *Jarvis agents* workflow: add / list / cancel, delivered every minute to Telegram and spoken on Jarvis Live
+- Jarvis Live now gives its brain the current time and each agent's task format and ask-first actions; alerts are read aloud in *My AI models* mode too
+- Telegram bot gets the same agent as an HTTP Request tool
+- Tested locally: agent code (add, list, cancel, past time, bad input, delivery) and the full dashboard → n8n → reply → alert path with stand-ins
+
 ## 2026-11-20 — Jarvis: AI providers you add yourself
 
 - New **AI providers** screen on the dashboard: add, edit, delete and test any provider (Groq, Gemini, OpenRouter, NVIDIA, Mistral, Bifrost, any OpenAI-compatible), fetch or type its models, and order models across providers

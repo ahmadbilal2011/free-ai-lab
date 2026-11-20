@@ -1,14 +1,14 @@
-# Lesson 11 — OpenJarvis on the laptop, thinking with the server's brain
+# Lesson 15 — OpenJarvis on the laptop, thinking with the server's brain
 
 > **⚠️ Needs update (2026-11-19):** this lesson connects the laptop to the old LiteLLM gateway over Tailscale. Both were replaced (Bifrost, Lesson 05; Tailscale paused). Installing OpenJarvis (Parts before the connection step) still works; connecting it will be rewritten for Bifrost when the laptop part restarts.
 
-**Goal:** install **OpenJarvis** on your Windows laptop and make it think with the **same free cloud models** as Telegram, through your server's gateway. The laptop gets **no AI provider keys**: it borrows the server's brain. This lesson is chat only; Lesson 12 lets Jarvis *do* things on the PC.
+**Goal:** install **OpenJarvis** on your Windows laptop and make it think with the **same free cloud models** as Telegram, through your server's gateway. The laptop gets **no AI provider keys**: it borrows the server's brain. This lesson is chat only; Lesson 16 lets Jarvis *do* things on the PC.
 
 **Time:** about 30–40 minutes (mostly the OpenJarvis install compiling).
 
 **Cost:** $0. OpenJarvis is open source (Apache 2.0).
 
-**Before you start:** Lesson 10 says `RESULT: ready for Lesson 11`, including the **C++ Build Tools** line. (That check was added after my first run; if you ran the check before, run it again.)
+**Before you start:** Lesson 14 says `RESULT: ready for Lesson 15`, including the **C++ Build Tools** line. (That check was added after my first run; if you ran the check before, run it again.)
 
 ---
 
@@ -40,7 +40,7 @@ You should see your n8n editor on `:9443` and now the gateway on `:4443`, both "
 
 ## Part C — Laptop: install OpenJarvis
 
-Open a **normal** PowerShell (not as administrator). This installs OpenJarvis without registering a background service (we add that in Lesson 12, when we need it):
+Open a **normal** PowerShell (not as administrator). This installs OpenJarvis without registering a background service (we add that in Lesson 16, when we need it):
 
 ```powershell
 $env:OPENJARVIS_SKIP_SERVICE = '1'; irm https://open-jarvis.github.io/OpenJarvis/install.ps1 | iex
@@ -56,7 +56,7 @@ jarvis --version
 
 ### Build with your stable Rust (avoids the blocked download)
 
-OpenJarvis's `rust/rust-toolchain.toml` asks for Rust **1.89 plus `rustfmt` and `clippy`** (a code formatter and a style checker). Neither is needed to *build* it, and on my laptop Windows Security blocked the `rustfmt` download every time. OpenJarvis only needs Rust **1.89 or newer**, so tell Rust to use the **stable** version you installed from rustup.rs (Lesson 11):
+OpenJarvis's `rust/rust-toolchain.toml` asks for Rust **1.89 plus `rustfmt` and `clippy`** (a code formatter and a style checker). Neither is needed to *build* it, and on my laptop Windows Security blocked the `rustfmt` download every time. OpenJarvis only needs Rust **1.89 or newer**, so tell Rust to use the **stable** version you installed from rustup.rs (Lesson 15):
 
 ```powershell
 rustup toolchain list            # should list stable-x86_64-pc-windows-msvc
@@ -105,12 +105,12 @@ Don't turn Windows Security off, and don't exclude whole folders: allow only the
    ```
 2. On the **laptop** (normal PowerShell):
    ```powershell
-   irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/11-connect-laptop.ps1 | iex
+   irm https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/15-connect-laptop.ps1 | iex
    ```
    It finds your server on Tailscale, checks the gateway answers, asks for the key (**hidden**: paste the part after `=` and press Enter), tests it, saves it for your Windows user only, sets OpenJarvis to use `smart`, and asks a test question.
 3. Type `clear` on the server.
 
-Source: [`scripts/11-connect-laptop.ps1`](../scripts/11-connect-laptop.ps1)
+Source: [`scripts/15-connect-laptop.ps1`](../scripts/15-connect-laptop.ps1)
 
 ### What it changed (so you can understand it)
 
@@ -140,14 +140,14 @@ jarvis chat -m private                  # the server's own private model (slower
 jarvis chat -e ollama -m qwen3.5:4b     # offline: the laptop's own model, no server needed
 ```
 
-> Jarvis can't **do** anything on the PC yet: this chat has no tools. That's on purpose. Lesson 12 adds PC actions, with a **Yes / No** before anything risky.
+> Jarvis can't **do** anything on the PC yet: this chat has no tools. That's on purpose. Lesson 16 adds PC actions, with a **Yes / No** before anything risky.
 
 ## Useful commands
 
 | Task | How |
 |---|---|
 | Update OpenJarvis | `$env:OPENJARVIS_SKIP_SERVICE='1'; & ([scriptblock]::Create((irm https://open-jarvis.github.io/OpenJarvis/install.ps1))) -Force` |
-| Gateway key changed on the server | Run `11-connect-laptop.ps1` again |
+| Gateway key changed on the server | Run `15-connect-laptop.ps1` again |
 | Check everything | `jarvis doctor` |
 | See settings | `jarvis config show` |
 
@@ -155,9 +155,9 @@ jarvis chat -e ollama -m qwen3.5:4b     # offline: the laptop's own model, no se
 
 | Problem | Fix |
 |---|---|
-| Installer: `MSVC build tools not found` | Install the C++ Build Tools (Lesson 10, row 5), restart, run the installer again |
-| Installer: `Python 3.10 - 3.13 not found` | Lesson 10: Python 3.13 on PATH (`-Fix`), new PowerShell window |
-| Installer: `Rust not found, installing into a temporary directory` … `could not read downloaded file` | Windows Security blocked the temporary Rust download. Don't turn protection off: delete `%LOCALAPPDATA%\puccinialin`, install Rust from [rustup.rs](https://rustup.rs) (Lesson 11, row 6), open a new PowerShell, run the installer again. Check **Windows Security → Protection history** to see what was blocked |
+| Installer: `MSVC build tools not found` | Install the C++ Build Tools (Lesson 14, row 5), restart, run the installer again |
+| Installer: `Python 3.10 - 3.13 not found` | Lesson 14: Python 3.13 on PATH (`-Fix`), new PowerShell window |
+| Installer: `Rust not found, installing into a temporary directory` … `could not read downloaded file` | Windows Security blocked the temporary Rust download. Don't turn protection off: delete `%LOCALAPPDATA%\puccinialin`, install Rust from [rustup.rs](https://rustup.rs) (Lesson 15, row 6), open a new PowerShell, run the installer again. Check **Windows Security → Protection history** to see what was blocked |
 | Installer: `uv sync failed` | Scroll up for the first red error. Often a network hiccup: run the installer again. Send me the error if it repeats |
 | `jarvis` not recognized | Open a **new** PowerShell window (the installer added it to PATH) |
 | `No answer from https://…:4443` | Did you run Part B on the server? Is Tailscale connected on the laptop (tray icon)? |
@@ -169,7 +169,7 @@ jarvis chat -e ollama -m qwen3.5:4b     # offline: the laptop's own model, no se
 
 - [ ] Server: gateway published on `:4443`, tailnet only (`tailscale serve status`)
 - [ ] Laptop: OpenJarvis installed, `jarvis --version` works in a new window
-- [ ] `11-connect-laptop.ps1` passed all 4 steps; the test question was answered
+- [ ] `15-connect-laptop.ps1` passed all 4 steps; the test question was answered
 - [ ] `jarvis` chat works with `smart`; offline chat works with Ollama
 
 ## Check your understanding
@@ -180,4 +180,4 @@ jarvis chat -e ollama -m qwen3.5:4b     # offline: the laptop's own model, no se
 
 ## Next
 
-**Lesson 12 — PC jobs from your phone:** n8n sends a job to the laptop, Jarvis asks "Yes / No?" on Telegram, then does it.
+**Lesson 16 — PC jobs from your phone:** n8n sends a job to the laptop, Jarvis asks "Yes / No?" on Telegram, then does it.

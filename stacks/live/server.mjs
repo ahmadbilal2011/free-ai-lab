@@ -30,6 +30,7 @@ const N8N_TOOL_URL = env('N8N_TOOL_URL', 'http://n8n:5678/webhook/jarvis-live-to
 const N8N_AGENTS_URL = env('N8N_AGENTS_URL', 'http://n8n:5678/webhook/jarvis-agents');
 const JARVIS_SECRET = env('N8N_TOOL_SECRET', '');                             // shared with n8n, both directions
 const OWNER_NAME = env('OWNER_NAME', 'friend');
+const TIME_ZONE = env('TIME_ZONE', 'Asia/Riyadh');
 // ---------- AI providers you add on the dashboard (stored on the server only; keys never go back to the browser) ----------
 const DATA_DIR = env('DATA_DIR', '/app/data');
 const PROVIDERS_FILE = path.join(DATA_DIR, 'providers.json');
@@ -97,6 +98,7 @@ async function refreshAgents() {
       const list = Array.isArray(j) ? j : Array.isArray(j.agents) ? j.agents : [];
       next = list.map((a) => ({
         id: slug(a.id || a.name), name: String(a.name || a.id).slice(0, 40), role: String(a.role || '').slice(0, 120),
+        howTo: String(a.howTo || '').slice(0, 600), confirm: String(a.confirm || '').slice(0, 200),
         color: /^#[0-9a-f]{6}$/i.test(a.color || '') ? a.color : '#8c6cff',
       })).filter((a) => a.id).slice(0, 16);
       status = { ok: true, note: next.length ? `connected · ${next.length} agent${next.length > 1 ? 's' : ''}` : 'connected · no agents yet' };
@@ -121,8 +123,13 @@ function brainStatus() {
 brainStatus();
 
 function brief(mode = 'voice') {
+  const now = new Date();
+  const local = now.toLocaleString('en-GB', { timeZone: TIME_ZONE, dateStyle: 'full', timeStyle: 'short' });
+  const iso = new Intl.DateTimeFormat('sv-SE', { timeZone: TIME_ZONE, dateStyle: 'short', timeStyle: 'medium' }).format(now).replace(' ', 'T')
+    + new Intl.DateTimeFormat('en-US', { timeZone: TIME_ZONE, timeZoneName: 'longOffset' }).formatToParts(now).find((x) => x.type === 'timeZoneName').value.replace('GMT', '').replace(/^$/, '+00:00');
   const base = `You are Jarvis, ${OWNER_NAME}'s personal AI operating system${mode === 'voice' ? ', speaking live by voice' : ''}.
-${mode === 'voice' ? 'Speak briefly and naturally, like a capable assistant on a call.' : 'Answer briefly and clearly; your replies are shown on a dashboard and read aloud, so avoid tables and long lists. Today is ' + new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh', dateStyle: 'full', timeStyle: 'short' }) + '.'} Reply in the language ${OWNER_NAME} uses (Urdu or English; mixing is fine).
+${mode === 'voice' ? 'Speak briefly and naturally, like a capable assistant on a call.' : 'Answer briefly and clearly; your replies are shown on a dashboard and read aloud, so avoid tables and long lists.'}
+Now: ${local} (${TIME_ZONE}; ISO ${iso}). Reply in the language ${OWNER_NAME} uses (Urdu or English; mixing is fine).
 Messages that start with [EVENT] come from the system, not from ${OWNER_NAME}: mention them briefly.
 Never ask for passwords or API keys. Never invent facts about ${OWNER_NAME}'s calendar, email, money or files.`;
   if (!agents.length) return `${base}
@@ -132,7 +139,10 @@ is added in n8n in an upcoming lesson.`;
   return `${base}
 You orchestrate these agents (they live in n8n). For anything needing their data or actions, call ask_agent with the
 right agent and a complete task; call several agents at once when a request has several parts. Never invent results.
-Agents: ${agents.map((a) => `${a.id} = ${a.name}: ${a.role}`).join('; ')}.`;
+Before an action listed under "ask first", tell ${OWNER_NAME} exactly what you will do and wait for a clear yes.
+After an agent acts, say in one short sentence what was done.
+Agents:
+${agents.map((a) => `- ${a.id} = ${a.name}: ${a.role}${a.howTo ? `\n  Task format: ${a.howTo}` : ''}${a.confirm ? `\n  Ask first: ${a.confirm}` : ''}`).join('\n')}`;
 }
 function tools() {
   if (!agents.length) return [];
