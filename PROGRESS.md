@@ -9,6 +9,7 @@ Newest entries at the top.
 - Jarvis Live now gives its brain the current time and each agent's task format and ask-first actions; alerts are read aloud in *My AI models* mode too
 - Telegram bot gets the same agent as an HTTP Request tool
 - Tested locally: agent code (add, list, cancel, past time, bad input, delivery) and the full dashboard → n8n → reply → alert path with stand-ins
+- First try on the server: Jarvis said the skill "arrives in an upcoming lesson" (it saw no agents). Lesson reordered (update Jarvis Live → n8n → **check**), new `10-check-agents.sh` tests each link and prints the fix; agent changes now restart the conversation
 
 ## 2026-11-20 — Jarvis: AI providers you add yourself
 

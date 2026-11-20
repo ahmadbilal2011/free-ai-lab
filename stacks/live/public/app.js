@@ -141,7 +141,11 @@ function connectEvents() {
     setupAgents(d.agents, d.n8n); showBrain(d.brain); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
     if (!$('log').children.length) { log('sys', `Connected. Brain: ${state.brain === 'models' ? 'your AI models (' + (d.brain?.note || '…') + ')' : 'Gemini Live (' + d.model + ')'}. ${d.n8n.ok ? 'n8n ' + d.n8n.note + '.' : d.n8n.note + '.'}`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
   });
-  es.addEventListener('agents', (e) => { const d = JSON.parse(e.data); setupAgents(d.agents, d.n8n); log('sys', `Agent list updated: n8n ${d.n8n.note}.`); });
+  es.addEventListener('agents', (e) => {
+    const d = JSON.parse(e.data); setupAgents(d.agents, d.n8n);
+    state.history = [];   // a fresh start, so old "I can't do that yet" answers don't stick
+    log('sys', `Agent list updated: n8n ${d.n8n.note}${d.agents.length ? ` (${d.agents.map((a) => a.name).join(', ')})` : ''}. Conversation restarted.`);
+  });
   es.addEventListener('brain', (e) => { const d = JSON.parse(e.data); showBrain(d.brain); });
   es.addEventListener('metrics', (e) => showMetrics(JSON.parse(e.data)));
   es.addEventListener('agent', (e) => agentActivity(JSON.parse(e.data)));

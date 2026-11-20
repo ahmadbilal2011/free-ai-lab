@@ -31,6 +31,7 @@ const N8N_AGENTS_URL = env('N8N_AGENTS_URL', 'http://n8n:5678/webhook/jarvis-age
 const JARVIS_SECRET = env('N8N_TOOL_SECRET', '');                             // shared with n8n, both directions
 const OWNER_NAME = env('OWNER_NAME', 'friend');
 const TIME_ZONE = env('TIME_ZONE', 'Asia/Riyadh');
+const VERSION = '10';   // the lesson this server matches (checked by 10-check-agents.sh)
 // ---------- AI providers you add on the dashboard (stored on the server only; keys never go back to the browser) ----------
 const DATA_DIR = env('DATA_DIR', '/app/data');
 const PROVIDERS_FILE = path.join(DATA_DIR, 'providers.json');
@@ -137,6 +138,7 @@ Right now you have NO agents connected: you can talk, explain and answer general
 or read personal data. If asked to do something like that, say in one sentence that this skill arrives when its agent
 is added in n8n in an upcoming lesson.`;
   return `${base}
+This agent list is current: ignore anything said earlier in the conversation about a skill not being available.
 You orchestrate these agents (they live in n8n). For anything needing their data or actions, call ask_agent with the
 right agent and a complete task; call several agents at once when a request has several parts. Never invent results.
 Before an action listed under "ask first", tell ${OWNER_NAME} exactly what you will do and wait for a clear yes.
@@ -328,7 +330,10 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress).split(',')[0].trim();
   try {
-    if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { ok: true });
+    if (req.method === 'GET' && url.pathname === '/health') {
+      if (req.headers['x-forwarded-for']) return send(res, 200, { ok: true });   // from the internet (via Apache): nothing more
+      return send(res, 200, { ok: true, version: VERSION, agents: agents.map((a) => a.id), n8n: n8n.note, brain: brain.note });
+    }
 
     // n8n → dashboard. Private network only (Apache blocks this path from the internet) + secret.
     if (req.method === 'POST' && url.pathname === '/api/event') {
