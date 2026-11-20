@@ -10,6 +10,7 @@ Newest entries at the top.
 - Telegram bot gets the same agent as an HTTP Request tool
 - Tested locally: agent code (add, list, cancel, past time, bad input, delivery) and the full dashboard → n8n → reply → alert path with stand-ins
 - First try on the server: Jarvis said the skill "arrives in an upcoming lesson" (it saw no agents). Lesson reordered (update Jarvis Live → n8n → **check**), new `10-check-agents.sh` tests each link and prints the fix; agent changes now restart the conversation
+- The n8n part was still manual (import, credentials, publish). New `10-install-agents.sh` does it with n8n's own CLI: secret credential, Telegram ID from *Only me*, unpublish old, import, publish, restart, checks. Tested against a simulated n8n container
 
 ## 2026-11-20 — Jarvis: AI providers you add yourself
 

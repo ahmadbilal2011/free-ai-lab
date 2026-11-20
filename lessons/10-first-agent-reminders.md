@@ -11,7 +11,7 @@ You learn the pattern every later agent uses:
 **Time:** about 30 minutes. **Cost:** $0, no new accounts or keys.
 **Before you start:** Lesson 07 (Telegram bot) and Lesson 09 (Jarvis Live, Part D) are done.
 
-**Status:** ⚠️ Written. Tested locally with stand-ins: the agent's code (add, list, cancel, wrong input, past times, delivery), dashboard → n8n → reply → alert, and the check script's success and failure messages. The n8n import and the Telegram tool are first tried on your server.
+**Status:** ⚠️ Written. Tested locally with stand-ins: the agent's code (add, list, cancel, wrong input, past times, delivery), dashboard → n8n → reply → alert, the check script, and the install script against a simulated n8n container (credentials, Telegram ID, unpublish old, import, publish, keeping reminders). Real n8n first runs on your server. Part C (Telegram tool) is still done by hand.
 
 ---
 
@@ -40,59 +40,58 @@ You learn the pattern every later agent uses:
 
 > **Honest limit:** the *ask first* rule is followed by the AI model. For agents that send email or touch money, later lessons add a real **Yes / No button** on Telegram that the model can't skip.
 
-## Part A — Update Jarvis Live (do this first)
+## Part A — Install it (one command)
 
-Jarvis Live must now tell its AI the **current time** and each agent's **task format**. On the server (Cloud Shell → VM):
+On the server (Cloud Shell → VM):
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/09-install-live.sh
-bash 09-install-live.sh
+curl -fsSLO https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/10-install-agents.sh
+bash 10-install-agents.sh
 ```
 
-It asks nothing this time: your password, keys and AI providers are kept. Wait for the tests at the end.
+It does every step for you, using n8n's own command line inside the n8n container:
 
-## Part B — Replace the "Jarvis agents" workflow in n8n
-
-The new version contains everything from Lesson 09 plus the Reminders agent.
-
-1. n8n → **Overview** → open **Jarvis agents** → **⋯ (top right) → Unpublish**, then **⋯ → Archive**. Two workflows can't use the same webhook address, so the old one must go first.
-2. Open [`stacks/jarvis/workflows/jarvis-agents.json`](../stacks/jarvis/workflows/jarvis-agents.json) on GitHub → **Download raw file** (↓ icon, top right of the file).
-3. **Create workflow → ⋯ → Import from File** → choose it.
-4. Set the credentials (all of them already exist):
-
-| Node | Set |
+| Step | What happens |
 |---|---|
-| **Jarvis asks: which agents?** | Credential `Jarvis Live secret` |
-| **Jarvis asks: do this task** | Credential `Jarvis Live secret` |
-| **Remind me on Telegram** | Credential `Jarvis bot` · **Chat ID**: replace `YOUR_TELEGRAM_ID` with your own Telegram ID (the number in the *Only me* node, Lesson 07) |
-| **Tell Jarvis Live** | Authentication is already *Header Auth* → choose `Jarvis Live secret` |
+| 1/6 | Updates Jarvis Live to the Lesson 10 version if needed (it now tells its AI the **time** and each agent's **task format**). Password, keys and AI providers are kept |
+| 2/6 | Creates or corrects the n8n credential **Jarvis Live secret**, so it always matches Jarvis Live. Finds your Telegram credential (**Jarvis bot**) |
+| 3/6 | Finds your **Telegram ID** in Lesson 07's *Only me* node and asks you to confirm it (press Enter) |
+| 4/6 | **Unpublishes** the old Lesson 09 *Jarvis agents* (two workflows can't share a webhook address) |
+| 5/6 | Imports the new *Jarvis agents*, connects its credentials, **publishes** it |
+| 6/6 | Restarts n8n (about 20 seconds; the SAR site isn't touched), then runs **all the checks** below |
 
-5. **Save**, then **Publish**.
+It ends with the checks. Each one stops at the first broken link and prints the fix:
 
-> ⚠️ **Don't test with the editor's "Execute workflow" button.** n8n only keeps reminders after **real** runs (from Jarvis, Telegram or the schedule). Editor test runs forget them.
+| Check | ✓ means | Most common ✗ and fix |
+|---|---|---|
+| 1/5 Jarvis Live version | up to date | run the script again |
+| 2/5 n8n agent list | n8n lists `reminders` | the old workflow is still published: in n8n, unpublish it, run the script again |
+| 3/5 Reminders agent answers | *No reminders set.* | open n8n → Executions → the red node says why |
+| 4/5 Jarvis Live sees the agent | Jarvis knows Reminders | `docker restart jarvis-live` |
+| 5/5 Your models can call agents | at least one ✓ | *answers, but does NOT call agents* → that model can't use tools: move a model that can to the top under **AI providers** |
 
-## Part C — Check every link (don't skip)
+Continue only when it says **All links work**. Then **reload** the dashboard: the roster shows **Reminders** (amber), and the log says *Agent list updated … Conversation restarted*. You can run the script again any time: it updates the same workflow and keeps your reminders. Later, archive the old unpublished *Jarvis agents* in n8n to keep the list tidy (optional).
 
-On the server:
+You can re-run only the checks with `bash 10-check-agents.sh`:
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/10-check-agents.sh
 bash 10-check-agents.sh
 ```
 
-It tests, in order, exactly what Jarvis uses, and stops at the first broken link with the fix:
+> ⚠️ **Don't test with the editor's "Execute workflow" button.** n8n only keeps reminders after **real** runs (from Jarvis, Telegram or the schedule). Editor test runs forget them.
 
-| Step | ✓ means | Most common ✗ and fix |
-|---|---|---|
-| 1/5 Jarvis Live version | Part A worked | *old version* → run Part A |
-| 2/5 n8n agent list | n8n lists `reminders` | *list is []* → the **old** workflow is still published: unpublish + archive it, publish the new one |
-| 3/5 Reminders agent answers | *No reminders set.* | *refused the secret* → webhook credentials not set |
-| 4/5 Jarvis Live sees the agent | Jarvis knows Reminders | wait 1 minute or `docker restart jarvis-live` |
-| 5/5 Your models can call agents | at least one ✓ | *answers, but does NOT call agents* → that model can't use tools: move a model that can to the top under **AI providers** |
+<details><summary>Manual way (only if the script can't run)</summary>
 
-Only continue when it says **All links work**. Then **reload** the dashboard page: the roster shows **Reminders** (amber) and the log says *Agent list updated … Conversation restarted*.
+1. Run `bash 09-install-live.sh` (updates Jarvis Live).
+2. n8n → open the old **Jarvis agents** → **Unpublish**, then **Archive**.
+3. Open [`stacks/jarvis/workflows/jarvis-agents.json`](../stacks/jarvis/workflows/jarvis-agents.json) on GitHub → **Download raw file**. n8n → **Create workflow → ⋯ → Import from File**.
+4. Credentials: both webhook nodes and **Tell Jarvis Live** → `Jarvis Live secret`; **Remind me on Telegram** → `Jarvis bot`, and replace `YOUR_TELEGRAM_ID` with your Telegram ID.
+5. **Save**, **Publish**, then run `bash 10-check-agents.sh`.
 
-## Part D — Try it on the dashboard
+</details>
+
+## Part B — Try it on the dashboard
 
 | Say or type | Expected |
 |---|---|
@@ -105,7 +104,7 @@ Only continue when it says **All links work**. Then **reload** the dashboard pag
 
 Hover over Jarvis's answer to see which model replied and whether it called the agent.
 
-## Part E — Give the Telegram bot the same skill
+## Part C — Give the Telegram bot the same skill
 
 The Telegram AI Agent (Lesson 07) gets the Reminders agent as a **tool**. Open the Telegram workflow:
 
@@ -154,10 +153,9 @@ Name the tool node `Reminders`. **Save** and keep the workflow published.
 
 | Problem | Fix |
 |---|---|
-| Publishing says the webhook path is already used | The old *Jarvis agents* is still published: unpublish and archive it (Part B, step 1) |
 | Jarvis replies without calling the agent | Check 5/5: some models (e.g. some NVIDIA ones through Bifrost) don't use tools. Put Groq `openai/gpt-oss-120b` or a Gemini Flash model first |
-| Jarvis says *"I can't set reminders yet… arrives in an upcoming lesson"* | Jarvis sees **no agents**. Run `bash 10-check-agents.sh` (Part C): it names the broken link |
-| Reminder set for the wrong hour | Part A not done (the AI didn't know the time), or the Telegram System Message is missing the *Now* line |
+| Jarvis says *"I can't set reminders yet… arrives in an upcoming lesson"* | Jarvis sees **no agents**. Run `bash 10-install-agents.sh` again; its checks name the broken link |
+| Reminder set for the wrong hour | Jarvis Live not updated (run the script), or the Telegram System Message is missing the *Now* line |
 | *"Send the task as JSON…"* in the log | The model sent plain words. It usually retries by itself; if not, put a model that passed check 5/5 first |
 | Reminder never arrives | Is the workflow published? Is the Chat ID your number? n8n → Executions shows failed runs with the reason |
 | Telegram works, dashboard silent | 🔊 must be on and the page open; the alert still appears in the log |
