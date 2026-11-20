@@ -2,24 +2,107 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jarvis Live</title>
-<link rel="stylesheet" href="/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS // Live</title>
+<link rel="stylesheet" href="/hud.css">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon.svg">
-<meta name="theme-color" content="#0f1720">
+<meta name="theme-color" content="#03060b">
 </head>
 <body>
-<main class="card">
-  <header>
-    <h1>Jarvis Live</h1>
-    <form method="post" action="/logout"><button class="link" type="submit">Sign out</button></form>
-  </header>
-  <button id="talk" class="orb" aria-label="Start talking"><span id="orbLabel">Tap to talk</span></button>
-  <p id="status" class="status">Ready</p>
-  <section id="log" class="log" aria-live="polite"></section>
-  <p class="hint">Talk naturally; you can interrupt Jarvis. Tap again to end the call.</p>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="ripple" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence id="rippleNoise" type="fractalNoise" baseFrequency="0.012 0.06" numOctaves="2" seed="3"/>
+    <feDisplacementMap in="SourceGraphic" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<header class="topbar">
+  <div class="brand"><span class="logo"></span>JARVIS <em>// personal AI operating system</em></div>
+  <div class="top-right">
+    <span id="clock" class="mono"></span>
+    <span id="linkState" class="pill">offline</span>
+    <form method="post" action="/logout"><button class="ghost" type="submit">Sign out</button></form>
+  </div>
+</header>
+
+<main id="hud" class="hud">
+  <div class="col" id="colLeft">
+    <section class="panel" id="pSystem">
+      <h2>System Integrity</h2>
+      <div class="rings">
+        <div class="ring" id="ringCpu"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><b>0%</b><span>CPU</span></div>
+        <div class="ring" id="ringMem"><svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42"/></svg><b>0%</b><span>Memory</span></div>
+      </div>
+      <div class="bars">
+        <div class="bar"><label>Network in</label><i><s id="barRx"></s></i><span id="valRx" class="mono">0 kb/s</span></div>
+        <div class="bar"><label>Network out</label><i><s id="barTx"></s></i><span id="valTx" class="mono">0 kb/s</span></div>
+      </div>
+      <canvas id="spark" class="spark" height="60"></canvas>
+      <div class="facts mono"><span>Load <b id="valLoad">0</b></span><span>Up <b id="valUp">—</b></span><span>RAM <b id="valRam">—</b></span></div>
+    </section>
+    <div class="gutter gy" data-target="pSystem"></div>
+    <section class="panel grow" id="pAgents">
+      <h2>Agents</h2>
+      <ul id="roster" class="roster"></ul>
+    </section>
+  </div>
+
+  <div class="gutter gx" data-target="colLeft"></div>
+
+  <div class="col grow" id="colCenter">
+    <section class="panel" id="pGraph">
+      <h2>Multi-Agent Operations <small id="opsSummary">idle</small></h2>
+      <svg id="graph" class="graph"></svg>
+    </section>
+    <div class="gutter gy" data-target="pGraph"></div>
+    <section class="panel grow" id="pGantt">
+      <h2>Task Timeline <small>last 3 min</small></h2>
+      <canvas id="gantt" class="gantt"></canvas>
+    </section>
+  </div>
+
+  <div class="gutter gx" data-target="colRight" data-side="right"></div>
+
+  <div class="col" id="colRight">
+    <section class="panel" id="pAvatar">
+      <h2>Jarvis <small id="avatarState">idle</small><button id="avatarCfg" class="icon" title="Avatar settings">⚙</button></h2>
+      <div id="avatar" class="avatar" data-state="idle">
+        <div class="av-stage">
+          <img id="avBase" class="av-img" alt="Jarvis avatar" src="/avatar-placeholder.svg">
+          <div class="av-mouth"></div>
+          <img id="avJaw" class="av-img av-jaw" alt="" src="/avatar-placeholder.svg">
+          <div class="av-scan"></div>
+          <div class="av-ripple"></div>
+        </div>
+        <span class="live-dot" id="liveDot">● standby</span>
+        <canvas id="avWave" class="av-wave" height="44"></canvas>
+      </div>
+      <div id="cfg" class="cfg" hidden>
+        <label class="file">Upload your photo<input id="avFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
+        <label>Mouth height <input id="mouthY" type="range" min="40" max="90" step="0.5"></label>
+        <label>Mouth left/right <input id="mouthX" type="range" min="25" max="75" step="0.5"></label>
+        <label>Mouth width <input id="mouthW" type="range" min="6" max="30" step="0.5"></label>
+        <p class="note">Your photo is stored only on your server. Use a front-facing photo; then slide the green line onto your lips.</p>
+      </div>
+    </section>
+    <div class="gutter gy" data-target="pAvatar"></div>
+    <section class="panel grow" id="pLog">
+      <h2>Live Command Log</h2>
+      <div id="log" class="log" aria-live="polite"></div>
+    </section>
+  </div>
 </main>
+
+<footer class="dock">
+  <button id="talk" class="mic" aria-label="Start voice"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+  <canvas id="dockWave" class="dock-wave" height="48"></canvas>
+  <form id="cmdForm" class="cmd">
+    <input id="cmd" autocomplete="off" placeholder="Type a command… or tap the mic and talk">
+    <button type="submit" class="send" aria-label="Send">➤</button>
+  </form>
+</footer>
+
 <script src="/app.js" type="module"></script>
 </body>
 </html>

@@ -1,9 +1,10 @@
-# Lesson 09: Jarvis Live — talk to Jarvis in real time from the phone or PC browser
+# Lesson 09: Jarvis Live — the holographic dashboard: live voice, agents, events, your avatar
 #
 # - The page is published by Apache at https://live-<ip>.sslip.io (scripts/09-install-live.sh), with its own
 #   password, HTTPS and fail2ban. Port 8090 is server-only.
 # - The Gemini API key stays here (.env, never committed). Browsers get one-time tokens valid for 1 minute.
-# - Tools go to n8n on the private "jarvis" network: http://n8n:5678/webhook/jarvis-live-tool
+# - Agents: Jarvis's tool calls go to n8n on the private "jarvis" network (http://n8n:5678/webhook/jarvis-live-tool);
+#   n8n pushes live events back to http://jarvis-live:8080/api/event (blocked from the internet by Apache).
 
 name: live
 
@@ -14,6 +15,9 @@ services:
     container_name: jarvis-live
     restart: unless-stopped
     env_file: .env
+    volumes:
+      - ./data:/app/data            # your avatar photo (never on GitHub)
+      - /proc:/host/proc:ro         # real server CPU / memory / network for the System Integrity panel (read-only)
     ports:
       - "127.0.0.1:8090:8080"
     networks:

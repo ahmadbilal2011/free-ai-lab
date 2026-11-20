@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Jarvis Live rebuilt as the holographic dashboard
+
+- [Lesson 09](lessons/09-jarvis-live.md) rewritten to the new spec: HUD with System Integrity, Agents, Multi-Agent Operations graph, Task Timeline, animated avatar (your photo), Live Command Log, voice + text bar
+- Orchestrator Gemini Live (free) with `ask_agent` → n8n agents; built-in System Monitor with proactive alerts; n8n can push events
+- Tested locally in a headless browser: sign-in, metrics, parallel agents in graph/timeline, alerts, avatar upload, desktop and phone layouts. Pending: install and first voice call on the server
+
 ## 2026-11-20 — Jarvis Live built (first call pending)
 
 - New: [Lesson 09 — Jarvis Live](lessons/09-jarvis-live.md): page at `live-<ip>.sslip.io` (password, HTTPS, fail2ban), one-time Gemini Live tokens, voice straight to Google, tools through an n8n webhook with a secret (`send_to_telegram`, `run_skill`)

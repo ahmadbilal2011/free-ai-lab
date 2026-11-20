@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — Lesson 09: Jarvis Live (talk in real time, like a call)
+# free-ai-lab — Lesson 09: Jarvis Live — holographic dashboard, live voice, agents, your avatar
 #
 # Run ON THE VM as ubuntu (over SSH):
 #   bash 09-install-live.sh            # install / update (asks only for what's missing)
@@ -125,9 +125,11 @@ rm -f /tmp/live-token.json
 
 # ---------- 3. container ----------
 step "3/6  Building and starting jarvis-live (private, port 8090)"
-for f in Dockerfile compose.yaml server.mjs public/index.html public/login.html public/app.js public/pcm-worklet.js public/style.css public/manifest.json public/icon.svg; do
+for f in Dockerfile compose.yaml server.mjs public/index.html public/login.html public/login.css public/hud.css public/app.js public/pcm-worklet.js public/avatar-placeholder.svg public/manifest.json public/icon.svg; do
   curl -fsSL "$RAW/stacks/live/$f" -o "$DIR/$f"
 done
+rm -f "$DIR/public/style.css"                                  # older version
+sudo install -d -o 1000 -g 1000 -m 700 "$DIR/data"             # avatar photo; the container runs as uid 1000
 docker network inspect jarvis >/dev/null 2>&1 || docker network create jarvis >/dev/null
 (cd "$DIR" && docker compose build -q && docker compose up -d --force-recreate >/dev/null)
 w=0; until curl -fsS --max-time 3 http://127.0.0.1:8090/health >/dev/null 2>&1; do
@@ -171,11 +173,21 @@ sudo tee "$SITE" >/dev/null <<EOF
     Header always set Strict-Transport-Security "max-age=31536000"
     Header always set X-Frame-Options "DENY"
     Header always set Permissions-Policy "microphone=(self), camera=()"
-    Header always set Content-Security-Policy "default-src 'self'; connect-src 'self' wss://generativelanguage.googleapis.com; img-src 'self' data:; frame-ancestors 'none'"
+    Header always set Content-Security-Policy "default-src 'self'; connect-src 'self' wss://generativelanguage.googleapis.com; img-src 'self' data: blob:; frame-ancestors 'none'"
+
+    # n8n pushes events in over the private network only
+    <Location /api/event>
+        Require all denied
+    </Location>
 
     ProxyPreserveHost On
     ProxyRequests Off
     RequestHeader set X-Forwarded-Proto "https"
+    # live event stream: no buffering, long-lived
+    ProxyPass        /api/events http://127.0.0.1:8090/api/events flushpackets=on timeout=86400
+    <Location /api/events>
+        SetEnv no-gzip 1
+    </Location>
     ProxyPass        / http://127.0.0.1:8090/
     ProxyPassReverse / http://127.0.0.1:8090/
 
@@ -214,12 +226,16 @@ step "Tests"
 c1=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$DOMAIN/" || true)
 c2=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "https://$DOMAIN/api/token" || true)
 c3=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://$PUBIP:8090/" || true)
+c4=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "https://$DOMAIN/api/event" || true)
+c5=$(docker exec n8n node -e "fetch('http://jarvis-live:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null && echo yes || echo no)
 printf "  %-28s HTTP %s  (200 = sign-in page ✓)\n" "https://$DOMAIN/" "$c1"
 printf "  %-28s HTTP %s  (401 = tokens need the password ✓)\n" "token without sign-in" "$c2"
 printf "  %-28s HTTP %s  (000 = port 8090 not public ✓)\n" "http://<ip>:8090" "$c3"
+printf "  %-28s HTTP %s  (403 = event input blocked from internet ✓)\n" "/api/event from internet" "$c4"
+printf "  %-28s %s       (yes = n8n can send events ✓)\n" "n8n → jarvis-live" "$c5"
 
 step "Done!"
-echo -e "  Open on your phone: ${c_ok}https://$DOMAIN${c_off}  (sign in, allow the microphone, tap the circle)"
+echo -e "  Open: ${c_ok}https://$DOMAIN${c_off}  (sign in → ⚙ in the Jarvis window to add your photo → mic button to talk)"
 echo "  Add it to your home screen for an app-like icon."
 echo
 echo "  For Jarvis's tools, n8n needs this secret (Lesson 09, Part D). Paste it ONLY into n8n:"

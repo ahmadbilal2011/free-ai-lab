@@ -139,3 +139,14 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - The browser streams audio straight to Google (WebSocket, 16 kHz in / 24 kHz out): lowest delay, no audio load on the server.
 - Tools are an allow-list of two; skills grow inside one n8n workflow shared by Telegram and Live.
 - Model picked at install from what the key can use, preferring `gemini-3.1-flash-live-preview` (listed as free).
+
+## 2026-11-20 — Jarvis Live becomes the "personal AI OS" dashboard
+
+- Spec given: orchestrator + sub-agents, event-driven, full-duplex voice + text, RAG, holographic HUD with an animated
+  avatar of the user. Decisions taken with the user:
+  - **Orchestrator: free now** (Gemini Live), Claude later as a paid premium pool via Bifrost. The Claude API has no free tier.
+  - **Avatar: own photo animated in the browser** (breathing, ripple, jaw + waveform from the real voice). True lip-sync
+    needs a GPU or a paid service that would also receive the user's face.
+  - **Scope:** dashboard + agents + live events now; RAG as Lesson 17.
+- Agents = one n8n workflow routed by agent name (`ask_agent` tool, parallel calls); System Monitor built in.
+  Events: SSE to screens; n8n pushes via `/api/event` (private network + secret, blocked at Apache).
