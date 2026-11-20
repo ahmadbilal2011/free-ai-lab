@@ -2,6 +2,11 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Jarvis thinks with Bifrost
+
+- Brain switch on the dashboard: **Bifrost** (default, your free models; type or speak, replies read aloud) or **Gemini Live** (voice calls). Both use the agents from n8n
+- Tested locally with stand-in Bifrost and n8n: plain answers, and an answer that called an n8n agent. Pending: install and first run on the server
+
 ## 2026-11-20 — Jarvis Live: AI sentinel avatar, agents only from n8n
 
 - Avatar is now an original **AI sentinel** (no face). Dashboard ships with **no agents**: it shows "n8n connected · no agents yet" and Jarvis talks without pretending to act

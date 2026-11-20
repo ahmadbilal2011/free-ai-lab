@@ -10,7 +10,8 @@ import { Globe } from '/globe.js';
 
 const WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
 const $ = (id) => document.getElementById(id);
-const state = { agents: [], byId: {}, tasks: [], active: new Map(), metrics: {}, hist: [], live: false, avatar: 'idle' };
+const state = { agents: [], byId: {}, tasks: [], active: new Map(), metrics: {}, hist: [], live: false, avatar: 'idle',
+  brain: localStorage.getItem('jarvis.brain') || 'bifrost', history: [], speakReplies: localStorage.getItem('jarvis.speak') !== 'off', synthLevel: 0 };
 
 // ---------------------------------------------------------------- helpers
 const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -137,10 +138,11 @@ function connectEvents() {
   const es = new EventSource('/api/events');
   es.addEventListener('hello', (e) => {
     const d = JSON.parse(e.data); $('linkState').textContent = 'connected'; $('linkState').classList.add('on');
-    setupAgents(d.agents, d.n8n); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
-    if (!$('log').children.length) { log('sys', `Connected. Orchestrator: Gemini Live (${d.model}). ${d.n8n.ok ? 'n8n ' + d.n8n.note + '.' : d.n8n.note + '.'}`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
+    setupAgents(d.agents, d.n8n); showBifrost(d.bifrost); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
+    if (!$('log').children.length) { log('sys', `Connected. Brain: ${state.brain === 'bifrost' ? 'Bifrost (' + (d.bifrost?.note || '…') + ')' : 'Gemini Live (' + d.model + ')'}. ${d.n8n.ok ? 'n8n ' + d.n8n.note + '.' : d.n8n.note + '.'}`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
   });
   es.addEventListener('agents', (e) => { const d = JSON.parse(e.data); setupAgents(d.agents, d.n8n); log('sys', `Agent list updated: n8n ${d.n8n.note}.`); });
+  es.addEventListener('bifrost', (e) => { const d = JSON.parse(e.data); showBifrost(d.bifrost); log('sys', `Bifrost: ${d.bifrost.note}.`); });
   es.addEventListener('metrics', (e) => showMetrics(JSON.parse(e.data)));
   es.addEventListener('agent', (e) => agentActivity(JSON.parse(e.data)));
   es.addEventListener('alert', (e) => {
@@ -192,10 +194,11 @@ function brightness() {                       // share of high frequencies: "ee/
   return lo + hi ? Math.min(1, (hi / (lo + hi)) * 2.2) : 0.5;
 }
 function frame(t) {
-  const speaking = audio.sources.size > 0;
-  const outRms = drawWave($('avWave'), speaking ? audio.outAnalyser : null, '#38c8ff', state.live ? 0.04 : 0.015);
+  const speaking = audio.sources.size > 0, synth = speechSynthesis.speaking;
+  const outRms = drawWave($('avWave'), speaking ? audio.outAnalyser : null, '#38c8ff', synth ? 0.35 * state.synthLevel + 0.05 : state.live ? 0.04 : 0.015);
   drawWave($('dockWave'), speaking ? audio.outAnalyser : audio.micAnalyser, speaking ? '#38c8ff' : '#8c6cff', 0.02);
-  twin.update(t, speaking ? Math.min(1, outRms * 6) : 0, speaking ? brightness() : 0.5);
+  if (synth) state.synthLevel += ((0.35 + 0.45 * Math.abs(Math.sin(t / 95)) * (0.6 + 0.4 * Math.sin(t / 37))) - state.synthLevel) * 0.3;
+  twin.update(t, speaking ? Math.min(1, outRms * 6) : synth ? state.synthLevel : 0, speaking ? brightness() : 0.4 + 0.3 * Math.sin(t / 140));
   globe.draw(t);
   requestAnimationFrame(frame);
 }
@@ -277,10 +280,82 @@ function sendText(text, system = false) {
   session.ws.send(JSON.stringify({ realtimeInput: { text } }));
   if (!system) setAvatar('thinking');
 }
-$('talk').addEventListener('click', () => (state.live ? stopLive() : startLive()));
+// ---------------------------------------------------------------- Bifrost brain (text + push-to-talk)
+function showBifrost(b) { if (!b) return; const el = $('bifrostState'); el.textContent = b.ok ? '● ' + b.note.replace('connected · ', '') : '● ' + b.note; el.className = b.ok ? 'ok' : 'bad'; el.title = b.ok ? `model ${b.model}` : b.note; }
+function setBrain(b) {
+  if (b === state.brain) return;
+  if (state.live) stopLive();
+  stopListening(); speechSynthesis.cancel();
+  state.brain = b; try { localStorage.setItem('jarvis.brain', b); } catch {}
+  document.querySelectorAll('.brain button').forEach((x) => x.setAttribute('aria-checked', String(x.dataset.brain === b)));
+  log('sys', b === 'bifrost' ? 'Brain: Bifrost (your free models). Type, or tap the mic and speak.' : 'Brain: Gemini Live. Tap the mic for a real-time voice call.');
+}
+document.querySelectorAll('.brain button').forEach((x) => x.addEventListener('click', () => setBrain(x.dataset.brain)));
+document.querySelectorAll('.brain button').forEach((x) => x.setAttribute('aria-checked', String(x.dataset.brain === state.brain)));
+$('lang').value = localStorage.getItem('jarvis.lang') || 'en-US';
+$('lang').addEventListener('change', () => { try { localStorage.setItem('jarvis.lang', $('lang').value); } catch {} });
+const speakBtn = $('speakToggle'); speakBtn.setAttribute('aria-pressed', String(state.speakReplies));
+speakBtn.addEventListener('click', () => { state.speakReplies = !state.speakReplies; speakBtn.setAttribute('aria-pressed', String(state.speakReplies)); if (!state.speakReplies) speechSynthesis.cancel(); try { localStorage.setItem('jarvis.speak', state.speakReplies ? 'on' : 'off'); } catch {} });
+
+function speak(text) {
+  if (!state.speakReplies || !('speechSynthesis' in window)) { setAvatar('idle'); return; }
+  speechSynthesis.cancel();
+  const urdu = /[\u0600-\u06FF]/.test(text);
+  const u = new SpeechSynthesisUtterance(text.replace(/[*_#`>|]/g, ' ').replace(/\[(\d+)\]/g, ''));
+  const voices = speechSynthesis.getVoices();
+  const want = urdu ? ['ur', 'hi'] : [($('lang').value || 'en').slice(0, 2), 'en'];
+  u.voice = want.map((l) => voices.find((v) => v.lang.toLowerCase().startsWith(l))).find(Boolean) || null;
+  u.lang = u.voice?.lang || (urdu ? 'ur-PK' : 'en-US'); u.rate = 1.02;
+  u.onstart = () => setAvatar('speaking'); u.onend = u.onerror = () => setAvatar('idle');
+  speechSynthesis.speak(u);
+}
+let busy = false;
+async function askBifrost(text) {
+  if (busy) return; busy = true;
+  state.history.push({ role: 'user', content: text });
+  setAvatar('thinking'); const t0 = performance.now();
+  try {
+    const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ history: state.history }) });
+    if (r.status === 401) { location.reload(); return; }
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || `server ${r.status}`);
+    state.history.push({ role: 'assistant', content: j.reply });
+    if (state.history.length > 30) state.history.splice(0, state.history.length - 30);
+    log('jarvis', `Jarvis: ${j.reply}`).title = `${j.model} · ${Math.round(performance.now() - t0)} ms`;
+    speak(j.reply);
+  } catch (e) { state.history.pop(); log('err', `Bifrost: ${e.message}`); setAvatar('idle'); }
+  finally { busy = false; }
+}
+
+// push-to-talk for the Bifrost brain: the browser turns speech into text (Chrome, Edge, Android, Safari)
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+function stopListening() { if (rec) { try { rec.abort(); } catch {} rec = null; } $('talk').classList.remove('on'); $('liveDot').textContent = 'standby'; $('liveDot').classList.remove('on'); }
+function listenOnce() {
+  if (!SR) { log('err', "This browser can't turn speech into text. Use Chrome or Edge, type instead, or switch to Gemini Live."); return; }
+  if (rec) { stopListening(); setAvatar('idle'); return; }
+  speechSynthesis.cancel();
+  rec = new SR(); rec.lang = $('lang').value; rec.interimResults = true; rec.maxAlternatives = 1;
+  let line = null, finalText = '';
+  rec.onresult = (e) => {
+    let interim = ''; finalText = '';
+    for (const r of e.results) (r.isFinal ? (finalText += r[0].transcript) : (interim += r[0].transcript));
+    line = line || log('you', 'You: '); line.lastChild.textContent = 'You: ' + (finalText || interim);
+  };
+  rec.onerror = (e) => { if (e.error !== 'aborted') log('err', e.error === 'not-allowed' ? 'Microphone blocked: allow it in the browser’s site settings.' : `Speech recognition: ${e.error}`); };
+  rec.onend = () => { const said = finalText.trim(); stopListening(); if (said) askBifrost(said); else setAvatar('idle'); };
+  rec.start(); setAvatar('listening');
+  $('talk').classList.add('on'); $('liveDot').textContent = 'listening'; $('liveDot').classList.add('on');
+}
+
+$('talk').addEventListener('click', () => {
+  if (state.brain === 'bifrost') return listenOnce();
+  return state.live ? stopLive() : startLive();
+});
 $('cmdForm').addEventListener('submit', (e) => {
   e.preventDefault(); const v = $('cmd').value.trim(); if (!v) return;
-  log('you', `You (typed): ${v}`); $('cmd').value = ''; sendText(v);
+  log('you', `You (typed): ${v}`); $('cmd').value = '';
+  if (state.brain === 'bifrost' && !state.live) askBifrost(v); else sendText(v);
 });
 
 // ---------------------------------------------------------------- resizable panels (drag the thin gutters)
@@ -304,5 +379,5 @@ document.querySelectorAll('.gutter').forEach((g) => {
 
 $('refreshAgents').addEventListener('click', async () => {
   const r = await fetch('/api/agents/refresh', { method: 'POST' }); if (!r.ok) return;
-  const d = await r.json(); setupAgents(d.agents, d.n8n); log('sys', `Asked n8n for agents: ${d.n8n.ok ? 'n8n ' : ''}${d.n8n.note}.`);
+  const d = await r.json(); setupAgents(d.agents, d.n8n); showBifrost(d.bifrost); log('sys', `Asked n8n for agents: ${d.n8n.ok ? 'n8n ' : ''}${d.n8n.note}.`);
 });

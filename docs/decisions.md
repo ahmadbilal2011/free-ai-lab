@@ -172,3 +172,10 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   The starter workflow `jarvis-agents.json` lists none. With no agents, Jarvis is told not to pretend to act.
 - Built-in AI agents (Web Scout, Writer, Analyst, Planner) and the Bifrost key prompt removed; future AI agents are
   built in n8n with Bifrost models, so Telegram and Live share the same agents.
+
+## 2026-11-20 — Jarvis thinks with Bifrost
+
+- User asked that Jarvis communicate through Bifrost (Lesson 05). Jarvis Live now has **two brains**, chosen at the top:
+  **Bifrost** (default: free models with fallback; text, browser speech-to-text in English/Urdu, replies read aloud by the
+  device) and **Gemini Live** (real-time voice calls). Both call the same n8n agents (OpenAI-style tool calls through Bifrost).
+- The Bifrost key and `CHAT_MODEL` live only in `~/lab/live/.env`; the browser never sees them. Claude later = one Bifrost model.

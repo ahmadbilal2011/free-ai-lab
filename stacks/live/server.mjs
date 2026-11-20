@@ -5,7 +5,10 @@
 //                                             ├── /api/tool   : Jarvis's tool calls → the agent in n8n
 //                                             └── /api/event  : n8n pushes events in (private network only)
 //
-// Gemini Live (free tier) is the orchestrator: it hears you, decides, and calls agents.
+// Two brains, one set of agents:
+//   • Bifrost (Lesson 05): your free models with automatic fallback — text and push-to-talk (/api/chat)
+//   • Gemini Live (free tier): real-time voice calls with interruptions
+// Both decide which agents to call.
 // Jarvis Live has NO agents of its own. Agents live in n8n (Lesson 06): n8n publishes the list of agents
 // (GET /webhook/jarvis-agents) and does the work (POST /webhook/jarvis-live-tool). Each upcoming lesson adds
 // one agent there, and it appears here by itself.
@@ -26,6 +29,9 @@ const N8N_TOOL_URL = env('N8N_TOOL_URL', 'http://n8n:5678/webhook/jarvis-live-to
 const N8N_AGENTS_URL = env('N8N_AGENTS_URL', 'http://n8n:5678/webhook/jarvis-agents');
 const JARVIS_SECRET = env('N8N_TOOL_SECRET', '');                             // shared with n8n, both directions
 const OWNER_NAME = env('OWNER_NAME', 'friend');
+const BIFROST_URL = env('BIFROST_URL', 'http://bifrost:8080/v1');                    // Lesson 05
+const BIFROST_KEY = env('BIFROST_KEY', '');                                           // a Bifrost virtual key ("smart")
+const CHAT_MODEL = env('CHAT_MODEL', 'groq/openai/gpt-oss-120b');
 const HOST_PROC = fs.existsSync('/host/proc/stat') ? '/host/proc' : '/proc';
 const SESSION_HOURS = 12;
 const PUBLIC_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), 'public');
@@ -76,9 +82,27 @@ async function refreshAgents() {
 }
 setInterval(refreshAgents, 60e3); refreshAgents();
 
-function brief() {
-  const base = `You are Jarvis, ${OWNER_NAME}'s personal AI operating system, speaking live by voice.
-Speak briefly and naturally, like a capable assistant on a call. Reply in the language ${OWNER_NAME} uses (Urdu or English; mixing is fine).
+// ---------- Bifrost: is the free-model switchboard reachable? ----------
+let bifrost = { ok: false, note: BIFROST_KEY ? 'not checked yet' : 'no Bifrost key set' };
+async function checkBifrost() {
+  let next;
+  if (!BIFROST_KEY) next = { ok: false, note: 'no Bifrost key set' };
+  else {
+    try {
+      const r = await fetch(`${BIFROST_URL}/models`, { headers: { Authorization: `Bearer ${BIFROST_KEY}` }, signal: AbortSignal.timeout(8000) });
+      if (r.status === 401 || r.status === 403) next = { ok: false, note: 'Bifrost refused the key' };
+      else if (!r.ok) next = { ok: false, note: `Bifrost answered HTTP ${r.status}` };
+      else { const j = await r.json().catch(() => ({})); const n = Array.isArray(j.data) ? j.data.length : 0; next = { ok: true, note: `connected${n ? ` · ${n} models` : ''}`, model: CHAT_MODEL }; }
+    } catch { next = { ok: false, note: 'Bifrost not reachable' }; }
+  }
+  const changed = next.note !== bifrost.note; bifrost = next;
+  if (changed) broadcast('bifrost', { bifrost }, false);
+}
+setInterval(checkBifrost, 60e3); checkBifrost();
+
+function brief(mode = 'voice') {
+  const base = `You are Jarvis, ${OWNER_NAME}'s personal AI operating system${mode === 'voice' ? ', speaking live by voice' : ''}.
+${mode === 'voice' ? 'Speak briefly and naturally, like a capable assistant on a call.' : 'Answer briefly and clearly; your replies are shown on a dashboard and read aloud, so avoid tables and long lists. Today is ' + new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh', dateStyle: 'full', timeStyle: 'short' }) + '.'} Reply in the language ${OWNER_NAME} uses (Urdu or English; mixing is fine).
 Messages that start with [EVENT] come from the system, not from ${OWNER_NAME}: mention them briefly.
 Never ask for passwords or API keys. Never invent facts about ${OWNER_NAME}'s calendar, email, money or files.`;
   if (!agents.length) return `${base}
@@ -121,6 +145,48 @@ async function runTool(name, args = {}) {
   } catch (e) { result = { ok: false, error: e.name === 'TimeoutError' ? 'the agent took too long' : 'n8n not reachable' }; }
   agentEvent(agent.id, result.ok === false ? 'error' : 'done', task, result.ok === false ? result.error : String(result.result ?? '').slice(0, 200));
   return result;
+}
+
+// ---------- Bifrost brain: chat with tool calls (OpenAI format) ----------
+function openaiTools() {
+  if (!agents.length) return undefined;
+  return [{ type: 'function', function: {
+    name: 'ask_agent',
+    description: 'Give a task to one agent and get its result. Put everything it needs into the task.',
+    parameters: { type: 'object', properties: {
+      agent: { type: 'string', enum: agents.map((a) => a.id) },
+      task: { type: 'string' }, context: { type: 'string' },
+    }, required: ['agent', 'task'] },
+  } }];
+}
+async function bifrostCall(messages) {
+  const body = { model: CHAT_MODEL, messages, temperature: 0.5, max_tokens: 700 };
+  const t = openaiTools(); if (t) body.tools = t;
+  const r = await fetch(`${BIFROST_URL}/chat/completions`, {
+    method: 'POST', signal: AbortSignal.timeout(60e3),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${BIFROST_KEY}` },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`Bifrost answered ${r.status}: ${JSON.stringify(j.error || j).slice(0, 200)}`);
+  return { msg: j.choices?.[0]?.message || {}, model: j.model || CHAT_MODEL };
+}
+async function chat(history) {
+  if (!BIFROST_KEY) throw new Error('No Bifrost key set: re-run 09-install-live.sh and paste your "smart" virtual key');
+  const messages = [{ role: 'system', content: brief('text') },
+    ...history.slice(-16).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) }))];
+  for (let step = 0; step < 4; step++) {                           // up to 4 rounds of agent calls
+    const { msg, model } = await bifrostCall(messages);
+    const calls = msg.tool_calls || [];
+    if (!calls.length) return { reply: (msg.content || '').trim(), model };
+    messages.push({ role: 'assistant', content: msg.content || '', tool_calls: calls });
+    const results = await Promise.all(calls.map(async (c) => {     // several agents in parallel
+      let args = {}; try { args = JSON.parse(c.function?.arguments || '{}'); } catch {}
+      return { role: 'tool', tool_call_id: c.id, content: JSON.stringify(await runTool(c.function?.name, args)).slice(0, 6000) };
+    }));
+    messages.push(...results);
+  }
+  return { reply: 'I asked the agents several times without finishing. Please try a simpler request.', model: CHAT_MODEL };
 }
 
 // ---------- server health (shown on the dashboard; alerts by itself) ----------
@@ -247,17 +313,24 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
-      res.write(`event: hello\ndata: ${JSON.stringify({ agents, n8n, recent, metrics, model: LIVE_MODEL, owner: OWNER_NAME })}\n\n`);
+      res.write(`event: hello\ndata: ${JSON.stringify({ agents, n8n, bifrost, recent, metrics, model: LIVE_MODEL, owner: OWNER_NAME })}\n\n`);
       clients.add(res);
       const ping = setInterval(() => res.write(': ping\n\n'), 15e3);
       req.on('close', () => { clearInterval(ping); clients.delete(res); });
       return;
     }
-    if (req.method === 'POST' && url.pathname === '/api/agents/refresh') { await refreshAgents(); return send(res, 200, { agents, n8n }); }
+    if (req.method === 'POST' && url.pathname === '/api/agents/refresh') { await Promise.all([refreshAgents(), checkBifrost()]); return send(res, 200, { agents, n8n, bifrost }); }
+    if (req.method === 'POST' && url.pathname === '/api/chat') {
+      const { history } = JSON.parse(await readBody(req, 128 * 1024));
+      if (!Array.isArray(history) || !history.length) return send(res, 400, { error: 'empty' });
+      await refreshAgents();
+      try { return send(res, 200, await chat(history)); }
+      catch (e) { return send(res, 502, { error: e.name === 'TimeoutError' ? 'The free model took too long. Try again.' : e.message.slice(0, 300) }); }
+    }
     if (req.method === 'POST' && url.pathname === '/api/token') {
       await refreshAgents();
       const token = await createToken();
-      return send(res, 200, { token, model: LIVE_MODEL, voice: LIVE_VOICE, systemInstruction: brief(), tools: tools() });
+      return send(res, 200, { token, model: LIVE_MODEL, voice: LIVE_VOICE, systemInstruction: brief('voice'), tools: tools() });
     }
     if (req.method === 'POST' && url.pathname === '/api/tool') {
       const { name, args } = JSON.parse(await readBody(req));

@@ -14,6 +14,10 @@
 <header class="topbar">
   <div class="brand"><span class="logo"></span>Jarvis <em>your personal AI operating system</em></div>
   <div class="top-right">
+    <div class="brain" role="radiogroup" aria-label="Who answers">
+      <button type="button" role="radio" data-brain="bifrost" aria-checked="true">Bifrost <small id="bifrostState">checking…</small></button>
+      <button type="button" role="radio" data-brain="live" aria-checked="false">Gemini Live</button>
+    </div>
     <span id="clock" class="num"></span>
     <span id="linkState" class="pill">offline</span>
     <form method="post" action="/logout"><button class="ghost" type="submit">Sign out</button></form>
@@ -78,6 +82,10 @@
 <footer class="dock">
   <button id="talk" class="mic" aria-label="Start voice"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
   <canvas id="dockWave" class="dock-wave" height="48"></canvas>
+  <select id="lang" class="lang" aria-label="Language you speak">
+    <option value="en-US">English</option><option value="ur-PK">اردو</option>
+  </select>
+  <button id="speakToggle" class="speak" type="button" aria-pressed="true" title="Read Bifrost replies aloud">🔊</button>
   <form id="cmdForm" class="cmd">
     <input id="cmd" autocomplete="off" placeholder="Ask Jarvis anything, or tap the mic and talk">
     <button type="submit" class="send" aria-label="Send">➤</button>

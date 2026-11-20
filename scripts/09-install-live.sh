@@ -9,7 +9,7 @@
 #   LIVE_MODEL=<name> bash 09-install-live.sh   # force a specific Gemini Live model
 #
 # What it does:
-#   1. Asks for your free Gemini key (AI Studio, project without billing) and a page password (both hidden)
+#   1. Asks for your Bifrost 'smart' key, your free Gemini key and a page password (all hidden)
 #   2. Finds a Gemini Live model your key can use, and checks one-time tokens work
 #   3. Builds and starts the small "jarvis-live" container (private, port 8090)
 #   4. Publishes https://live-<ip>.sslip.io through Apache (Let's Encrypt), fail2ban on the login
@@ -95,6 +95,15 @@ if [ -z "$(env_get OWNER_NAME)" ]; then
 fi
 [ -n "$(env_get LIVE_VOICE)" ] || env_set LIVE_VOICE "Kore"
 [ -n "$(env_get N8N_AGENTS_URL)" ] || env_set N8N_AGENTS_URL "http://n8n:5678/webhook/jarvis-agents"
+if [ -z "$(env_get BIFROST_KEY)" ]; then
+  echo "  Jarvis's main brain is Bifrost (Lesson 05): your free models with automatic fallback."
+  echo "  Paste your Bifrost 'smart' virtual key (Bifrost page → Virtual Keys). Enter = skip (only Gemini Live will work)."
+  read -r -s -p "  Bifrost virtual key (hidden): " BK; echo
+  BK=$(printf '%s' "$BK" | tr -d '[:space:]')
+  if [ -n "$BK" ]; then env_set BIFROST_KEY "$BK"; fi
+fi
+[ -n "$(env_get BIFROST_URL)" ] || env_set BIFROST_URL "http://bifrost:8080/v1"
+[ -n "$(env_get CHAT_MODEL)" ] || env_set CHAT_MODEL "groq/openai/gpt-oss-120b"
 
 # ---------- 2. model ----------
 step "2/6  Choosing a Gemini Live model"
@@ -228,6 +237,7 @@ c2=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "https://$DOMA
 c3=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://$PUBIP:8090/" || true)
 c4=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "https://$DOMAIN/api/event" || true)
 c6=$(docker exec jarvis-live node -e "fetch(process.env.N8N_AGENTS_URL,{headers:{'X-Jarvis-Secret':process.env.N8N_TOOL_SECRET}}).then(r=>console.log(r.status)).catch(()=>console.log('000'))" 2>/dev/null || echo 000)
+c7=$(docker exec jarvis-live node -e "fetch(process.env.BIFROST_URL+'/models',{headers:{Authorization:'Bearer '+(process.env.BIFROST_KEY||'')}}).then(r=>console.log(r.status)).catch(()=>console.log('000'))" 2>/dev/null || echo 000)
 c5=$(docker exec n8n node -e "fetch('http://jarvis-live:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null && echo yes || echo no)
 printf "  %-28s HTTP %s  (200 = sign-in page ✓)\n" "https://$DOMAIN/" "$c1"
 printf "  %-28s HTTP %s  (401 = tokens need the password ✓)\n" "token without sign-in" "$c2"
@@ -235,6 +245,7 @@ printf "  %-28s HTTP %s  (000 = port 8090 not public ✓)\n" "http://<ip>:8090" 
 printf "  %-28s HTTP %s  (403 = event input blocked from internet ✓)\n" "/api/event from internet" "$c4"
 printf "  %-28s %s       (yes = n8n can send events ✓)\n" "n8n → jarvis-live" "$c5"
 printf "  %-28s HTTP %s  (200 = agent list from n8n ✓; 404 = import the workflow, Part D)\n" "jarvis-live → n8n agents" "$c6"
+printf "  %-28s HTTP %s  (200 = Bifrost brain ready ✓; 401 = wrong key; 000 = Bifrost not running)\n" "jarvis-live → Bifrost" "$c7"
 
 step "Done!"
 echo -e "  Open: ${c_ok}https://$DOMAIN${c_off}  (sign in, then tap the mic to talk or type in the bar)"
