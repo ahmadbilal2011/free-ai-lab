@@ -18,7 +18,7 @@ Newest entries at the top.
 
 - ✅ Tested: typed and voice messages, only-me check, memory, spoken replies (ElevenLabs), and the free **Gemini listening backup** (ElevenLabs key switched off on purpose)
 - Written, not yet tested: free **Gemini speaking backup** (Gemini TTS → WAV)
-- Decided: real-time talk ("Jarvis Live") later, with the Gemini Live API and n8n workflows as its tools — [Lesson 09 plan](lessons/09-jarvis-live-plan.md)
+- Decided: real-time talk ("Jarvis Live") later, with the Gemini Live API and n8n workflows as its tools — [Lesson 09](lessons/09-jarvis-live.md)
 - Repo cleaned: replaced lessons, scripts and stacks removed (they remain in git history); lessons renumbered 00–11 in the order they're done; Backups (08) is next
 
 - Telegram Trigger (instant, no polling) → only-me check → voice notes heard by ElevenLabs Scribe → AI Agent via Bifrost with memory → text reply, plus a spoken reply for voice notes — [Lesson 07](lessons/07-telegram-jarvis-voice.md)
