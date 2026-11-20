@@ -4,6 +4,7 @@
 #
 # Run ON THE VM as ubuntu:
 #   bash install-gateway.sh          # install / update (web page locked to YOUR IP until you create the admin)
+#   bash 05-install-gateway.sh --allow [IP] # setup lock: let YOUR browser in (no IP = the last blocked visitor)
 #   bash install-gateway.sh --open   # after creating the admin login: open the page from anywhere
 #   bash install-gateway.sh --off    # stop it and take its web page offline (data kept)
 #   AI_DOMAIN=ai.example.org bash install-gateway.sh   # use your own name instead of sslip.io
@@ -92,7 +93,7 @@ EOF
 [ "$(id -u)" -ne 0 ] || die "Run WITHOUT sudo:  bash $0 $MODE"
 command -v docker >/dev/null || die "Docker isn't installed (Lesson 03)."
 systemctl is-active --quiet apache2 || die "Apache isn't running."
-case "$MODE" in ""|--off|--open) ;; *) die "Unknown option '$MODE'. Use --open, --off or nothing." ;; esac
+case "$MODE" in ""|--off|--open|--allow) ;; *) die "Unknown option '$MODE'. Use --allow, --open, --off or nothing." ;; esac
 
 if [ "$MODE" = "--off" ]; then
   step "Stopping Bifrost and taking its web page offline (data kept in $DIR/data)"
@@ -101,6 +102,22 @@ if [ "$MODE" = "--off" ]; then
   sudo rm -f "$JAIL" "$FILTER"; sudo systemctl restart fail2ban 2>/dev/null || true
   [ -f "$DIR/compose.yaml" ] && (cd "$DIR" && docker compose down >/dev/null 2>&1) || true
   echo "Done."; exit 0
+fi
+
+if [ "$MODE" = "--allow" ]; then
+  step "Setup lock: letting your browser in"
+  DOMAIN=$(env_get AI_PUBLIC_HOST); [ -n "$DOMAIN" ] || die "Install first: bash $0"
+  IP="${2:-}"
+  if [ -z "$IP" ]; then
+    IP=$(sudo grep -h "client denied" /var/log/apache2/ai-gateway-error.log 2>/dev/null | tail -1 | grep -oE '\[client [^]]+\]' | tail -1 | sed -E 's/^\[client //; s/\]$//; s/:[0-9]+$//')
+    [ -n "$IP" ] || die "No blocked visit found yet. Open https://$DOMAIN in your browser first (you'll see Forbidden), then run this again."
+    echo "  The last browser that was blocked came from: $IP"
+    read -r -p "  Is that you (you opened the page a moment ago)? (y/N): " ok
+    [ "${ok,,}" = y ] || die "Cancelled. Or give the IP yourself: bash $0 --allow <your-ip>  (search 'what is my ip' on the laptop)"
+  fi
+  [[ "$IP" =~ ^[0-9a-fA-F.:]+$ ]] || die "That doesn't look like an IP address: $IP"
+  write_site "$IP"
+  echo "  Done. https://$DOMAIN now opens for $IP only. Create the admin login there, then run: bash $0 --open"; exit 0
 fi
 
 if [ "$MODE" = "--open" ]; then
@@ -163,6 +180,7 @@ MYIP="${SSH_CLIENT%% *}"
 [ -n "$MYIP" ] || die "Run this over SSH (needed to lock the page to your IP during setup)."
 write_site "$MYIP"
 echo "Page is locked to your IP ($MYIP) until you create the admin login."
+echo "(Forbidden in your browser? You probably ran this from Cloud Shell or another network: use  bash $0 --allow)"
 
 # ---------- 6. fail2ban ----------
 step "6/6  fail2ban: ban IPs that keep failing the Bifrost login"

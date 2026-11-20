@@ -76,6 +76,7 @@ Real voice calls need your server and Google: the first call happens there.
 | Top right | **Jarvis** | The **AI sentinel**, described below |
 | Below | **Live command log** | What you said, what Jarvis said, agent steps and alerts, time-stamped |
 | Top bar | **Brain switch** | **Bifrost** (with its status, e.g. *● 12 models*) or **Gemini Live** |
+| Top bar | **Models** | Pick as many of your Bifrost models as you like and put them in order (Part E2) |
 | Bottom | **Command bar** | Mic, waveform, language (English or اردو) for speech, 🔊 read replies aloud on/off, text input |
 
 Drag the thin lines between panels to resize; the layout is remembered. On a phone, the panels stack.
@@ -146,6 +147,18 @@ Each upcoming lesson adds one entry to the list, for example `{ "id": "calendar"
 3. Choose **اردو** next to the mic, tap the mic and say *"آج کا دن کیسے منظم کروں؟"*. Your words appear in the log, then Jarvis answers.
 4. Ask for an action, such as *"What's on my calendar?"*. Jarvis should say that skill arrives when its agent is added. It must **not** make up an answer.
 
+### Part E2 — Choose Jarvis's models (as many as you want)
+
+![Picking models](../docs/images/09-models.png)
+
+1. **Add free models in Bifrost first.** Open Bifrost's page (Lesson 05) → *Models → Model Providers*, add providers and their keys. Every model you add there shows up in Jarvis.
+2. On the dashboard, click **Models** (top right). You see every model Bifrost offers. Filter by typing, e.g. `groq`, `gemini`, `free`.
+3. Click **Add** on each model you want, then put them in order with ↑ ↓. Click **Save order**.
+
+Jarvis tries them **top to bottom**: if one is busy, out of free quota or failing, the next answers, and the log says which one did (hover over a reply to see every model it tried). With nothing picked, Jarvis uses `CHAT_MODEL` from the installer.
+
+Tip: put a **fast** model first (e.g. a Groq one), then a **big** one, then models from **other providers**, so that one provider's daily limit never stops Jarvis.
+
 **With Gemini Live:**
 
 5. Click **Gemini Live** at the top, tap the mic and allow the microphone. Talk back and forth, and interrupt it mid-sentence: it stops and listens. Tap again to end.
@@ -186,7 +199,7 @@ The server also watches itself: memory above 85% or CPU above 90% for a minute �
 | `bash 09-install-live.sh --password` | Change the page password |
 | `bash 09-install-live.sh --off` | Stop it and take the page offline |
 | `LIVE_MODEL=<name> bash 09-install-live.sh` | Force another Gemini Live model |
-| Edit `CHAT_MODEL` in `~/lab/live/.env`, then re-run | Change Jarvis's Bifrost model (e.g. Claude later) |
+| Dashboard → **Models** | Pick and order Jarvis's models (saved in `~/lab/live/data`, included in backups) |
 | `docker logs --tail 30 jarvis-live` | Errors and agent calls |
 
 ## If something goes wrong
@@ -194,6 +207,8 @@ The server also watches itself: memory above 85% or CPU above 90% for a minute �
 | Problem | Fix |
 |---|---|
 | Top bar says *no Bifrost key set* or *Bifrost refused the key* | Re-run the installer and paste the `smart` virtual key; check it in Bifrost → Virtual Keys |
+| Models list is empty | Add providers and models in Bifrost's page first; your virtual key must allow those providers (Bifrost → Virtual Keys) |
+| A reply says *None of your models answered* | All picked models failed (quota, keys). Open **Models**, add models from another provider |
 | Top bar says *Bifrost not reachable* | `docker ps` should show `bifrost` running (Lesson 05) |
 | "Bifrost answered 404/400" in the log | The model in `CHAT_MODEL` (`~/lab/live/.env`) isn't in Bifrost: pick one from Bifrost's Models page and re-run the installer |
 | Mic does nothing in Bifrost mode | The browser has no speech-to-text: use Chrome or Edge, type instead, or switch to Gemini Live |

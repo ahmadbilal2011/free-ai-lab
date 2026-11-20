@@ -179,3 +179,10 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   **Bifrost** (default: free models with fallback; text, browser speech-to-text in English/Urdu, replies read aloud by the
   device) and **Gemini Live** (real-time voice calls). Both call the same n8n agents (OpenAI-style tool calls through Bifrost).
 - The Bifrost key and `CHAT_MODEL` live only in `~/lab/live/.env`; the browser never sees them. Claude later = one Bifrost model.
+
+## 2026-11-20 — Pick as many models as you like; setup lock fix
+
+- Jarvis's Bifrost brain uses a **model list chosen on the dashboard** (Models dialog: all models Bifrost offers, add/order/remove),
+  saved in `~/lab/live/data/settings.json`. Jarvis tries them in order and moves on when one is busy, out of quota or failing.
+- Bifrost page "Forbidden": the setup lock used the SSH client's IP (Cloud Shell ≠ browser). New `05-install-gateway.sh --allow [IP]`
+  reads the last blocked IP from Apache's log (with confirmation) and unlocks it.

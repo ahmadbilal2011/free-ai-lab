@@ -31,7 +31,13 @@ const JARVIS_SECRET = env('N8N_TOOL_SECRET', '');                             //
 const OWNER_NAME = env('OWNER_NAME', 'friend');
 const BIFROST_URL = env('BIFROST_URL', 'http://bifrost:8080/v1');                    // Lesson 05
 const BIFROST_KEY = env('BIFROST_KEY', '');                                           // a Bifrost virtual key ("smart")
-const CHAT_MODEL = env('CHAT_MODEL', 'groq/openai/gpt-oss-120b');
+const CHAT_MODEL = env('CHAT_MODEL', 'groq/openai/gpt-oss-120b');                 // used until you pick models
+const DATA_DIR = env('DATA_DIR', '/app/data');                                        // settings chosen on the dashboard
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+let settings = { models: [] };
+try { settings = { ...settings, ...JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) }; } catch {}
+function saveSettings() { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), { mode: 0o600 }); }
+const chatModels = () => (settings.models.length ? settings.models : [CHAT_MODEL]);
 const HOST_PROC = fs.existsSync('/host/proc/stat') ? '/host/proc' : '/proc';
 const SESSION_HOURS = 12;
 const PUBLIC_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), 'public');
@@ -92,10 +98,10 @@ async function checkBifrost() {
       const r = await fetch(`${BIFROST_URL}/models`, { headers: { Authorization: `Bearer ${BIFROST_KEY}` }, signal: AbortSignal.timeout(8000) });
       if (r.status === 401 || r.status === 403) next = { ok: false, note: 'Bifrost refused the key' };
       else if (!r.ok) next = { ok: false, note: `Bifrost answered HTTP ${r.status}` };
-      else { const j = await r.json().catch(() => ({})); const n = Array.isArray(j.data) ? j.data.length : 0; next = { ok: true, note: `connected${n ? ` · ${n} models` : ''}`, model: CHAT_MODEL }; }
+      else { const j = await r.json().catch(() => ({})); const n = Array.isArray(j.data) ? j.data.length : 0; next = { ok: true, note: `connected${n ? ` · ${n} models` : ''}`, model: chatModels()[0], chosen: chatModels().length }; }
     } catch { next = { ok: false, note: 'Bifrost not reachable' }; }
   }
-  const changed = next.note !== bifrost.note; bifrost = next;
+  const changed = next.note !== bifrost.note || next.model !== bifrost.model || next.chosen !== bifrost.chosen; bifrost = next;
   if (changed) broadcast('bifrost', { bifrost }, false);
 }
 setInterval(checkBifrost, 60e3); checkBifrost();
@@ -159,8 +165,14 @@ function openaiTools() {
     }, required: ['agent', 'task'] },
   } }];
 }
-async function bifrostCall(messages) {
-  const body = { model: CHAT_MODEL, messages, temperature: 0.5, max_tokens: 700 };
+async function listModels() {
+  const r = await fetch(`${BIFROST_URL}/models`, { headers: { Authorization: `Bearer ${BIFROST_KEY}` }, signal: AbortSignal.timeout(10e3) });
+  if (!r.ok) throw new Error(`Bifrost answered ${r.status}`);
+  const j = await r.json().catch(() => ({}));
+  return [...new Set((j.data || []).map((m) => String(m.id || '')).filter(Boolean))].sort();
+}
+async function bifrostCall(messages, model) {
+  const body = { model, messages, temperature: 0.5, max_tokens: 700 };
   const t = openaiTools(); if (t) body.tools = t;
   const r = await fetch(`${BIFROST_URL}/chat/completions`, {
     method: 'POST', signal: AbortSignal.timeout(60e3),
@@ -168,17 +180,31 @@ async function bifrostCall(messages) {
     body: JSON.stringify(body),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(`Bifrost answered ${r.status}: ${JSON.stringify(j.error || j).slice(0, 200)}`);
-  return { msg: j.choices?.[0]?.message || {}, model: j.model || CHAT_MODEL };
+  if (!r.ok) throw Object.assign(new Error(`${model}: Bifrost answered ${r.status} ${JSON.stringify(j.error || j).slice(0, 160)}`), { status: r.status });
+  return { msg: j.choices?.[0]?.message || {}, model: j.model || model };
+}
+// your models, in your order: if one is busy, out of free quota or failing, the next one answers
+async function callWithFallback(messages, tried) {
+  let lastErr;
+  for (const model of chatModels()) {
+    try { const out = await bifrostCall(messages, model); tried.push(model); return out; }
+    catch (e) {
+      tried.push(`${model} ✗`); lastErr = e;
+      if (e.status === 401 || e.status === 403) throw new Error('Bifrost refused the key: re-run 09-install-live.sh with your "smart" virtual key');
+      broadcast('agent', { agent: 'core', status: 'info', task: `${model} didn't answer, trying the next model`, detail: '' });
+    }
+  }
+  throw new Error(`None of your ${chatModels().length} model(s) answered. Last error: ${lastErr?.name === 'TimeoutError' ? 'took too long' : lastErr?.message}`);
 }
 async function chat(history) {
   if (!BIFROST_KEY) throw new Error('No Bifrost key set: re-run 09-install-live.sh and paste your "smart" virtual key');
   const messages = [{ role: 'system', content: brief('text') },
     ...history.slice(-16).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) }))];
+  const tried = [];
   for (let step = 0; step < 4; step++) {                           // up to 4 rounds of agent calls
-    const { msg, model } = await bifrostCall(messages);
+    const { msg, model } = await callWithFallback(messages, tried);
     const calls = msg.tool_calls || [];
-    if (!calls.length) return { reply: (msg.content || '').trim(), model };
+    if (!calls.length) return { reply: (msg.content || '').trim(), model, tried };
     messages.push({ role: 'assistant', content: msg.content || '', tool_calls: calls });
     const results = await Promise.all(calls.map(async (c) => {     // several agents in parallel
       let args = {}; try { args = JSON.parse(c.function?.arguments || '{}'); } catch {}
@@ -186,7 +212,7 @@ async function chat(history) {
     }));
     messages.push(...results);
   }
-  return { reply: 'I asked the agents several times without finishing. Please try a simpler request.', model: CHAT_MODEL };
+  return { reply: 'I asked the agents several times without finishing. Please try a simpler request.', model: chatModels()[0], tried };
 }
 
 // ---------- server health (shown on the dashboard; alerts by itself) ----------
@@ -320,6 +346,18 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/agents/refresh') { await Promise.all([refreshAgents(), checkBifrost()]); return send(res, 200, { agents, n8n, bifrost }); }
+    if (req.method === 'GET' && url.pathname === '/api/models') {
+      if (!BIFROST_KEY) return send(res, 200, { available: [], chosen: settings.models, fallback: CHAT_MODEL, error: 'No Bifrost key set' });
+      try { return send(res, 200, { available: await listModels(), chosen: settings.models, fallback: CHAT_MODEL }); }
+      catch (e) { return send(res, 200, { available: [], chosen: settings.models, fallback: CHAT_MODEL, error: e.message }); }
+    }
+    if (req.method === 'POST' && url.pathname === '/api/models') {
+      const { models } = JSON.parse(await readBody(req));
+      if (!Array.isArray(models)) return send(res, 400, { error: 'models must be a list' });
+      settings.models = [...new Set(models.map((m) => String(m).trim()).filter((m) => /^[\w.:/@+-]{1,120}$/.test(m)))].slice(0, 40);
+      saveSettings(); await checkBifrost();
+      return send(res, 200, { chosen: settings.models });
+    }
     if (req.method === 'POST' && url.pathname === '/api/chat') {
       const { history } = JSON.parse(await readBody(req, 128 * 1024));
       if (!Array.isArray(history) || !history.length) return send(res, 400, { error: 'empty' });

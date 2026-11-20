@@ -55,6 +55,11 @@ older version of this course it also stops the old LiteLLM gateway; its folder i
    password (12+ characters with upper and lower case, a digit and a symbol). Keep **Enforce Virtual Keys on Inference** on.
 4. Back on the server: `bash 05-install-gateway.sh --open` removes the IP lock. It refuses if the password isn't on yet.
 
+> **"Forbidden" in your browser?** The page only opens for the IP you ran the installer from. If you used
+> **Oracle Cloud Shell** or another network, that isn't your browser's IP. Open the page once (you'll see Forbidden), then on
+> the server run `bash 05-install-gateway.sh --allow`. It finds the IP that was just blocked, asks you to confirm, and lets it in.
+> You can also give it yourself: `bash 05-install-gateway.sh --allow <your-ip>`. Create the admin login, then run `--open`.
+
 ## Step 3: Add free providers (all in the web page: Models → Model Providers → Add New Provider)
 
 | Provider | Free key at | Notes |

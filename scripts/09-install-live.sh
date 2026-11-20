@@ -139,6 +139,7 @@ for f in Dockerfile compose.yaml server.mjs public/index.html public/login.html 
   curl -fsSL "$RAW/stacks/live/$f" -o "$DIR/$f"
 done
 rm -f "$DIR/public/style.css" "$DIR/public/avatar-placeholder.svg"   # older versions
+sudo install -d -o 1000 -g 1000 -m 700 "$DIR/data"             # dashboard settings; the container runs as uid 1000
 docker network inspect jarvis >/dev/null 2>&1 || docker network create jarvis >/dev/null
 (cd "$DIR" && docker compose build -q && docker compose up -d --force-recreate >/dev/null)
 w=0; until curl -fsS --max-time 3 http://127.0.0.1:8090/health >/dev/null 2>&1; do

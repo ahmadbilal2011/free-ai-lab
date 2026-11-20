@@ -2,6 +2,11 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Models dialog; Bifrost "Forbidden" fix
+
+- Bifrost page showed Forbidden: the setup lock was on the Cloud Shell IP. Fix: `bash 05-install-gateway.sh --allow`
+- Dashboard **Models**: pick any number of Bifrost models in order; Jarvis falls back down the list (tested locally with a model out of quota)
+
 ## 2026-11-20 — Jarvis thinks with Bifrost
 
 - Brain switch on the dashboard: **Bifrost** (default, your free models; type or speak, replies read aloud) or **Gemini Live** (voice calls). Both use the agents from n8n

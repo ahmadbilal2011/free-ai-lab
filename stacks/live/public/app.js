@@ -281,7 +281,7 @@ function sendText(text, system = false) {
   if (!system) setAvatar('thinking');
 }
 // ---------------------------------------------------------------- Bifrost brain (text + push-to-talk)
-function showBifrost(b) { if (!b) return; const el = $('bifrostState'); el.textContent = b.ok ? '● ' + b.note.replace('connected · ', '') : '● ' + b.note; el.className = b.ok ? 'ok' : 'bad'; el.title = b.ok ? `model ${b.model}` : b.note; }
+function showBifrost(b) { if (!b) return; const el = $('bifrostState'); el.textContent = b.ok ? '● ' + b.note.replace('connected · ', '') : '● ' + b.note; el.className = b.ok ? 'ok' : 'bad'; el.title = b.ok ? `Jarvis tries ${b.chosen || 1} model(s), first: ${b.model}` : b.note; }
 function setBrain(b) {
   if (b === state.brain) return;
   if (state.live) stopLive();
@@ -321,7 +321,8 @@ async function askBifrost(text) {
     if (!r.ok) throw new Error(j.error || `server ${r.status}`);
     state.history.push({ role: 'assistant', content: j.reply });
     if (state.history.length > 30) state.history.splice(0, state.history.length - 30);
-    log('jarvis', `Jarvis: ${j.reply}`).title = `${j.model} · ${Math.round(performance.now() - t0)} ms`;
+    const line = log('jarvis', `Jarvis: ${j.reply}`); line.title = `${j.model} · ${Math.round(performance.now() - t0)} ms${j.tried?.length > 1 ? ' · tried: ' + j.tried.join(', ') : ''}`;
+    const tag = document.createElement('small'); tag.className = 'model-tag'; tag.textContent = ` · ${j.model}`; line.append(tag);
     speak(j.reply);
   } catch (e) { state.history.pop(); log('err', `Bifrost: ${e.message}`); setAvatar('idle'); }
   finally { busy = false; }
@@ -380,4 +381,45 @@ document.querySelectorAll('.gutter').forEach((g) => {
 $('refreshAgents').addEventListener('click', async () => {
   const r = await fetch('/api/agents/refresh', { method: 'POST' }); if (!r.ok) return;
   const d = await r.json(); setupAgents(d.agents, d.n8n); showBifrost(d.bifrost); log('sys', `Asked n8n for agents: ${d.n8n.ok ? 'n8n ' : ''}${d.n8n.note}.`);
+});
+
+// ---------------------------------------------------------------- models: pick and order your free models
+const dlg = $('models');
+let modelState = { available: [], chosen: [], fallback: '' };
+function renderModels() {
+  const ch = $('chosen'); ch.innerHTML = '';
+  modelState.chosen.forEach((m, i) => {
+    const li = document.createElement('li'); const sp = document.createElement('span'); sp.textContent = m; li.append(sp);
+    for (const [label, fn, title] of [['↑', () => move(i, -1), 'Move up'], ['↓', () => move(i, 1), 'Move down'], ['✕', () => { modelState.chosen.splice(i, 1); renderModels(); }, 'Remove']]) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.textContent = label; b.title = title; b.setAttribute('aria-label', `${title}: ${m}`); b.onclick = fn; li.append(b);
+    }
+    ch.append(li);
+  });
+  const empty = $('chosenEmpty'); empty.hidden = modelState.chosen.length > 0;
+  empty.textContent = `None picked yet: Jarvis uses ${modelState.fallback}. Add models below.`;
+  const q = $('modelSearch').value.trim().toLowerCase(), av = $('available'); av.innerHTML = '';
+  const list = modelState.available.filter((m) => !modelState.chosen.includes(m) && (!q || m.toLowerCase().includes(q)));
+  for (const m of list.slice(0, 300)) {
+    const li = document.createElement('li'); const sp = document.createElement('span'); sp.textContent = m;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.textContent = 'Add'; b.setAttribute('aria-label', `Add ${m}`);
+    b.onclick = () => { modelState.chosen.push(m); renderModels(); };
+    li.append(sp, b); av.append(li);
+  }
+  if (!list.length) { const li = document.createElement('li'); li.textContent = modelState.available.length ? 'No match.' : 'No models found in Bifrost yet: add providers in its page first.'; li.style.color = 'var(--muted)'; av.append(li); }
+}
+function move(i, d) { const j = i + d; if (j < 0 || j >= modelState.chosen.length) return; const c = modelState.chosen; [c[i], c[j]] = [c[j], c[i]]; renderModels(); }
+$('openModels').addEventListener('click', async () => {
+  dlg.showModal(); $('modelsError').hidden = true; $('available').innerHTML = '<li style="color:var(--muted)">Asking Bifrost for your models…</li>';
+  const r = await fetch('/api/models'); if (r.status === 401) return location.reload();
+  const j = await r.json(); modelState = { available: j.available || [], chosen: [...(j.chosen || [])], fallback: j.fallback };
+  if (j.error) { $('modelsError').hidden = false; $('modelsError').textContent = `Bifrost: ${j.error}`; }
+  renderModels(); $('modelSearch').focus();
+});
+$('modelSearch').addEventListener('input', renderModels);
+$('saveModels').addEventListener('click', async () => {
+  const r = await fetch('/api/models', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ models: modelState.chosen }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { $('modelsError').hidden = false; $('modelsError').textContent = j.error || 'Saving failed'; return; }
+  log('sys', j.chosen.length ? `Models saved. Jarvis tries: ${j.chosen.join(' → ')}.` : `Models cleared. Jarvis uses ${modelState.fallback}.`);
+  dlg.close();
 });

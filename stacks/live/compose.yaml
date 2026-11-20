@@ -18,6 +18,7 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
+      - ./data:/app/data            # dashboard settings (your model list); in ~/lab, so it's backed up
       - /proc:/host/proc:ro         # real server CPU / memory / network for the System Integrity panel (read-only)
     ports:
       - "127.0.0.1:8090:8080"
