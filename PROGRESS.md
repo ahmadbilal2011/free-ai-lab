@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Jarvis Live: digital twin, globe, working agents
+
+- Avatar is now a holographic **digital twin** (no photo); center panel is a **globe** with your server and the agent ring
+- Agents do real work: **Web Scout** (web search + reading + sources), **Writer**, **Analyst**, **Planner** on free models via Bifrost; **Messenger** via an importable n8n workflow; System Monitor built in
+- Tested locally with stand-in Bifrost/n8n: six agents in parallel, results returned, alerts, desktop + phone. Pending: install and first run on the server
+
 ## 2026-11-20 — Jarvis Live rebuilt as the holographic dashboard
 
 - [Lesson 09](lessons/09-jarvis-live.md) rewritten to the new spec: HUD with System Integrity, Agents, Multi-Agent Operations graph, Task Timeline, animated avatar (your photo), Live Command Log, voice + text bar

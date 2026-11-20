@@ -23,8 +23,10 @@ const SESSION_SECRET = env('SESSION_SECRET', '');
 const N8N_TOOL_URL = env('N8N_TOOL_URL', 'http://n8n:5678/webhook/jarvis-live-tool');
 const JARVIS_SECRET = env('N8N_TOOL_SECRET', '');                // shared with n8n, both directions
 const OWNER_NAME = env('OWNER_NAME', 'friend');
+const BIFROST_URL = env('BIFROST_URL', 'http://bifrost:8080/v1');     // Lesson 05: many free AI models behind one address
+const BIFROST_KEY = env('BIFROST_KEY', '');                            // a Bifrost virtual key (e.g. "smart")
+const AGENT_MODEL = env('AGENT_MODEL', 'groq/openai/gpt-oss-120b');
 const HOST_PROC = fs.existsSync('/host/proc/stat') ? '/host/proc' : '/proc';
-const DATA_DIR = env('DATA_DIR', '/app/data');
 const SESSION_HOURS = 12;
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const PUBLIC_DIR = path.join(HERE, 'public');
@@ -35,15 +37,19 @@ for (const [k, v] of Object.entries({ GEMINI_API_KEY, PASSWORD_HASH, SESSION_SEC
 
 // ---------- the team: orchestrator + specialised agents ----------
 // "where": built-in = handled here, n8n = a branch in the "Jarvis Live tools" workflow.
+// "ai" = runs here on free models through Bifrost · "n8n" = a branch in the "Jarvis Live tools" workflow
 const AGENTS = [
-  { id: 'core',     name: 'Jarvis Core',      role: 'Orchestrator (Gemini Live)',            color: '#4cc9ff', where: 'built-in' },
-  { id: 'system',   name: 'System Monitor',   role: 'Server health, live metrics, alerts',   color: '#3ddc97', where: 'built-in' },
-  { id: 'telegram', name: 'Messenger',        role: 'Sends notes and summaries to Telegram', color: '#7aa2ff', where: 'n8n' },
-  { id: 'calendar', name: 'Calendar Agent',   role: 'Meetings, priorities, reminders',       color: '#b388ff', where: 'n8n' },
-  { id: 'email',    name: 'Email Agent',      role: 'Reads and drafts emails',               color: '#ff8fd8', where: 'n8n' },
-  { id: 'web',      name: 'Web Scout',        role: 'Searches and reads the web',            color: '#ffd166', where: 'n8n' },
-  { id: 'docs',     name: 'Document Analyst', role: 'Reads and summarises documents',        color: '#9d7bff', where: 'n8n' },
-  { id: 'sar',      name: 'SAR Desk',         role: 'SAR→PKR rates and requests',            color: '#5eead4', where: 'n8n' },
+  { id: 'core',       name: 'Jarvis Core',     role: 'Orchestrator (Gemini Live)',                         color: '#38c8ff', where: 'built-in' },
+  { id: 'system',     name: 'System Monitor',  role: 'server health and live metrics',                     color: '#3ddc97', where: 'built-in' },
+  { id: 'research',   name: 'Web Scout',       role: 'searches the web, reads pages, answers with sources', color: '#ffc857', where: 'ai' },
+  { id: 'writer',     name: 'Writer',          role: 'drafts emails, messages, posts and documents',       color: '#ff8fd8', where: 'ai' },
+  { id: 'analyst',    name: 'Analyst',         role: 'analyses text, numbers and risks; summarises',       color: '#8c6cff', where: 'ai' },
+  { id: 'planner',    name: 'Planner',         role: 'turns goals into prioritised plans and schedules',   color: '#5eead4', where: 'ai' },
+  { id: 'telegram',   name: 'Messenger',       role: 'sends a message to the owner\'s Telegram',           color: '#7aa2ff', where: 'n8n' },
+  { id: 'calendar',   name: 'Calendar',        role: 'meetings, priorities and reminders',                 color: '#b388ff', where: 'n8n' },
+  { id: 'email',      name: 'Email',           role: 'reads and sends email',                              color: '#ff6bd6', where: 'n8n' },
+  { id: 'sar',        name: 'SAR Desk',        role: 'SAR to PKR rates and customer requests',             color: '#2ee6c5', where: 'n8n' },
+  { id: 'automation', name: 'Automations',     role: 'runs any other n8n workflow by name',                color: '#9fb4ff', where: 'n8n' },
 ];
 const agentIds = AGENTS.filter((a) => a.id !== 'core').map((a) => a.id);
 
@@ -60,12 +66,13 @@ const TOOLS = [{
   functionDeclarations: [
     {
       name: 'ask_agent',
-      description: 'Give a task to one specialised agent and get its result.',
+      description: 'Give a task to one specialised agent and get its result. Put everything the agent needs into the task (agents do not hear the conversation). Use context for longer text to work on.',
       parameters: {
         type: 'OBJECT',
         properties: {
           agent: { type: 'STRING', enum: agentIds, description: 'Which agent' },
           task: { type: 'STRING', description: 'What the agent should do, in plain words' },
+          context: { type: 'STRING', description: 'Optional text for the agent to work on' },
         },
         required: ['agent', 'task'],
       },
@@ -202,6 +209,68 @@ async function callN8n(payload) {
   } catch (e) { return { ok: false, error: e.name === 'AbortError' ? 'n8n took too long' : `n8n not reachable: ${e.message}` }; }
   finally { clearTimeout(t); }
 }
+// ---------- AI agents (free models via Bifrost) ----------
+async function llm(system, user, maxTokens = 900) {
+  if (!BIFROST_KEY) throw new Error('AI agents need a Bifrost key: re-run 09-install-live.sh');
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 60e3);
+  try {
+    const r = await fetch(`${BIFROST_URL}/chat/completions`, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${BIFROST_KEY}`, 'x-bf-vk': BIFROST_KEY },
+      body: JSON.stringify({ model: AGENT_MODEL, max_tokens: maxTokens, temperature: 0.4,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(`Bifrost answered ${r.status}: ${JSON.stringify(j).slice(0, 200)}`);
+    return (j.choices?.[0]?.message?.content || '').trim();
+  } finally { clearTimeout(t); }
+}
+const strip = (html) => html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<noscript[\s\S]*?<\/noscript>/gi, ' ')
+  .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+async function fetchText(url, ms = 9000) {
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal, redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (JarvisLive research agent)', 'Accept-Language': 'en' } });
+    if (!r.ok) return '';
+    return (await r.text()).slice(0, 600000);
+  } catch { return ''; } finally { clearTimeout(t); }
+}
+async function webSearch(q) {
+  const html = await fetchText(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`);
+  const out = [];
+  for (const m of html.matchAll(/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g)) {
+    let url = m[1]; const u = /uddg=([^&]+)/.exec(url); if (u) url = decodeURIComponent(u[1]);
+    if (/^https?:/.test(url) && !/duckduckgo\.com\/y\.js/.test(url)) out.push({ title: strip(m[2]), url, snippet: strip(m[3]) });
+    if (out.length >= 5) break;
+  }
+  if (out.length) return out;
+  const wj = await fetchText(`https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srlimit=4&srsearch=${encodeURIComponent(q)}`);
+  try { return JSON.parse(wj).query.search.map((r) => ({ title: r.title, url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`, snippet: strip(r.snippet) })); } catch { return []; }
+}
+const ROLE = {
+  writer: 'You are the Writer agent. Produce the requested text ready to use: clear, warm, professional, no filler. If the language is unclear, use the language of the task.',
+  analyst: 'You are the Analyst agent. Analyse what you are given: key points, numbers, risks and recommendations, as short bullet points. Say plainly when information is missing.',
+  planner: 'You are the Planner agent. Turn the goal into a short prioritised plan: the 3-7 steps that matter most, with rough timing. Be concrete.',
+};
+async function aiAgent(agent, task, args) {
+  const today = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh', dateStyle: 'full', timeStyle: 'short' });
+  if (agent === 'research') {
+    agentEvent(agent, 'progress', `Searching the web: ${task}`);
+    const urlInTask = (task.match(/https?:\/\/\S+/) || [])[0];
+    const results = urlInTask ? [{ title: urlInTask, url: urlInTask, snippet: '' }] : await webSearch(task);
+    if (!results.length) return { ok: false, error: 'web search returned nothing (search sites may be blocking the server)' };
+    agentEvent(agent, 'progress', `Reading ${Math.min(3, results.length)} sources`);
+    const pages = await Promise.all(results.slice(0, 3).map(async (r) => ({ ...r, text: strip(await fetchText(r.url)).slice(0, 5000) })));
+    agentEvent(agent, 'progress', 'Writing the answer');
+    const ctx = pages.map((p, i) => `[${i + 1}] ${p.title} (${p.url})\n${p.snippet}\n${p.text}`).join('\n\n');
+    const answer = await llm(`You are the Web Scout agent. Today is ${today}. Answer the question using ONLY the sources given. Be brief (max 8 sentences), cite sources as [1], [2]. If the sources don't answer it, say so.`, `Question: ${task}\n\nSources:\n${ctx}`);
+    return { ok: true, result: answer, sources: pages.map((p, i) => `[${i + 1}] ${p.url}`) };
+  }
+  agentEvent(agent, 'progress', 'Thinking with a free model');
+  const extra = args?.context ? `\n\nContext:\n${String(args.context).slice(0, 8000)}` : '';
+  return { ok: true, result: await llm(`${ROLE[agent]} Today is ${today}. The owner is ${OWNER_NAME}.`, task + extra) };
+}
+
 async function runTool(name, args = {}) {
   let agent, task;
   if (name === 'send_to_telegram') { agent = 'telegram'; task = 'Send to Telegram'; }
@@ -211,8 +280,12 @@ async function runTool(name, args = {}) {
   agentEvent('core', 'delegate', `→ ${AGENTS.find((a) => a.id === agent).name}: ${task}`);
   agentEvent(agent, 'start', task);
   let result;
-  if (agent === 'system') result = { ok: true, result: systemReport() };
-  else result = await callN8n(name === 'send_to_telegram' ? { tool: name, agent, args } : { tool: name, agent, task, args });
+  const where = AGENTS.find((a) => a.id === agent).where;
+  try {
+    if (agent === 'system') result = { ok: true, result: systemReport() };
+    else if (where === 'ai') result = await aiAgent(agent, task, args);
+    else result = await callN8n(name === 'send_to_telegram' ? { tool: name, agent, task, args } : { tool: name, agent, task, args });
+  } catch (e) { result = { ok: false, error: e.name === 'AbortError' ? 'the AI model took too long' : e.message }; }
   agentEvent(agent, result.ok === false ? 'error' : 'done', task, result.ok === false ? result.error : String(result.result ?? '').slice(0, 200));
   return result;
 }
@@ -253,7 +326,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) return serveFile(res, authed ? 'index.html' : 'login.html');
     if (req.method === 'GET' && openFiles.includes(url.pathname)) return serveFile(res, url.pathname.slice(1));
     if (!authed) return send(res, 401, { error: 'login' });
-    if (req.method === 'GET' && ['/app.js', '/hud.css', '/pcm-worklet.js', '/avatar-placeholder.svg'].includes(url.pathname)) return serveFile(res, url.pathname.slice(1));
+    if (req.method === 'GET' && ['/app.js', '/hud.css', '/pcm-worklet.js', '/avatar.js', '/globe.js'].includes(url.pathname)) return serveFile(res, url.pathname.slice(1));
 
     if (req.method === 'GET' && url.pathname === '/api/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
@@ -276,23 +349,6 @@ const server = http.createServer(async (req, res) => {
       const { who, text } = JSON.parse(await readBody(req));
       broadcast('say', { who: who === 'jarvis' ? 'jarvis' : 'you', text: String(text).slice(0, 500) });
       return send(res, 200, { ok: true });
-    }
-    // your avatar photo: stored only on the server (~/lab/live/data), never on GitHub
-    if (url.pathname === '/avatar') {
-      const file = path.join(DATA_DIR, 'avatar');
-      if (req.method === 'GET') {
-        if (!fs.existsSync(file)) { res.writeHead(204, HDR); return res.end(); }
-        const head = fs.readFileSync(file).subarray(0, 4);
-        res.writeHead(200, { 'Content-Type': head[0] === 0x89 ? 'image/png' : head[0] === 0x52 ? 'image/webp' : 'image/jpeg', 'Cache-Control': 'no-cache' });
-        return fs.createReadStream(file).pipe(res);
-      }
-      if (req.method === 'POST') {
-        const b = await readBody(req, 6 * 1024 * 1024, true);
-        const jpg = b[0] === 0xff && b[1] === 0xd8, png = b[0] === 0x89 && b[1] === 0x50, webp = b.subarray(0, 4).toString() === 'RIFF' && b.subarray(8, 12).toString() === 'WEBP';
-        if (!jpg && !png && !webp) return send(res, 400, { ok: false, error: 'Use a JPG, PNG or WebP photo' });
-        fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(file, b, { mode: 0o600 });
-        return send(res, 200, { ok: true });
-      }
     }
     return send(res, 404, { error: 'not found' });
   } catch (e) {

@@ -1,71 +1,67 @@
-# Lesson 09 — Jarvis Live: the holographic dashboard (voice, agents, live events, your avatar)
+# Lesson 09 — Jarvis Live: your personal AI operating system (digital twin, agents, live voice)
 
-**Goal:** one screen, your personal AI operating system. You talk to Jarvis (or type), and you **watch** it work:
+**Goal:** one screen where you **talk** to Jarvis (or type) and **watch** it work:
+- a holographic **digital twin** of you speaks the answers
+- a **globe** shows your server, with **agents** orbiting it
+- working agents light up and fire arcs into the globe
+- a live timeline, server health and a command log run alongside
 
-- your own photo as Jarvis's animated avatar
-- agents lighting up as they take on tasks
-- a live timeline of what each agent is doing
-- the server's health
-- a command log
+The agents **do real tasks**: search the web, write, analyse, plan, message your Telegram, and anything else you connect in n8n.
 
-Jarvis can also speak up **by itself** when something happens.
+**Time:** about 45 minutes. **Cost:** $0. **Before you start:** Lessons 05–07 are done (Bifrost with a `smart` virtual key, n8n online, Telegram bot working).
 
-**Time:** about 45 minutes. **Cost:** $0. **Before you start:** Lessons 06–07 are done (n8n online, Telegram bot working).
+**Status:** ⚠️ Written. Tested locally in a browser with stand-in AI and n8n services:
+- sign-in, live metrics, the twin's three states, the globe
+- six agents working in parallel, with their results coming back
+- alerts, and desktop and phone layouts
 
-**Status:** ⚠️ Written. The dashboard was tested locally in a browser (screenshots below): sign-in, live metrics, agent graph and timeline, alerts, avatar upload, desktop and phone layouts. Real voice calls need your server and Google: the first call happens there.
+Real voice calls and real model answers need your server: the first run happens there.
 
-![Jarvis dashboard with four agents working](../docs/images/09-dashboard-agents-active.png)
+![Jarvis dashboard with five agents working in parallel](../docs/images/09-dashboard-agents-working.png)
 
 ---
 
 ## Part A — The architecture
 
 ```
-                         ┌──────────────── Jarvis dashboard (your browser) ────────────────┐
-  you: voice + text ───► │ avatar · agent graph · timeline · system integrity · command log │
-                         └───┬───────────────────────────┬─────────────────────────────▲───┘
-            voice, both ways │ (straight to Google)      │ tool calls                  │ live events
-                             ▼                           ▼                             │ (metrics, agents, alerts)
-                 Gemini Live API (free)        jarvis-live server ─────────────────────┘
-                 = ORCHESTRATOR: listens,      • one-time Gemini tokens (key stays on the server)
-                 thinks, decides which         • System Monitor agent (built in, reads real CPU/RAM/network)
-                 agents to call                • event loop: watches the server, alerts by itself
-                                               • forwards agent tasks ──► n8n "Jarvis Live tools" workflow
-                                                                           ├─ Messenger (Telegram)
-                                                                           ├─ Calendar · Email · Web Scout
-                                                                           ├─ Document Analyst · SAR Desk
-                                                                           └─ any n8n workflow can PUSH events back
+ you: voice + text ──► Jarvis dashboard (browser): twin · globe of agents · timeline · system · log
+          ▲   │ voice both ways, straight to Google              ▲ live events (metrics, agent steps, alerts)
+          │   ▼                                                  │
+   Gemini Live API (free) = ORCHESTRATOR ──tool calls──► jarvis-live server (on your VM)
+   hears you, decides, calls agents                     ├─ System Monitor ........ built in (real CPU/RAM/network)
+   (several at once), speaks the result                 ├─ Web Scout · Writer ·    AI agents on your free models
+                                                        │  Analyst · Planner ....  through Bifrost (Lesson 05)
+                                                        ├─ Messenger · Calendar ·  n8n agents: one imported workflow,
+                                                        │  Email · SAR Desk ·      one branch per agent
+                                                        │  Automations
+                                                        └─ event loop: watches the server, accepts events from n8n
 ```
 
-How your four requirements are covered:
-
-| Requirement | How |
+| Your requirement | How it's built |
 |---|---|
-| **1. Orchestrator + specialised agents** | **Gemini Live** is the orchestrator (free). It calls agents through one tool, `ask_agent(agent, task)`, several at once when a request has several parts. Agents are n8n workflows; the System Monitor is built in. **Claude** can be added later as a paid "premium" brain inside agents, through Bifrost (Lesson 05), without changing the dashboard. |
-| **2. Real-time event loop** | The server streams events to every open screen (Server-Sent Events): metrics every 2 seconds, every agent start, finish and failure, and alerts. It **watches the server by itself** (memory above 85% or CPU above 90% for a minute → alert). Any n8n workflow can push an event; with `"speak": true`, Jarvis says it out loud during a call. |
-| **3. Voice + text** | Full-duplex voice: you can interrupt Jarvis mid-sentence, and both sides are transcribed live. The bottom bar takes typed commands into the same conversation. |
-| **4. Long-term memory (RAG)** | Its own lesson (Lesson 17): a vector database with your preferences, past conversations and documents, exposed as one more agent (`memory`). The dashboard needs no change for it. |
+| **Orchestrator + specialised agents** | **Gemini Live** (free) is the orchestrator. It calls `ask_agent(agent, task)`, several agents at once when a request has several parts. **AI agents** run on your free models through Bifrost. **Integration agents** are n8n workflows. **Claude** can be added later as a paid premium model in Bifrost: the agents switch with one setting (`AGENT_MODEL`). |
+| **Real-time event loop** | The server streams events to every open screen: metrics every 2 s, every agent start, step, finish and failure, and alerts. It watches the server by itself (memory above 85% or CPU above 90% for a minute → alert). Any n8n workflow can push events; with `"speak": true`, Jarvis says them out loud during a call. |
+| **Voice + text** | Full-duplex voice: you can interrupt Jarvis mid-sentence, and both sides are transcribed live. Typed commands go into the same conversation. |
+| **Long-term memory (RAG)** | Lesson 17 adds a `memory` agent (vector database + embeddings). The dashboard needs no change. |
 
-**Honest limits**
-- **Lip movement:** the avatar is **your photo, animated in the browser**. It breathes, gets a digital ripple while thinking, and its jaw and a waveform move with Jarvis's real voice. That is not true lip-sync: realistic talking-head models need a GPU, which the free server doesn't have.
-- **Agents:** the dashboard shows all eight agents from day one, but only **System Monitor** and **Messenger** do real work after this lesson. Calendar, Email, Web Scout, Document Analyst and SAR Desk answer "not built yet" until their lessons (16–18). Each is one more branch in the same n8n workflow.
-- **Preview models:** Gemini Live models are previews; Google can change them. The installer picks one your key can use.
-- **Free tier:** limited minutes and parallel calls, enough for one person. Google ends a call after a while; tap the mic again.
-- **Privacy:** the free tier may use conversations to improve Google's products. **No SAR customer data** in live calls.
-
-## Part B — The dashboard, panel by panel
+## Part B — The dashboard
 
 | Where | Panel | What it shows |
 |---|---|---|
-| Top left | **System Integrity** | CPU and memory rings, network in and out, a 3-minute history line, load, uptime, RAM, all from the real server |
-| Below it | **Agents** | Every agent, its role, and what it's doing now (blinking dot = working) |
-| Center | **Multi-Agent Operations** | A network graph: Jarvis in the middle, agents around it. Active agents glow, their links pulse, and their current task appears under them |
-| Below it | **Task Timeline** | A Gantt chart of the last 3 minutes: one row per agent, one bar per task, red if it failed |
-| Top right | **Jarvis** (avatar) | Your photo, live. **Idle/listening:** slow breathing. **Thinking:** digital ripple. **Speaking:** jaw and waveform follow the voice |
-| Below it | **Live Command Log** | What you said, what Jarvis said, agent steps, alerts, all time-stamped |
-| Bottom | **Command bar** | Mic button (start/end voice), live waveform, text input |
+| Top left | **System integrity** | CPU and memory rings, network in and out, a short history line, load, uptime, RAM, all from the real server |
+| Below | **Agents** | Every agent, its job, and what it's doing right now |
+| Center | **Multi-agent operations** | A dotted holographic globe with **your server** marked. The agents sit on an orbit ring; a working agent glows, an arc with a travelling pulse connects it to the server, and its task shows under its name |
+| Below | **Task timeline** | Gantt chart of the last 3 minutes: one row per agent, one bar per task, red if it failed |
+| Top right | **Jarvis** (digital twin) | A vector hologram of you: black cap, beard, white striped shirt. **Idle/listening:** breathes, blinks, glances, then looks at you. **Thinking:** digital ripple, eyes drift up. **Speaking:** the mouth opens with the voice's loudness and goes wide or round with its pitch, with a live waveform below |
+| Below | **Live command log** | What you said, what Jarvis said, each agent step, and alerts, time-stamped |
+| Bottom | **Command bar** | Mic (start/end voice), waveform, text input |
 
-Drag the thin lines between panels to resize them; the layout is remembered. On a phone, the panels stack.
+Drag the thin lines between panels to resize; the layout is remembered. On a phone, the panels stack.
+
+![The digital twin: listening, speaking, thinking](../docs/images/09-digital-twin-states.png)
+
+> **About the twin:** it is drawn, not a photo, so nothing about your face is uploaded anywhere. Its mouth
+> follows the real voice, but it is not frame-perfect lip-sync: that needs a GPU, which the free server doesn't have.
 
 ## Part C — Install (one command, on the server over SSH)
 
@@ -74,13 +70,11 @@ curl -fsSLO https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/sc
 bash 09-install-live.sh
 ```
 
-It asks for three things:
-1. Your **Gemini API key**: free from aistudio.google.com/apikey, from a project **without billing**. It's typed hidden and checked with Google.
-2. A **page password** (12+ characters, hidden). It's stored only as a hash.
+It asks for four things, typed hidden where secret:
+1. **Gemini API key**: free from aistudio.google.com/apikey, from a project without billing. It's checked with Google.
+2. **Page password** (12+ characters). It's stored only as a hash.
 3. Your first name, which is how Jarvis addresses you.
-
-Then it picks the Live model, checks one-time tokens, builds the small container, gets the HTTPS certificate,
-publishes `https://live-<ip>.sslip.io`, and adds a fail2ban jail.
+4. **Bifrost virtual key** for the AI agents: your `smart` key from Lesson 05. Press Enter to skip for now.
 
 **Expected tests at the end:**
 
@@ -89,61 +83,53 @@ publishes `https://live-<ip>.sslip.io`, and adds a fail2ban jail.
 | `https://live-…sslip.io/` | **200** (sign-in page) |
 | token without sign-in | **401** |
 | `http://<ip>:8090` | **000** (not public) |
-| `/api/event` from the internet | **403** (only n8n, inside the server, may push events) |
+| `/api/event` from the internet | **403** (only n8n inside the server may push events) |
 | n8n → jarvis-live | **yes** |
+| jarvis-live → Bifrost | **yes** (AI agents can reach your free models) |
 
 It also prints the **Jarvis secret** for Part E. Keep the terminal open.
 
-## Part D — Your avatar
+## Part D — Try the AI agents right away
 
-1. Open the dashboard and sign in.
-2. Click **⚙** in the Jarvis window → **Upload your photo**:
-   - front-facing, face in the upper half, good light
-   - JPG, PNG or WebP, up to 6 MB
-3. A green line appears: use **Mouth height**, **Mouth left/right** and **Mouth width** to place it on your lips. That's where the jaw opens when Jarvis speaks.
-4. Click **⚙** again to close.
+These work as soon as the install finishes, with no n8n needed. Open the dashboard, tap the mic (or type), and say:
+- *"Jarvis, search the web: what's the latest on Oracle Cloud's free tier?"* → **Web Scout** searches, reads 3 pages, and answers with sources
+- *"Write a short WhatsApp message to my team: Monday review moved to 11."* → **Writer**
+- *"Plan my morning: client call at 10, QA report, SAR transfers."* → **Planner**
+- *"How is the server doing?"* → **System Monitor**
+- *"Plan my morning **and** find the latest PKR news."* → Planner and Web Scout work **at the same time** on the globe and timeline
 
-The photo is stored **only on your server** (`~/lab/live/data`, root-protected and included in the nightly backup). It never goes to GitHub or to Google.
+## Part E — n8n agents: import one workflow
 
-## Part E — Agents in n8n: one workflow, one branch per agent
+1. n8n → **Credentials → Create → Header Auth**: Name `X-Jarvis-Secret`, Value = the Jarvis secret from the installer. Save it as `Jarvis Live secret`.
+2. Download [`stacks/jarvis/workflows/jarvis-live-tools.json`](../stacks/jarvis/workflows/jarvis-live-tools.json) to your laptop.
+3. n8n → **Create workflow → ⋯ (top right) → Import from File** → choose it.
+4. Open **From Jarvis** (Webhook) → Credential → `Jarvis Live secret`.
+5. Open **Messenger: send to Telegram** → Credential `Jarvis bot`. In **Chat ID**, replace `PUT-YOUR-TELEGRAM-ID-HERE` with your ID (from Lesson 07).
+6. **Publish** the workflow.
 
-Jarvis sends every agent task to one n8n webhook with: `{ "tool", "agent", "task", "args" }`.
+Test: *"Jarvis, send me on Telegram: buy milk tomorrow."* → Messenger lights up and the message arrives.
 
-**1. Credential:** n8n → **Credentials → Create → Header Auth**. Name `X-Jarvis-Secret`, Value = the Jarvis secret
-the installer printed. Save it as `Jarvis Live secret`.
-
-**2. New workflow** `Jarvis Live tools`:
-
-| # | Node | Settings |
+| Branch | Now | Later |
 |---|---|---|
-| 1 | **Webhook** | POST · Path `jarvis-live-tool` · Authentication **Header Auth** → `Jarvis Live secret` · Respond: **Using 'Respond to Webhook' Node** |
-| 2 | **Switch** (name it `Which agent`) | Value `{{ $json.body.agent }}`. Rules: `telegram`, `calendar`, `email`, `web`, `docs`, `sar` · Options → Fallback Output: *Extra Output* |
-| 3 | **Telegram → Send a text message** (output `telegram`) | Credential `Jarvis bot` · Chat ID: your Telegram ID · Text `{{ $json.body.args.text }}` · Append n8n Attribution off |
-| 4 | **Respond to Webhook** (after 3) | JSON `{ "ok": true, "result": "sent to Telegram" }` |
-| 5 | **Respond to Webhook** (all other outputs, for now) | JSON, Expression: `{{ JSON.stringify({ ok: true, result: 'The ' + $json.body.agent + ' agent is not built yet.' }) }}` |
+| Messenger | ✅ sends to your Telegram | — |
+| Calendar, Email | "not connected yet" | Lesson 16 (Google Calendar / Gmail nodes) |
+| SAR Desk | "not connected yet" | Lesson 18 (rates, new requests) |
+| Automations | "not connected yet" | call any of your workflows by name |
 
-**Publish** it. Later lessons replace step 5 per agent. For example, the Calendar branch becomes *Google Calendar → AI summary → Respond*.
+To make a branch real: replace its **Reply: not built yet** link with your nodes, ending in a **Respond to Webhook** that returns `{ "ok": true, "result": "…" }`. Jarvis speaks the result.
 
-**Test by voice or text:**
-- *"Jarvis, send me on Telegram: buy milk tomorrow."* → Messenger lights up, and the message arrives.
-- *"Jarvis, how is the server doing?"* → System Monitor lights up, and Jarvis reads the real numbers.
-- The spec's example: *"What are my priorities this morning, and the key risks in the Q4 report?"* → Calendar and Document Analyst light up **together** in the graph and timeline. For now they reply "not built yet", and Jarvis says so.
+## Part F — Events: Jarvis speaks without being asked
 
-## Part F — Proactive events: Jarvis speaks without being asked
-
-Any n8n workflow can tell the dashboard something happened. Add an **HTTP Request** node:
+Any n8n workflow can add an **HTTP Request** node:
 
 | Field | Value |
 |---|---|
-| Method / URL | POST `http://jarvis-live:8080/api/event` (inside the server, on the private network) |
+| Method / URL | POST `http://jarvis-live:8080/api/event` (private network) |
 | Authentication | Generic → Header Auth → `Jarvis Live secret` |
-| Body (JSON) | `{ "agent": "telegram", "type": "alert", "text": "New Telegram message from Ahmad", "speak": true }` |
+| Body (JSON) | `{ "agent": "sar", "type": "alert", "text": "New SAR request: 2,500 SAR", "speak": true }` |
 
-- `type: "alert"` shows the event in amber in the log. With `"speak": true`, Jarvis mentions it out loud during a voice call.
-- To show agent work in the graph and timeline, send `{ "agent": "sar", "status": "start", "task": "Checking SAR rate" }`,
-  then the same with `"status": "done"` (add `"detail"` for the result).
-
-The **System Monitor** already does this by itself for high memory or CPU.
+- **Alert:** shown in amber in the log. During a call, Jarvis mentions it out loud.
+- **Show work on the globe and timeline:** send `{ "agent": "sar", "status": "start", "task": "Checking rates" }`, then the same with `"status": "done"` and `"detail"`.
 
 ## Part G — Security
 
@@ -151,36 +137,40 @@ The **System Monitor** already does this by itself for high memory or CPU.
 |---|---|
 | HTTPS + page password (scrypt hash) + fail2ban (5 tries / 10 min → 1 h ban) | Strangers using your Jarvis |
 | Gemini key stays on the server; browsers get one-time tokens (1 minute to start) | Key theft from a phone or browser |
-| Agents only via n8n with a secret; Jarvis can only call agents on the list | Jarvis being tricked into random actions |
-| `/api/event` blocked from the internet; n8n uses the private network + secret | Fake alerts from outside |
-| Container: read-only, no extra rights, 128 MB, port 8090 server-only; server stats read-only | A bug in the page harming the server |
-| Avatar photo only on your server, root-protected, never on GitHub | Your face leaking |
+| Agents only from a fixed list; n8n calls carry a secret | Jarvis being tricked into random actions |
+| `/api/event` blocked from the internet | Fake alerts from outside |
+| Bifrost key only inside the container; agents' answers come from your own free models | Key leaks; surprise bills |
+| Container read-only, no extra rights, 128 MB, server stats read-only | A bug harming the server |
+
+Web Scout reads public web pages: it only fetches what a search returns, never logs in anywhere, and sends nothing from your conversation except the search words.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `bash 09-install-live.sh` | Update (asks only for what's missing) |
-| `bash 09-install-live.sh --password` | Change the page password (signs everyone out) |
+| `bash 09-install-live.sh --password` | Change the page password |
 | `bash 09-install-live.sh --off` | Stop it and take the page offline |
-| `LIVE_MODEL=<name> bash 09-install-live.sh` | Force another Live model |
-| `docker logs --tail 30 jarvis-live` | See errors and agent calls |
+| `LIVE_MODEL=<name> bash 09-install-live.sh` | Force another Gemini Live model |
+| Edit `AGENT_MODEL` in `~/lab/live/.env`, then re-run | Change the agents' model (e.g. a Claude model in Bifrost later) |
+| `docker logs --tail 30 jarvis-live` | Errors and agent calls |
 
 ## If something goes wrong
 
 | Problem | Fix |
 |---|---|
 | "Couldn't start voice: Google answered 4xx" | Key or model not allowed. Re-run the installer and send me its *Token test* line |
-| Voice link closes at once with a code (1007/1008) | Model or setup refused: `docker logs jarvis-live`, then `LIVE_MODEL=<another> bash 09-install-live.sh` |
-| Header shows **reconnecting** | The event stream dropped. It retries by itself; if it stays, `docker ps` should show `jarvis-live` healthy |
-| System Integrity shows 0% everywhere | `docker exec jarvis-live ls /host/proc/stat` must exist; re-run the installer |
-| No microphone prompt | Open the page over **https**; browser site settings → Microphone → Allow |
+| Voice link closes at once (code 1007/1008) | `docker logs jarvis-live`, then `LIVE_MODEL=<another> bash 09-install-live.sh` |
+| AI agent: "need a Bifrost key" | Re-run the installer and paste the `smart` virtual key |
+| AI agent: "Bifrost answered 401/404" | Wrong key, or the model name isn't in Bifrost: check `AGENT_MODEL` and Bifrost's Models page |
+| Web Scout: "search returned nothing" | Search sites can block servers. Try again later, or give it a URL to read ("read https://…") |
+| n8n agent: "HTTP 404" | The imported workflow isn't **published** |
+| n8n agent: "HTTP 403" | The Header Auth value differs from `N8N_TOOL_SECRET` in `~/lab/live/.env` |
+| Header shows *reconnecting…* | It retries by itself; if it stays, check `docker ps` shows `jarvis-live` healthy |
+| No microphone prompt | Open over **https**; browser site settings → Microphone → Allow |
 | Jarvis hears itself | Use earphones or lower the volume |
-| Agent says "n8n answered HTTP 404" | The `Jarvis Live tools` workflow isn't **published**, or the path isn't `jarvis-live-tool` |
-| Agent says "HTTP 403" | The Header Auth value in n8n differs from `N8N_TOOL_SECRET` in `~/lab/live/.env` |
-| Mouth moves in the wrong place | ⚙ → move the green line onto your lips |
 
 ## Next
 
-Make the agents real, one per lesson: **Calendar and Email** (16), **memory / RAG** (17), **SAR Desk and routines** (18).
-Each adds a branch to `Jarvis Live tools`, and both Telegram Jarvis and Live Jarvis use it.
+Make the n8n agents real, one lesson each: **Calendar and Email** (16), **memory / RAG** (17), **SAR Desk and routines** (18).
+Telegram Jarvis can use the same agents later, so both doors share one brain.

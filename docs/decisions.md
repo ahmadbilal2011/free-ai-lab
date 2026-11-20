@@ -150,3 +150,14 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   - **Scope:** dashboard + agents + live events now; RAG as Lesson 17.
 - Agents = one n8n workflow routed by agent name (`ask_agent` tool, parallel calls); System Monitor built in.
   Events: SSE to screens; n8n pushes via `/api/event` (private network + secret, blocked at Apache).
+
+## 2026-11-20 — Digital twin, globe, and agents that do real work
+
+- Photo avatar replaced by a **vector digital twin** (cap, beard, striped shirt) per the user's request: animated blinks,
+  gaze, breathing, ripple, and mouth shapes from voice loudness and pitch. No face data uploaded anywhere.
+- Agent graph replaced by a **dotted holographic globe** (continents from simplified outlines in code; map packages
+  weren't reachable) with the server marked and an orbit ring of agents; arcs and pulses for working agents.
+- **AI agents run in jarvis-live** on free models through Bifrost (Web Scout with web search + page reading, Writer,
+  Analyst, Planner); n8n agents come from one importable workflow (Messenger live; others stubbed for later lessons).
+- Design pass: sentence-case titles, technical display face (Bahnschrift, already on Windows), tabular numbers,
+  boldness spent on the twin.

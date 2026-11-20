@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — Lesson 09: Jarvis Live — holographic dashboard, live voice, agents, your avatar
+# free-ai-lab — Lesson 09: Jarvis Live — holographic dashboard, digital twin, live voice, working agents
 #
 # Run ON THE VM as ubuntu (over SSH):
 #   bash 09-install-live.sh            # install / update (asks only for what's missing)
@@ -94,6 +94,14 @@ if [ -z "$(env_get OWNER_NAME)" ]; then
   read -r -p "  Your first name (how Jarvis calls you): " OWN; env_set OWNER_NAME "${OWN:-friend}"
 fi
 [ -n "$(env_get LIVE_VOICE)" ] || env_set LIVE_VOICE "Kore"
+if [ -z "$(env_get BIFROST_KEY)" ]; then
+  echo "  AI agents (Web Scout, Writer, Analyst, Planner) think with your free models through Bifrost (Lesson 05)."
+  echo "  Paste a Bifrost virtual key (e.g. your 'smart' key). Enter = skip for now (those agents will say they need it)."
+  read -r -s -p "  Bifrost virtual key (hidden): " BK; echo
+  BK=$(printf '%s' "$BK" | tr -d '[:space:]'); [ -n "$BK" ] && env_set BIFROST_KEY "$BK"
+fi
+[ -n "$(env_get BIFROST_URL)" ] || env_set BIFROST_URL "http://bifrost:8080/v1"
+[ -n "$(env_get AGENT_MODEL)" ] || env_set AGENT_MODEL "groq/openai/gpt-oss-120b"
 
 # ---------- 2. model ----------
 step "2/6  Choosing a Gemini Live model"
@@ -125,11 +133,10 @@ rm -f /tmp/live-token.json
 
 # ---------- 3. container ----------
 step "3/6  Building and starting jarvis-live (private, port 8090)"
-for f in Dockerfile compose.yaml server.mjs public/index.html public/login.html public/login.css public/hud.css public/app.js public/pcm-worklet.js public/avatar-placeholder.svg public/manifest.json public/icon.svg; do
+for f in Dockerfile compose.yaml server.mjs public/index.html public/login.html public/login.css public/hud.css public/app.js public/avatar.js public/globe.js public/pcm-worklet.js public/manifest.json public/icon.svg; do
   curl -fsSL "$RAW/stacks/live/$f" -o "$DIR/$f"
 done
-rm -f "$DIR/public/style.css"                                  # older version
-sudo install -d -o 1000 -g 1000 -m 700 "$DIR/data"             # avatar photo; the container runs as uid 1000
+rm -f "$DIR/public/style.css" "$DIR/public/avatar-placeholder.svg"   # older versions
 docker network inspect jarvis >/dev/null 2>&1 || docker network create jarvis >/dev/null
 (cd "$DIR" && docker compose build -q && docker compose up -d --force-recreate >/dev/null)
 w=0; until curl -fsS --max-time 3 http://127.0.0.1:8090/health >/dev/null 2>&1; do
@@ -227,18 +234,21 @@ c1=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$DOMAIN/" || 
 c2=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "https://$DOMAIN/api/token" || true)
 c3=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://$PUBIP:8090/" || true)
 c4=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "https://$DOMAIN/api/event" || true)
+c6=$(docker exec jarvis-live node -e "fetch(process.env.BIFROST_URL+'/models',{headers:{Authorization:'Bearer '+process.env.BIFROST_KEY}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null && echo yes || echo no)
 c5=$(docker exec n8n node -e "fetch('http://jarvis-live:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null && echo yes || echo no)
 printf "  %-28s HTTP %s  (200 = sign-in page ✓)\n" "https://$DOMAIN/" "$c1"
 printf "  %-28s HTTP %s  (401 = tokens need the password ✓)\n" "token without sign-in" "$c2"
 printf "  %-28s HTTP %s  (000 = port 8090 not public ✓)\n" "http://<ip>:8090" "$c3"
 printf "  %-28s HTTP %s  (403 = event input blocked from internet ✓)\n" "/api/event from internet" "$c4"
 printf "  %-28s %s       (yes = n8n can send events ✓)\n" "n8n → jarvis-live" "$c5"
+printf "  %-28s %s       (yes = AI agents can reach your free models ✓)\n" "jarvis-live → Bifrost" "$c6"
 
 step "Done!"
-echo -e "  Open: ${c_ok}https://$DOMAIN${c_off}  (sign in → ⚙ in the Jarvis window to add your photo → mic button to talk)"
+echo -e "  Open: ${c_ok}https://$DOMAIN${c_off}  (sign in, then tap the mic to talk or type in the bar)"
 echo "  Add it to your home screen for an app-like icon."
 echo
-echo "  For Jarvis's tools, n8n needs this secret (Lesson 09, Part D). Paste it ONLY into n8n:"
+echo "  For the n8n agents, import stacks/jarvis/workflows/jarvis-live-tools.json (Lesson 09, Part E)"
+echo "  and give its webhook this secret. Paste it ONLY into n8n:"
 echo -e "    Header Auth credential  Name: X-Jarvis-Secret   Value: ${c_warn}$(env_get N8N_TOOL_SECRET)${c_off}"
 echo
 echo "  Change the password: bash $0 --password     Undo: bash $0 --off"

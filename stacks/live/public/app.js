@@ -2,7 +2,11 @@
 //   • /api/events (Server-Sent Events): metrics, agent activity, alerts → panels update by themselves
 //   • Voice: one-time token from our server → WebSocket straight to Gemini Live (16 kHz in, 24 kHz out)
 //   • Tools: Gemini calls ask_agent / send_to_telegram → our server → agents (n8n or built-in)
-//   • Avatar: your photo, breathing (idle), digital ripple (thinking), jaw + waveform from Jarvis's voice (speaking)
+//   • Avatar: Jarvis's digital twin — breathing and blinking (idle), ripple (thinking), mouth shapes from the live voice (speaking)
+//   • Globe: your server and the agent ring; working agents fire arcs
+
+import { Twin } from '/avatar.js';
+import { Globe } from '/globe.js';
 
 const WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
 const $ = (id) => document.getElementById(id);
@@ -23,33 +27,11 @@ const bufferFromB64 = (b64) => { const s = atob(b64), o = new Uint8Array(s.lengt
 function fitCanvas(c) { const r = c.getBoundingClientRect(), d = devicePixelRatio || 1; if (c.width !== Math.round(r.width * d) || c.height !== Math.round(r.height * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } return { ctx: c.getContext('2d'), w: c.width, h: c.height, d }; }
 setInterval(() => { $('clock').textContent = new Date().toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }, 1000);
 
-// ---------------------------------------------------------------- avatar
+// ---------------------------------------------------------------- avatar (digital twin) + globe
 const avatar = $('avatar');
-function setAvatar(s) { if (state.avatar === s) return; state.avatar = s; avatar.dataset.state = s; $('avatarState').textContent = s; }
-const AV_KEY = 'jarvis.avatar.mouth';
-const mouth = Object.assign({ y: 66, x: 50, w: 14 }, JSON.parse(localStorage.getItem(AV_KEY) || '{}'));
-function applyMouth() {
-  avatar.style.setProperty('--mouthY', mouth.y + '%'); avatar.style.setProperty('--mouthX', mouth.x + '%'); avatar.style.setProperty('--mouthW', mouth.w + '%');
-  $('mouthY').value = mouth.y; $('mouthX').value = mouth.x; $('mouthW').value = mouth.w;
-}
-for (const [id, k] of [['mouthY', 'y'], ['mouthX', 'x'], ['mouthW', 'w']]) {
-  $(id).addEventListener('input', (e) => { mouth[k] = +e.target.value; applyMouth(); try { localStorage.setItem(AV_KEY, JSON.stringify(mouth)); } catch {} });
-}
-$('avatarCfg').addEventListener('click', () => { const c = $('cfg'); c.hidden = !c.hidden; avatar.classList.toggle('editing', !c.hidden); });
-async function loadAvatar() {
-  const r = await fetch('/avatar', { cache: 'no-store' });
-  if (r.status !== 200) return;                                         // 204 = no photo yet
-  const url = URL.createObjectURL(await r.blob());
-  $('avBase').src = url; $('avJaw').src = url;
-}
-$('avFile').addEventListener('change', async (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  if (f.size > 6 * 1024 * 1024) return log('err', 'Photo is larger than 6 MB; use a smaller one.');
-  const r = await fetch('/avatar', { method: 'POST', body: f });
-  const j = await r.json().catch(() => ({}));
-  if (r.ok) { log('sys', 'Avatar photo saved on your server.'); loadAvatar(); } else log('err', `Avatar upload failed: ${j.error || r.status}`);
-});
-applyMouth(); loadAvatar();
+const twin = new Twin($('twin'));
+const globe = new Globe($('globe'));
+function setAvatar(s) { if (state.avatar === s) return; state.avatar = s; avatar.dataset.state = s; twin.setState(s); $('avatarState').textContent = s; }
 
 // ---------------------------------------------------------------- system integrity
 const RING = 264;
@@ -77,14 +59,13 @@ function drawSpark() {
 // ---------------------------------------------------------------- agents: roster, graph, timeline
 function setupAgents(list) {
   state.agents = list; state.byId = Object.fromEntries(list.map((a) => [a.id, a]));
-  $('roster').innerHTML = '';
+  globe.setAgents(list); $('roster').innerHTML = '';
   for (const a of list) {
     const li = document.createElement('li'); li.id = `ag-${a.id}`; li.style.setProperty('--c', a.color);
     li.innerHTML = `<span class="dot"></span><b></b><em></em>`;
     li.querySelector('b').textContent = a.name; li.querySelector('em').textContent = a.role;
     $('roster').append(li);
   }
-  drawGraph();
 }
 function agentActivity(ev) {
   const a = state.byId[ev.agent] || { id: ev.agent, name: ev.agent, color: '#9d7bff' };
@@ -93,7 +74,9 @@ function agentActivity(ev) {
   if (ev.status === 'start') {
     state.active.set(a.id, ev.task); state.tasks.push({ agent: a.id, task: ev.task, start: ev.ts, end: null });
     li?.classList.add('active'); li?.classList.remove('error'); if (em) em.textContent = ev.task;
-    log('agent', `${a.name} → ${ev.task}`, ev.ts);
+    log('agent', `${a.name}: ${ev.task}`, ev.ts);
+  } else if (ev.status === 'progress') {
+    if (em) em.textContent = ev.task; log('agent', `${a.name}: ${ev.task}`, ev.ts);
   } else if (ev.status === 'done' || ev.status === 'error') {
     state.active.delete(a.id);
     const t = [...state.tasks].reverse().find((x) => x.agent === a.id && !x.end); if (t) { t.end = ev.ts; t.error = ev.status === 'error'; }
@@ -108,34 +91,14 @@ function agentActivity(ev) {
     log(ev.status === 'alert' ? 'alert' : 'sys', `${a.name}: ${ev.task}${ev.detail ? ' — ' + ev.detail : ''}`, ev.ts);
   }
   if (state.tasks.length > 300) state.tasks.splice(0, state.tasks.length - 300);
-  $('opsSummary').textContent = state.active.size ? `${state.active.size} agent${state.active.size > 1 ? 's' : ''} active` : 'idle';
+  $('opsSummary').textContent = state.active.size ? `${state.active.size} agent${state.active.size > 1 ? 's' : ''} working` : 'all agents idle';
+  globe.setActive(state.active);
+  if (ev.status === 'start') globe.ping(-35 + Math.random() * 95, -180 + Math.random() * 360, a.color);
   if (state.active.size) { setAvatar('thinking'); flash('pGraph'); }
   else if (state.avatar === 'thinking' && !audio.sources.size) setAvatar(state.live ? 'listening' : 'idle');
-  drawGraph(); drawGantt();
+  drawGantt();
 }
 const SVGNS = 'http://www.w3.org/2000/svg';
-function drawGraph() {
-  const svg = $('graph'); const r = svg.getBoundingClientRect(); if (!r.width) return;
-  const W = r.width, H = r.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - (W < 520 ? 62 : 46);
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = '';
-  const others = state.agents.filter((a) => a.id !== 'core');
-  const pos = { core: [cx, cy] };
-  others.forEach((a, i) => { const ang = -Math.PI / 2 + (i / others.length) * Math.PI * 2; pos[a.id] = [cx + Math.cos(ang) * R * (W > H ? 1.35 : 1), cy + Math.sin(ang) * R]; });
-  const g = (tag, attrs, parent = svg) => { const el = document.createElementNS(SVGNS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); parent.append(el); return el; };
-  for (const a of others) {
-    const e = g('line', { x1: cx, y1: cy, x2: pos[a.id][0], y2: pos[a.id][1], class: 'edge' + (state.active.has(a.id) ? ' active' : '') });
-    e.style.setProperty('--c', a.color);
-  }
-  for (const a of state.agents) {
-    const [x, y] = pos[a.id]; const active = state.active.has(a.id) || (a.id === 'core' && state.active.size > 0);
-    const n = g('g', { class: `node${a.id === 'core' ? ' core' : ''}${active ? ' active' : ''}`, transform: `translate(${x},${y})` });
-    n.style.setProperty('--c', a.color);
-    g('circle', { class: 'halo', r: 22 }, n);
-    g('circle', { r: a.id === 'core' ? 30 : 20 }, n);
-    const t = g('text', { y: a.id === 'core' ? 4 : 34 }, n); t.textContent = a.id === 'core' ? 'JARVIS' : a.name;
-    if (state.active.has(a.id)) { const s = g('text', { y: 48, class: 'task' }, n); const task = state.active.get(a.id); s.textContent = task.length > 34 ? task.slice(0, 33) + '…' : task; }
-  }
-}
 function drawGantt() {
   const { ctx, w, h, d } = fitCanvas($('gantt')); ctx.clearRect(0, 0, w, h);
   const now = Date.now(), span = 3 * 60e3, left = 118 * d, rows = state.agents, rh = Math.min(26 * d, (h - 18 * d) / Math.max(1, rows.length));
@@ -159,15 +122,15 @@ function drawGantt() {
   ctx.strokeStyle = '#4cc9ff'; ctx.beginPath(); ctx.moveTo(w - 1, 0); ctx.lineTo(w - 1, h - 14 * d); ctx.stroke();
 }
 setInterval(drawGantt, 1000);
-addEventListener('resize', () => { drawGraph(); drawGantt(); drawSpark(); });
+addEventListener('resize', () => { drawGantt(); drawSpark(); });
 
 // ---------------------------------------------------------------- live event stream
 function connectEvents() {
   const es = new EventSource('/api/events');
   es.addEventListener('hello', (e) => {
-    const d = JSON.parse(e.data); $('linkState').textContent = 'linked'; $('linkState').classList.add('on');
+    const d = JSON.parse(e.data); $('linkState').textContent = 'connected'; $('linkState').classList.add('on');
     setupAgents(d.agents); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
-    if (!$('log').children.length) { log('sys', `Linked to server. Orchestrator: Gemini Live (${d.model}). ${d.agents.length - 1} agents ready.`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
+    if (!$('log').children.length) { log('sys', `Connected. Orchestrator: Gemini Live (${d.model}). ${d.agents.length - 1} agents ready.`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
   });
   es.addEventListener('metrics', (e) => showMetrics(JSON.parse(e.data)));
   es.addEventListener('agent', (e) => agentActivity(JSON.parse(e.data)));
@@ -175,7 +138,7 @@ function connectEvents() {
     const a = JSON.parse(e.data); log('alert', `⚠ ${state.byId[a.agent]?.name || a.agent}: ${a.text}`, a.ts); flash('pLog');
     if (a.speak && session.ws?.readyState === WebSocket.OPEN) sendText(`[EVENT from ${a.agent}] ${a.text}`, true);
   });
-  es.onerror = () => { $('linkState').textContent = 'reconnecting'; $('linkState').classList.remove('on'); fetch('/api/events', { method: 'HEAD' }).then((r) => { if (r.status === 401) location.reload(); }).catch(() => {}); };
+  es.onerror = () => { $('linkState').textContent = 'reconnecting…'; $('linkState').classList.remove('on'); fetch('/api/events', { method: 'HEAD' }).then((r) => { if (r.status === 401) location.reload(); }).catch(() => {}); };
 }
 connectEvents();
 
@@ -212,14 +175,19 @@ function drawWave(canvas, analyser, color, idleAmp) {
   ctx.strokeStyle = color; ctx.lineWidth = 2 * d; ctx.shadowColor = color; ctx.shadowBlur = 10 * d; ctx.stroke();
   return Math.sqrt(rms / n);
 }
-const noise = $('rippleNoise');
+const fd = new Uint8Array(512);
+function brightness() {                       // share of high frequencies: "ee/s" sounds → wide mouth, "oo" → round
+  if (!audio.outAnalyser) return 0.5;
+  audio.outAnalyser.getByteFrequencyData(fd); let lo = 0, hi = 0;
+  for (let i = 2; i < 40; i++) lo += fd[i]; for (let i = 40; i < 160; i++) hi += fd[i];
+  return lo + hi ? Math.min(1, (hi / (lo + hi)) * 2.2) : 0.5;
+}
 function frame(t) {
   const speaking = audio.sources.size > 0;
-  const outRms = drawWave($('avWave'), speaking ? audio.outAnalyser : null, '#4cc9ff', state.live ? 0.04 : 0.015);
-  drawWave($('dockWave'), speaking ? audio.outAnalyser : audio.micAnalyser, speaking ? '#4cc9ff' : '#9d7bff', 0.02);
-  const target = speaking ? Math.min(1, outRms * 6) : 0;                   // jaw follows the voice loudness
-  audio.jaw += (target - audio.jaw) * 0.35; avatar.style.setProperty('--jaw', audio.jaw.toFixed(3));
-  if (state.avatar === 'thinking') noise.setAttribute('baseFrequency', `${0.01 + 0.004 * Math.sin(t / 300)} ${0.05 + 0.03 * Math.sin(t / 170)}`);
+  const outRms = drawWave($('avWave'), speaking ? audio.outAnalyser : null, '#38c8ff', state.live ? 0.04 : 0.015);
+  drawWave($('dockWave'), speaking ? audio.outAnalyser : audio.micAnalyser, speaking ? '#38c8ff' : '#8c6cff', 0.02);
+  twin.update(t, speaking ? Math.min(1, outRms * 6) : 0, speaking ? brightness() : 0.5);
+  globe.draw(t);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -280,7 +248,7 @@ async function startLive() {
     ws.onmessage = onMessage;
     ws.onerror = () => log('err', 'Voice link error.');
     ws.onclose = (e) => { if (state.live) { log('sys', `Voice link closed${e.reason ? ': ' + e.reason : ''} (code ${e.code}).`); stopLive(false); } };
-    state.live = true; $('talk').classList.add('on'); $('liveDot').textContent = '● live'; $('liveDot').classList.add('on');
+    state.live = true; $('talk').classList.add('on'); $('liveDot').textContent = 'live'; $('liveDot').classList.add('on');
     try { session.wake = await navigator.wakeLock?.request('screen'); } catch {}
   } catch (e) { log('err', `Couldn't start voice: ${e.message}`); stopLive(false); }
   finally { $('talk').disabled = false; }
@@ -292,7 +260,7 @@ function stopLive(close = true) {
   session.micStream?.getTracks().forEach((t) => t.stop()); session.micCtx?.close().catch(() => {});
   Object.assign(session, { micCtx: null, micStream: null, worklet: null }); audio.micAnalyser = null;
   stopPlayback(); session.wake?.release?.().catch(() => {});
-  $('talk').classList.remove('on'); $('liveDot').textContent = '● standby'; $('liveDot').classList.remove('on'); setAvatar('idle');
+  $('talk').classList.remove('on'); $('liveDot').textContent = 'standby'; $('liveDot').classList.remove('on'); setAvatar('idle');
   if (close) log('sys', 'Voice link closed.');
 }
 function sendText(text, system = false) {
@@ -318,7 +286,7 @@ document.querySelectorAll('.gutter').forEach((g) => {
     const move = (ev) => {
       const delta = (isCol ? ev.clientX : ev.clientY) - start; const s = Math.max(isCol ? 180 : 110, size0 + (right ? -delta : delta));
       if (isCol) target.style.width = s + 'px'; else { target.style.height = s + 'px'; target.style.flex = 'none'; }
-      layout[target.id] = s; drawGraph(); drawGantt();
+      layout[target.id] = s; drawGantt();
     };
     const up = () => { g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch {} };
     g.addEventListener('pointermove', move); g.addEventListener('pointerup', up);
