@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Jarvis Live built (first call pending)
+
+- New: [Lesson 09 — Jarvis Live](lessons/09-jarvis-live.md): page at `live-<ip>.sslip.io` (password, HTTPS, fail2ban), one-time Gemini Live tokens, voice straight to Google, tools through an n8n webhook with a secret (`send_to_telegram`, `run_skill`)
+- Tested locally: login, forged cookies refused, unknown tools refused, tool calls reach n8n with the secret. Not yet tested: a real call on the server
+- Backups: restore test fixed (it checked folders left out on purpose)
+
 ## 2026-11-20 — Backups changed to local .zip files
 
 - Decided: no bucket storage; nightly `.zip` in `/data/backups` on the server, newest 14 kept, plus a copy on the laptop now and then — [Lesson 08](lessons/08-backups-monitoring.md)

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jarvis Live</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg">
+<meta name="theme-color" content="#0f1720">
+</head>
+<body>
+<main class="card">
+  <header>
+    <h1>Jarvis Live</h1>
+    <form method="post" action="/logout"><button class="link" type="submit">Sign out</button></form>
+  </header>
+  <button id="talk" class="orb" aria-label="Start talking"><span id="orbLabel">Tap to talk</span></button>
+  <p id="status" class="status">Ready</p>
+  <section id="log" class="log" aria-live="polite"></section>
+  <p class="hint">Talk naturally; you can interrupt Jarvis. Tap again to end the call.</p>
+</main>
+<script src="/app.js" type="module"></script>
+</body>
+</html>

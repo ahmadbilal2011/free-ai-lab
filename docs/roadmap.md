@@ -34,7 +34,7 @@ Rules for the whole course:
 | 06 | **n8n online and safe**: Apache, HTTPS, login + 2FA, fail2ban, next to the SAR site | The engine every Jarvis skill runs on, reachable anywhere |
 | 07 | **Jarvis on Telegram**: instant trigger, ElevenLabs ears and voice, free Gemini backups | Text or voice → Jarvis answers in text, and in voice when spoken to |
 | 08 | **Backups**: nightly .zip in `/data/backups` on the server, a copy on the laptop now and then | Undo any mistake; survive losing the VM |
-| 09 | **Jarvis Live** (planned): real-time talk with the Gemini Live API, n8n workflows as tools | Talk to Jarvis like a call |
+| 09 | **Jarvis Live**: real-time talk with the Gemini Live API (one-time tokens), n8n workflows as tools | Talk to Jarvis like a call |
 
 ## Part 3 — Jarvis's hands (my Windows laptop)
 

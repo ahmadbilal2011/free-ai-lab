@@ -25,6 +25,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
       │                   also serves my separate SAR→PKR calculator site, untouched
       ├── Docker ........ every app in its own container (autoheal restarts frozen ones)
       ├── n8n ........... Jarvis's skills and routines (owner login + 2FA)
+      ├── Jarvis Live ... talk in real time from the phone (Gemini Live API, free tier)
       ├── Bifrost ....... AI switchboard: free providers and models added in a web page,
       │                   automatic fallback; n8n reaches it privately at http://bifrost:8080/v1
       └── backups ....... nightly .zip in /data/backups (14 kept) + a copy on the laptop now and then
@@ -72,7 +73,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | 06 | [n8n: the engine behind every skill, online and safe](lessons/06-n8n.md) | ✅ Tested |
 | 07 | [Jarvis on Telegram: text and voice in and out, with free backups](lessons/07-telegram-jarvis-voice.md) | ✅ Tested (Gemini speaking backup: Written) |
 | 08 | [Backups: nightly .zip files on the server](lessons/08-backups-monitoring.md) | ⚠️ Written, not installed yet: **do next** |
-| 09 | [Jarvis Live: talk in real time, like a call](lessons/09-jarvis-live-plan.md) | ⬜ Planned |
+| 09 | [Jarvis Live: talk in real time, like a call](lessons/09-jarvis-live.md) | ⚠️ Written, first call pending |
 
 **Part 3 — Jarvis's hands (my Windows laptop)**
 

@@ -136,5 +136,5 @@ Then **Publish** the workflow.
 ## Next
 
 - **Lesson 08 — Backups**: protect everything built so far.
-- **Jarvis Live** (Lesson 09, planned): talk in real time, like a call.
+- **Lesson 09 — Jarvis Live**: talk in real time, like a call.
 - Automations: SAR→PKR rate alert, new SAR request alert, morning summary.

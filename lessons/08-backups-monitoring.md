@@ -157,4 +157,4 @@ is ever reclaimed, only the copy on your laptop survives.
 
 ## Next
 
-**Lesson 09 — Jarvis Live** (planned), or the next automation: SAR→PKR rate alert, new SAR request alert, morning summary.
+**Lesson 09 — Jarvis Live**, or the next automation: SAR→PKR rate alert, new SAR request alert, morning summary.

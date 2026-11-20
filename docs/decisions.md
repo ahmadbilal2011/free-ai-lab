@@ -131,3 +131,11 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - Accepted limit: the zips share the server's disk, so they cover mistakes, not losing the VM. Mitigation: copy a zip
   to the laptop monthly and before big changes (one PowerShell line in Lesson 08).
 - healthchecks.io alerts dropped for now; `lab-status` shows the age of the last backup.
+
+## 2026-11-20 — Jarvis Live design
+
+- Small dependency-free Node container: password page (scrypt hash, signed cookie), `/api/token` mints single-use
+  Gemini Live tokens (v1alpha `auth_tokens`, 1 min to start, 30 min max), `/api/tool` forwards to n8n with a secret.
+- The browser streams audio straight to Google (WebSocket, 16 kHz in / 24 kHz out): lowest delay, no audio load on the server.
+- Tools are an allow-list of two; skills grow inside one n8n workflow shared by Telegram and Live.
+- Model picked at install from what the key can use, preferring `gemini-3.1-flash-live-preview` (listed as free).

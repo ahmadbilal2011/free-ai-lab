@@ -48,7 +48,7 @@ LAB_DIR="$LAB_DIR"
 BACKUP_DIR="$BACKUP_DIR"
 KEEP="$KEEP"
 STOP_APPS="n8n bifrost"
-EXTRA_FILES="/etc/apache2/sites-available/n8n-public.conf /etc/apache2/sites-available/ai-gateway.conf /etc/fail2ban/jail.d/n8n-login.conf /etc/fail2ban/filter.d/n8n-login.conf /etc/fail2ban/jail.d/bifrost-login.conf /etc/fail2ban/filter.d/bifrost-login.conf"
+EXTRA_FILES="/etc/apache2/sites-available/n8n-public.conf /etc/apache2/sites-available/ai-gateway.conf /etc/fail2ban/jail.d/n8n-login.conf /etc/fail2ban/filter.d/n8n-login.conf /etc/fail2ban/jail.d/bifrost-login.conf /etc/fail2ban/filter.d/bifrost-login.conf /etc/apache2/sites-available/jarvis-live.conf /etc/fail2ban/jail.d/live-login.conf /etc/fail2ban/filter.d/live-login.conf"
 EOF
 chmod 600 "$CONF"
 echo "Settings in $CONF: keep the newest $KEEP zips."
