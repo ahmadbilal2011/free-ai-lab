@@ -123,3 +123,11 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   the separate voice service, the old keys script and `wipe-apps.sh`. They remain in git history.
 - Lessons renumbered 00–11 in the order they're actually done; n8n's two lessons merged into one (06); the n8n stack
   is now a single compose file (public settings built in). The n8n installer also starts autoheal.
+
+## 2026-11-20 — Backups as local .zip files instead of Object Storage
+
+- Chosen: nightly `.zip` in `/data/backups` on the server (root-only, newest 14 kept, n8n and Bifrost stopped for a
+  few seconds for consistent SQLite copies). Simpler than restic + bucket keys + an encryption password.
+- Accepted limit: the zips share the server's disk, so they cover mistakes, not losing the VM. Mitigation: copy a zip
+  to the laptop monthly and before big changes (one PowerShell line in Lesson 08).
+- healthchecks.io alerts dropped for now; `lab-status` shows the age of the last backup.

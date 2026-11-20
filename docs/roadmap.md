@@ -33,7 +33,7 @@ Rules for the whole course:
 | 05 | **The AI switchboard (Bifrost)**: free AI keys added in a web page; levels `quick` / `smart` / `code` | Many free AIs through one private address, with fallback |
 | 06 | **n8n online and safe**: Apache, HTTPS, login + 2FA, fail2ban, next to the SAR site | The engine every Jarvis skill runs on, reachable anywhere |
 | 07 | **Jarvis on Telegram**: instant trigger, ElevenLabs ears and voice, free Gemini backups | Text or voice → Jarvis answers in text, and in voice when spoken to |
-| 08 | **Backups and monitoring**: restic → Oracle Object Storage, healthchecks.io | Keys and workflows safe |
+| 08 | **Backups**: nightly .zip in `/data/backups` on the server, a copy on the laptop now and then | Undo any mistake; survive losing the VM |
 | 09 | **Jarvis Live** (planned): real-time talk with the Gemini Live API, n8n workflows as tools | Talk to Jarvis like a call |
 
 ## Part 3 — Jarvis's hands (my Windows laptop)

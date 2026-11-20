@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Backups changed to local .zip files
+
+- Decided: no bucket storage; nightly `.zip` in `/data/backups` on the server, newest 14 kept, plus a copy on the laptop now and then — [Lesson 08](lessons/08-backups-monitoring.md)
+- New commands: `lab-backup`, `lab-restore-test`, `lab-restore <zip>`, `lab-status`
+- Next: run `08-install-backup.sh` on the server
+
 ## 2026-11-19 — Jarvis on Telegram with voice, built in n8n's web page; course updated
 
 - ✅ Tested: typed and voice messages, only-me check, memory, spoken replies (ElevenLabs), and the free **Gemini listening backup** (ElevenLabs key switched off on purpose)

@@ -65,7 +65,7 @@ Oracle gives every account resources that stay free forever, in your **home regi
 |---|---|
 | Ampere A1 (Arm) compute | **2 OCPU and 12 GB RAM in total** (halved from 4 OCPU / 24 GB in mid-2026) |
 | Block storage (disks) | 200 GB total, including boot disks |
-| Object Storage | 20 GB (we use it for encrypted backups) |
+| Object Storage | 20 GB (not used: backups are zips on the server, Lesson 08) |
 
 Warnings:
 

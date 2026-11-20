@@ -1,78 +1,45 @@
-# Lesson 08 — Backups and monitoring
+# Lesson 08 — Backups: nightly .zip files on the server
 
-**Goal:** never lose Jarvis's keys, settings and (soon) workflows, and get an **email** if the server or a backup stops working.
+**Goal:** never lose Jarvis's workflows, credentials and keys to a mistake, a bad update or a `--fresh` by accident.
 
-**Time:** about 30 minutes.
+**Time:** about 10 minutes. **Cost:** $0. Nothing outside the server is used.
 
-**Cost:** $0. Oracle Always Free Object Storage (20 GB), restic (open source), healthchecks.io free plan.
+**Before you start:** Lessons 05–07 are done (`docker ps` shows `bifrost` and `n8n`).
 
-**Before you start:** Lessons 05–07 are done (`docker ps` shows `bifrost`, `n8n`, `autoheal`).
-
-**Status:** ⚠️ Written, not installed on the current server yet. **Do this next**: the server now holds n8n workflows, credentials and Bifrost's keys.
+**Status:** ✅ Written. Run it next.
 
 ---
 
-## Part A — Why now?
+## Part A — What gets backed up, and how
 
-Everything Jarvis has lives on **one** server. If it breaks, gets deleted by mistake, or Oracle reclaims it, you lose Bifrost's provider keys, every n8n workflow and credential, the Telegram bot setup, everything Jarvis learns. Before Jarvis gets more of your life, we protect it.
+Every night at **03:30** the server writes one zip file: `/data/backups/lab-YYYYMMDD-HHMM.zip`.
 
-Backups must be:
-
-| Rule | How |
+| In the zip | Why |
 |---|---|
-| **Off the server** | Oracle **Object Storage**: a separate storage service, not the server's disk |
-| **Encrypted** | **restic** encrypts everything *before* it leaves the server; Oracle only sees scrambled data |
-| **Automatic** | A timer runs every night at 03:30 |
-| **Tested** | `lab-restore-test` really restores the latest backup and checks the files |
-| **Watched** | **healthchecks.io** emails you if a night's backup doesn't report "OK" |
+| `~/lab/` (compose files, **`.env` keys**, n8n's data, Bifrost's data) | Rebuild every app exactly as it was |
+| Apache sites and fail2ban rules for n8n and Bifrost | The public doors and their locks |
 
-> A backup you've never restored is just a hope. We test the restore on day one.
-
-## Part B — What gets backed up
-
-| Included | Why |
+| Left out | Why |
 |---|---|
-| `~/lab/` (compose files, **`.env` keys**, Bifrost's data, n8n's data) | Rebuild every app exactly as it was |
-| Every Docker volume, including future ones | Picked up automatically, nothing to remember |
+| Moved-aside folders (`n8n.old-*`, `brain.retired-*`, `.env.old-*`) | Old copies, not needed |
+| The SAR calculator site | A separate project, untouched by this course |
 
-**Consistency:** n8n and Bifrost keep their data in SQLite database files, and copying one while it's being written can give a broken copy. So the backup **pauses them for a few seconds** at 03:30 and starts it again right after, even if the backup fails. (Telegram retries webhook messages, so nothing sent in those seconds is lost.)
+- **Consistency:** n8n and Bifrost keep their data in SQLite database files, and copying one while it's being written
+  can give a broken copy. So the backup **stops them for a few seconds** and starts them again right after, even if the
+  backup fails. Telegram retries webhook messages, so nothing sent in those seconds is lost.
+- **Retention:** the newest **14** zips are kept, so two weeks to go back to. Each is small (a few MB).
+- **Privacy:** the zips contain your API keys, so `/data/backups` is readable by **root only**.
 
-**Retention:** 7 daily + 4 weekly + 6 monthly snapshots. restic stores only what changed (**deduplication**), so it stays small.
+## Part B — The honest limit
 
-### The two secrets you must keep safe
+| Protects against | Doesn't protect against |
+|---|---|
+| A deleted or broken workflow, a bad update, a wrong setting, `--fresh` by mistake | Losing the VM itself (Oracle reclaims it, the disk fails, the VM is deleted) |
 
-| Secret | What it is | If you lose it |
-|---|---|---|
-| Oracle **Secret key** | Lets the server write to the bucket | Make a new one. No data lost |
-| **Backup encryption password** | Unlocks your backups | **The backups are useless forever.** Nobody can recover it, not even Oracle |
+The zips sit **on the same disk** as the data. So now and then (say monthly, and before big changes) **copy one to
+your laptop** (Part D). That copy is what saves you if the server is ever lost.
 
-Both are stored on the server in `/etc/free-ai-lab/backup.env` (root only). **But if the server dies, that file dies with it.** Keep a copy in a **password manager** (Bitwarden is free). Never on GitHub, never in a chat.
-
-## Part C — Create the backup storage (Oracle Cloud Shell)
-
-Open **Cloud Shell** in the Oracle Console (as in Lesson 01), then:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/08-create-backup-bucket.sh -o 08-create-backup-bucket.sh && bash 08-create-backup-bucket.sh
-```
-
-It creates a **private** bucket `free-ai-lab-backups` and an **S3-compatible key pair** ("Customer Secret Key"), then prints:
-
-```
-  S3 endpoint : https://<namespace>.compat.objectstorage.me-riyadh-1.oci.customer-oci.com
-  Bucket      : free-ai-lab-backups
-  Region      : me-riyadh-1
-  Access key  : ...
-  Secret key  : ...   ← shown only once
-```
-
-Copy the **Secret key** into your password manager now, then type `clear`.
-
-**Coming from the first version of the course?** The script finds the old bucket and offers to **delete the old backups** in it (their password went with the old server settings, so they can't be restored any more). Answer **Y**. It also replaces the old access key: answer **N** when it asks if you still have the old secret, unless you really do.
-
-> **S3-compatible** means Oracle's storage speaks the same "language" as Amazon S3, so tools like restic work with it unchanged.
-
-## Part D — Install backups on the server
+## Part C — Install (one command)
 
 On the server:
 
@@ -80,116 +47,113 @@ On the server:
 curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/08-install-backup.sh -o 08-install-backup.sh && sudo bash 08-install-backup.sh
 ```
 
-1. Installs **restic**.
-2. Asks for the 5 values from Part C (the secret key is typed hidden).
-3. Asks for two **healthchecks.io** URLs. Press **Enter** to skip for now; you'll add them in Part E.
-4. Creates the encrypted repository and **shows the backup encryption password once**. Save it in your password manager, then type `SAVED`.
-5. Installs four commands and two timers.
-6. Runs the **first backup** and a **restore test**.
-
-You should end with:
+It installs `zip`, creates `/data/backups` (root only), adds four commands and a nightly timer, then runs the
+**first backup** and a **restore test**. You should end with:
 
 ```
-Backup OK
-...
-  OK    /home/ubuntu/lab/autoheal/compose.yaml
-  OK    /home/ubuntu/lab/gateway/compose.yaml
-  OK    /home/ubuntu/lab/jarvis/.env
-  OK    /home/ubuntu/lab/jarvis/n8n/database.sqlite
+Backup OK: /data/backups/lab-20261120-1405.zip (3.1M), 1 kept
+Testing /data/backups/lab-20261120-1405.zip ...
+  OK      /home/ubuntu/lab/gateway/compose.yaml
+  OK      /home/ubuntu/lab/jarvis/compose.yaml
+  OK      /home/ubuntu/lab/jarvis/.env
+  OK      /home/ubuntu/lab/jarvis/n8n/database.sqlite
+  ...
 RESTORE TEST PASSED
 ```
 
-Sources: [`08-create-backup-bucket.sh`](../scripts/08-create-backup-bucket.sh), [`08-install-backup.sh`](../scripts/08-install-backup.sh)
+Source: [`08-install-backup.sh`](../scripts/08-install-backup.sh)
 
 ### Your new commands
 
 | Command | What it does |
 |---|---|
-| `sudo lab-status` | One screen: containers and health, memory, disk, Tailscale, last backup, alerts |
-| `sudo lab-backup` | Back up right now (e.g. before a risky change) |
-| `sudo lab-restore-test` | Prove the latest backup restores (do it once a month) |
-| `systemctl list-timers 'lab-*'` | When the next backup and heartbeat run |
-| `journalctl -u lab-backup -n 50` | Log of the last backup |
+| `sudo lab-status` | One screen: containers, memory, disk, last backup and its age |
+| `sudo lab-backup` | Back up right now. Do it **before** any risky change |
+| `sudo lab-restore-test` | Prove the newest zip opens and holds the key files (changes nothing) |
+| `sudo lab-restore <zip>` | Put a backup back (Part E) |
+| `sudo ls -lt /data/backups` | List the backups, newest first |
 
-## Part E — Monitoring: an email when something stops
+## Part D — Copy a backup to your laptop
 
-A monitor running *on* the server can't tell you the server is down. So we use a **dead man's switch**: the server says "I'm alive" to an outside service every 5 minutes. If the messages **stop**, that service emails you.
+On the **laptop**, in PowerShell (use your own key file and IP, as in Lesson 01):
 
-[healthchecks.io](https://healthchecks.io) (open source, free hosted plan) does exactly this.
+```powershell
+mkdir $HOME\jarvis-backups -Force
+ssh -i $HOME\.ssh\oracle_key ubuntu@<server-ip> "sudo cat `$(sudo ls -1t /data/backups/lab-*.zip | head -1)" > $HOME\jarvis-backups\lab-latest.zip
+```
 
-1. Sign up at <https://healthchecks.io> (email only). Coming from v1? Reuse your account and the two old checks: just **resume** them.
-2. Check **`jarvis heartbeat`**: **Period 5 minutes**, **Grace 10 minutes**. Copy its ping URL (`https://hc-ping.com/…`).
-3. Check **`jarvis backup`**: **Period 1 day**, **Grace 2 hours**. Copy its ping URL.
-4. On the server, run `sudo bash 08-install-backup.sh` again. Press **Enter** to keep everything else and paste the two URLs.
+- Open it in File Explorer to check it's a real zip.
+- ⚠️ It contains your API keys. Keep it in a private folder, never on a USB stick you lend out, never in a shared drive.
+  Rename it with the date if you keep several.
 
-| Event | What you get |
-|---|---|
-| Server off / crashed / reclaimed / no network | Email about 15 minutes later ("heartbeat is DOWN") |
-| Nightly backup failed or didn't run | Email |
-| Everything fine | Silence, and a green dashboard |
+## Part E — Restoring
 
-> A ping URL works like a password for that check (anyone with it could send fake "I'm alive" pings). Keep it off GitHub.
+**Undo a mistake** (a workflow deleted, an update went wrong):
 
-Later (Lesson 18) these alerts also reach you on **Telegram**.
+```bash
+sudo ls -lt /data/backups              # pick the zip from before the mistake
+sudo lab-restore /data/backups/lab-20261119-0330.zip
+```
+
+It asks you to type `RESTORE`. Then it:
+1. Takes a safety backup of the current state.
+2. Stops n8n and Bifrost.
+3. Moves the current `~/lab` aside to `~/lab.before-restore-<date>`.
+4. Unzips the backup with the original file owners.
+5. Starts everything again.
+
+Delete the `before-restore` folder once all is fine.
+
+**New server** (the old one was lost):
+1. Lessons 01–03 on a new server.
+2. Copy your laptop's zip to it:
+   ```powershell
+   scp -i $HOME\.ssh\oracle_key $HOME\jarvis-backups\lab-latest.zip ubuntu@<new-ip>:
+   ```
+3. Run `sudo bash 08-install-backup.sh` (its first backup fails because nothing is installed yet, which is fine),
+   then `sudo lab-restore ~/lab-latest.zip`.
+4. Run `bash 05-install-gateway.sh` and `bash 06-install-n8n.sh` (**without** `--fresh`). They reuse the restored
+   keys and data and set up Apache, HTTPS and fail2ban for the **new IP**: the `sslip.io` names change with the IP,
+   so update Telegram (Lesson 07) by publishing the workflow again.
 
 ## Part F — Staying clear of Oracle's idle rule
 
-Oracle may **reclaim** an Always Free VM it considers idle. An A1 VM counts as idle if, over **7 days**, CPU (95th percentile), network **and** memory all stay below 20% ([Oracle's Always Free docs](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm)). All three must be true, so keeping **memory above 20%** with real work protects us.
-
-Check where you stand:
+Oracle may **reclaim** an Always Free VM it considers idle. An A1 VM counts as idle if, over **7 days**, CPU
+(95th percentile), network **and** memory all stay below 20%
+([Oracle's Always Free docs](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm)).
 
 ```bash
-sudo lab-status      # "Memory used": a yellow warning appears below 20%
+sudo lab-status      # "Memory used": a yellow note appears below 20%
 ```
 
 Real services (the SAR site, n8n, Bifrost, Telegram traffic, scheduled workflows) are the honest way to stay above
-the line. As of 2026-11 memory use was around 11%, so network and CPU activity from real work matter too, and the
-server should keep doing useful, scheduled jobs. We don't run fake "busy" programs to trick Oracle.
-
-## Part G — Restoring for real (if disaster happens)
-
-If the server is ever lost:
-
-1. Create a new server (Lesson 01) and run Lessons 02 and 03.
-2. **First** put your saved encryption password on the new server, so the installer reuses the existing backups instead of creating a new, empty repository:
-   ```bash
-   sudo install -d -m 700 /etc/free-ai-lab
-   sudo sh -c 'umask 077; echo RESTIC_PASSWORD=\"YOUR-SAVED-PASSWORD\" >> /etc/free-ai-lab/backup.env'
-   ```
-   Then `sudo bash 08-install-backup.sh` with the **same** endpoint, bucket and keys. It should say *"Repository already exists and the password matches."*
-3. Restore everything to its original place:
-   ```bash
-   sudo sh -c 'set -a; . /etc/free-ai-lab/backup.env; restic -o s3.region=$S3_REGION restore latest --target /'
-   ```
-4. Start the apps again: `bash 05-install-gateway.sh`, then `bash 06-install-n8n.sh` (without `--fresh`: the restored data and keys are reused).
+the line. We don't run fake "busy" programs to trick Oracle. And this is exactly why **Part D matters**: if the VM
+is ever reclaimed, only the copy on your laptop survives.
 
 ## If something goes wrong
 
 | Problem | Fix |
 |---|---|
 | `No .../lab/jarvis found` | Do Lessons 05–06 first |
-| `Could not create the repository` | Re-check endpoint, bucket, region and both keys. The region must be your **home region** |
-| `wrong password or no key found` | The password in `backup.env` doesn't match the repository. Use the saved one (Part G) |
-| `403 Forbidden` from Object Storage | The secret key is wrong or deleted. Run Part C again for a new one |
-| Cloud Shell: `Could not create the key (each user can have at most 2)` | Delete an unused one: Console → your profile → **Customer secret keys** |
-| n8n is down after a backup | It shouldn't stay down (the job always restarts it): `docker start n8n` and check `journalctl -u lab-backup` |
-| healthchecks.io shows "late" | `systemctl list-timers 'lab-*'` and `journalctl -u lab-heartbeat -n 20` |
+| `Less than 1 GB free` | `df -h /`, then `docker image prune -a` to remove old images |
+| n8n is down after a backup | It shouldn't stay down (the job always restarts it): `docker start n8n bifrost` and check `journalctl -u lab-backup -n 30` |
+| `Zip check FAILED` | Disk problem or full disk: `df -h /` and `sudo dmesg | tail` |
+| After a restore, n8n says `EACCES` | `sudo chown -R 1000:1000 ~/lab/jarvis/n8n && docker restart n8n` |
+| The laptop copy is 0 bytes | Wrong key or IP in the `ssh` command; test `ssh -i … ubuntu@<ip>` first |
 
 ## Checklist
 
-- [ ] Bucket and key created in Cloud Shell; secret key in a password manager
 - [ ] `08-install-backup.sh` finished with **Backup OK** and **RESTORE TEST PASSED**
-- [ ] Backup encryption password in a password manager
-- [ ] Two healthchecks.io checks created, URLs added; `sudo lab-status` shows alerts **on**
-- [ ] Checked memory in `sudo lab-status` (see Part F)
+- [ ] `sudo lab-status` shows the last backup
+- [ ] One zip copied to the laptop (Part D) and kept private
+- [ ] Reminder set: copy a fresh zip to the laptop monthly and before big changes
 
 ## Check your understanding
 
-1. Why must backups live *off* the server?
-2. Why does the backup pause n8n for a few seconds?
-3. What happens if you lose the backup encryption password?
-4. How does a dead man's switch tell you the server is down, when the server itself can't?
-5. Which three conditions make Oracle treat an A1 VM as idle?
+1. Why does the backup stop n8n and Bifrost for a few seconds?
+2. Which problems do the zips on the server protect against, and which don't they?
+3. Why must the zips (and the laptop copy) be kept private?
+4. What does `lab-restore` do with your current data before restoring?
 
 ## Next
 

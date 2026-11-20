@@ -27,7 +27,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
       ├── n8n ........... Jarvis's skills and routines (owner login + 2FA)
       ├── Bifrost ....... AI switchboard: free providers and models added in a web page,
       │                   automatic fallback; n8n reaches it privately at http://bifrost:8080/v1
-      └── restic ........ encrypted nightly backups → Oracle Object Storage (+ healthchecks.io)
+      └── backups ....... nightly .zip in /data/backups (14 kept) + a copy on the laptop now and then
       Voice: ElevenLabs (ears + voice) with free Gemini backups, all inside n8n
                                              │
                      Tailscale (paused for now; returns for the laptop part)
@@ -48,7 +48,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | n8n | Automation engine (self-hosted) | Free to self-host (fair-code licence) |
 | Telegram Bot API | Jarvis's front door on the phone | Free |
 | ElevenLabs (+ Gemini as free backup) | Ears and voice | Free plan / free tier |
-| restic + Oracle Object Storage + healthchecks.io | Backups and alerts | Free |
+| zip + systemd timer | Nightly backups on the server | Free |
 | OpenJarvis | Jarvis's hands on the Windows PC | Free, open source (Apache 2.0) |
 | Tailscale | Private network for my devices (paused) | Free personal plan |
 
@@ -71,7 +71,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | 05 | [The AI switchboard: free AI keys, added in a web page (Bifrost)](lessons/05-ai-switchboard.md) | ✅ Tested |
 | 06 | [n8n: the engine behind every skill, online and safe](lessons/06-n8n.md) | ✅ Tested |
 | 07 | [Jarvis on Telegram: text and voice in and out, with free backups](lessons/07-telegram-jarvis-voice.md) | ✅ Tested (Gemini speaking backup: Written) |
-| 08 | [Backups and monitoring](lessons/08-backups-monitoring.md) | ⚠️ Written, not installed yet: **do next** |
+| 08 | [Backups: nightly .zip files on the server](lessons/08-backups-monitoring.md) | ⚠️ Written, not installed yet: **do next** |
 | 09 | [Jarvis Live: talk in real time, like a call](lessons/09-jarvis-live-plan.md) | ⬜ Planned |
 
 **Part 3 — Jarvis's hands (my Windows laptop)**

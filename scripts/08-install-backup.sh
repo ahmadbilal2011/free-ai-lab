@@ -1,27 +1,31 @@
 #!/usr/bin/env bash
 # =============================================================================
-# free-ai-lab — Lesson 08 (part 2): encrypted nightly backups + monitoring
+# free-ai-lab — Lesson 08: nightly .zip backups in /data/backups on the server
 #
-# Run ON THE SERVER:
-#   curl -fsSL https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/scripts/08-install-backup.sh -o 08-install-backup.sh && sudo bash 08-install-backup.sh
+# Run ON THE VM:
+#   sudo bash 08-install-backup.sh
 #
 # Installs:
-#   restic                 encrypted, deduplicated backups to Oracle Object Storage
-#   /usr/local/bin/lab-backup        the backup job (also runnable by hand)
-#   /usr/local/bin/lab-restore-test  proves a backup can really be restored
-#   /usr/local/bin/lab-status        one-screen health check of the whole lab
-#   /usr/local/bin/lab-heartbeat     keeps the private model loaded + "I'm alive" ping
-#   systemd timers         backup every night 03:30, heartbeat every 5 minutes
+#   lab-backup          back up now -> /data/backups/lab-YYYYMMDD-HHMM.zip (keeps the newest 14)
+#   lab-restore-test    check the newest zip opens and holds the key files (changes nothing)
+#   lab-restore <zip>   put a backup back (stops the apps, restores, starts them again)
+#   lab-status          one-screen health check (containers, memory, disk, last backup)
+#   a timer that runs lab-backup every night at 03:30
 #
-# Secrets go to /etc/free-ai-lab/backup.env (root only, never committed).
-# Safe to re-run: press Enter to keep saved values.
+# What's in each zip: ~/lab (compose files, .env keys, n8n and Bifrost data) plus the Apache
+# sites and fail2ban rules for n8n and Bifrost. Old moved-aside folders are skipped.
+# n8n and Bifrost are stopped for a few seconds so their SQLite databases are copied consistently.
+#
+# Limit: the zips live on the SAME disk. They protect against mistakes, not against losing the VM.
+# Copy one to your laptop now and then (the lesson shows the one-line command).
 # =============================================================================
 set -euo pipefail
 
-CONF_DIR=/etc/free-ai-lab
-CONF="$CONF_DIR/backup.env"
-LOGIN_USER="${SUDO_USER:-ubuntu}"; [ "$LOGIN_USER" = root ] && LOGIN_USER=ubuntu
-LAB_DIR="$(getent passwd "$LOGIN_USER" | cut -d: -f6)/lab"
+BACKUP_DIR="${BACKUP_DIR:-/data/backups}"
+KEEP="${KEEP:-14}"
+LAB_USER="${SUDO_USER:-ubuntu}"
+LAB_DIR="$(getent passwd "$LAB_USER" | cut -d: -f6)/lab"
+CONF=/etc/free-ai-lab/backup.env
 
 c_ok="\033[32m"; c_warn="\033[33m"; c_err="\033[31m"; c_off="\033[0m"
 step() { echo -e "\n${c_ok}==>${c_off} $*"; }
@@ -31,130 +35,93 @@ die()  { echo -e "${c_err}[x] $*${c_off}" >&2; exit 1; }
 [ "$(id -u)" -eq 0 ] || die "Run with sudo:  sudo bash $0"
 [ -d "$LAB_DIR/jarvis" ] || die "No $LAB_DIR/jarvis found. Do Lessons 05-06 first."
 
-conf_get() { grep -E "^$1=" "$CONF" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//' || true; }
-conf_set() { local tmp; tmp=$(mktemp); grep -vE "^$1=" "$CONF" > "$tmp" 2>/dev/null || true
-             printf '%s="%s"\n' "$1" "$2" >> "$tmp"; cat "$tmp" > "$CONF"; rm -f "$tmp"; }
-ask() {  # ask VAR "Question" [secret]
-  local var="$1" q="$2" secret="${3:-}" cur val; cur=$(conf_get "$var")
-  local hint="Enter keeps current"; [ -z "$cur" ] && hint="required"
-  [ -n "$secret" ] && [ -n "$cur" ] && hint="saved ...${cur: -4}, Enter keeps it"
-  [ -z "$secret" ] && [ -n "$cur" ] && hint="current: $cur"
-  if [ -n "$secret" ]; then read -r -s -p "  $q ($hint): " val; echo; else read -r -p "  $q ($hint): " val; fi
-  val=$(printf '%s' "$val" | tr -d '[:space:]')
-  [ -n "$val" ] && conf_set "$var" "$val"
-  [ -n "$(conf_get "$var")" ] || [ "$var" = HC_BACKUP_URL ] || [ "$var" = HC_HEARTBEAT_URL ] || die "$var is required."
-}
-
-# ---------- 1. restic ----------
-step "1/6  Installing restic"
+step "1/5  Tools"
 export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
-apt-get update -q >/dev/null
-apt-get install -y -q restic curl >/dev/null
-echo "restic $(restic version | awk '{print $2}')"
+apt-get install -y -q zip unzip >/dev/null
+echo "zip and unzip installed."
 
-# ---------- 2. settings ----------
-step "2/6  Backup settings (from 08-create-backup-bucket.sh in Cloud Shell)"
-install -d -m 700 "$CONF_DIR"; touch "$CONF"; chmod 600 "$CONF"
-ask S3_ENDPOINT "S3 endpoint (https://...customer-oci.com)"
-ask S3_BUCKET   "Bucket"
-ask S3_REGION   "Region (e.g. me-riyadh-1)"
-ask AWS_ACCESS_KEY_ID     "Access key"
-ask AWS_SECRET_ACCESS_KEY "Secret key (hidden)" secret
-echo
-echo "  Monitoring (optional, free at https://healthchecks.io). Paste ping URLs, or Enter to skip:"
-ask HC_BACKUP_URL    "Backup check URL"
-ask HC_HEARTBEAT_URL "Heartbeat check URL"
-conf_set LAB_DIR "$LAB_DIR"
-conf_set BACKUP_STOP "n8n bifrost"                # apps with SQLite databases, paused a few seconds
-conf_set BACKUP_EXCLUDE_VOLUMES ""                # nothing big to skip
-conf_set RESTIC_REPOSITORY "s3:$(conf_get S3_ENDPOINT)/$(conf_get S3_BUCKET)/jarvis"
+step "2/5  Backup folder $BACKUP_DIR (only root can read it: the zips contain your keys)"
+install -d -m 700 -o root -g root "$BACKUP_DIR"
+install -d -m 700 /etc/free-ai-lab
+cat > "$CONF" <<EOF
+LAB_DIR="$LAB_DIR"
+BACKUP_DIR="$BACKUP_DIR"
+KEEP="$KEEP"
+STOP_APPS="n8n bifrost"
+EXTRA_FILES="/etc/apache2/sites-available/n8n-public.conf /etc/apache2/sites-available/ai-gateway.conf /etc/fail2ban/jail.d/n8n-login.conf /etc/fail2ban/filter.d/n8n-login.conf /etc/fail2ban/jail.d/bifrost-login.conf /etc/fail2ban/filter.d/bifrost-login.conf"
+EOF
+chmod 600 "$CONF"
+echo "Settings in $CONF: keep the newest $KEEP zips."
 
-NEW_PASSWORD=""
-if [ -z "$(conf_get RESTIC_PASSWORD)" ]; then
-  NEW_PASSWORD=$(openssl rand -base64 30 | tr -d '/+=' | cut -c1-32)
-  conf_set RESTIC_PASSWORD "$NEW_PASSWORD"
-fi
-
-# ---------- 3. repository ----------
-step "3/6  Connecting to the backup repository"
-set -a; . "$CONF"; set +a
-R=(restic -o "s3.region=$S3_REGION")
-if "${R[@]}" cat config >/dev/null 2>&1; then
-  echo "Repository already exists and the password matches."
-else
-  "${R[@]}" init || die "Could not create the repository. Check endpoint, bucket, region and keys."
-  echo "New encrypted repository created."
-fi
-
-if [ -n "$NEW_PASSWORD" ]; then
-  echo
-  echo -e "${c_warn}=================== SAVE THIS NOW ===================${c_off}"
-  echo -e "  Backup encryption password:  ${c_ok}${NEW_PASSWORD}${c_off}"
-  echo "  Without it, NOBODY (not even you) can restore the backups."
-  echo "  If the server is lost, this file is lost with it."
-  echo "  Put it in a password manager (with the Oracle secret key), NOT on GitHub."
-  echo -e "${c_warn}=====================================================${c_off}"
-  read -r -p "  Type SAVED when it's safely stored: " ok
-  [ "$ok" = "SAVED" ] || warn "You can show it later with: sudo grep RESTIC_PASSWORD $CONF"
-  clear 2>/dev/null || true
-fi
-unset NEW_PASSWORD
-
-# ---------- 4. tools ----------
-step "4/6  Installing lab-backup, lab-restore-test, lab-status, lab-heartbeat"
+step "3/5  Commands"
 cat > /usr/local/bin/lab-backup <<'EOF'
 #!/usr/bin/env bash
-# free-ai-lab nightly backup. Run by hand any time:  sudo lab-backup
-set -uo pipefail
-set -a; . /etc/free-ai-lab/backup.env; set +a
-R=(restic -o "s3.region=$S3_REGION")
-hc() { [ -n "${HC_BACKUP_URL:-}" ] && curl -fsS -m 10 --retry 3 "${HC_BACKUP_URL}$1" >/dev/null 2>&1 || true; }
+# Back up ~/lab + n8n/Bifrost server config into one zip. Run as root (the timer does).
+set -euo pipefail
+. /etc/free-ai-lab/backup.env
+[ "$(id -u)" -eq 0 ] || { echo "Run with sudo"; exit 1; }
+STAMP=$(date +%Y%m%d-%H%M); OUT="$BACKUP_DIR/lab-$STAMP.zip"; TMP="$OUT.part"
+FREE_MB=$(df -Pm "$BACKUP_DIR" | awk 'NR==2{print $4}')
+[ "$FREE_MB" -gt 1024 ] || { echo "Less than 1 GB free on $BACKUP_DIR, backup skipped"; exit 1; }
 STOPPED=()
-restart() { for c in "${STOPPED[@]}"; do docker start "$c" >/dev/null && echo "started $c again"; done; STOPPED=(); }
-trap restart EXIT                                   # containers always come back, even on error
-hc /start
-
-# 1. Pause apps that use SQLite files, so the copy is consistent (about 30 seconds)
-for c in $BACKUP_STOP; do
-  if [ -n "$(docker ps -q -f "name=^${c}$")" ]; then docker stop -t 30 "$c" >/dev/null && STOPPED+=("$c") && echo "paused $c"; fi
+start_again() { for c in "${STOPPED[@]}"; do docker start "$c" >/dev/null 2>&1 || echo "WARNING: could not start $c"; done; }
+trap start_again EXIT                                      # apps always come back, even if the zip fails
+for c in $STOP_APPS; do
+  if docker ps --format '{{.Names}}' | grep -qx "$c"; then docker stop -t 20 "$c" >/dev/null && STOPPED+=("$c"); fi
 done
-
-# 2. What we back up: the lab folder (compose files, configs, .env keys, n8n data) + every Docker volume except big re-downloadable ones
-PATHS=("$LAB_DIR")
-for v in $(docker volume ls -q); do
-  case " $BACKUP_EXCLUDE_VOLUMES " in *" $v "*) continue ;; esac
-  PATHS+=("/var/lib/docker/volumes/$v/_data")
-done
-"${R[@]}" backup --host free-ai-lab --tag lab "${PATHS[@]}"; RC=$?
-restart
-
-# 3. Keep 7 daily, 4 weekly, 6 monthly; tidy once a week (saves API requests)
-if [ "$RC" -eq 0 ] && [ "$(date +%u)" = 7 ]; then
-  "${R[@]}" forget --host free-ai-lab --tag lab --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune || RC=$?
-fi
-if [ "$RC" -eq 0 ]; then hc ""; echo "Backup OK"; else hc /fail; echo "Backup FAILED (code $RC)"; fi
-exit "$RC"
+LIST=("$LAB_DIR")
+for f in $EXTRA_FILES; do [ -e "$f" ] && LIST+=("$f"); done
+rm -f "$TMP"
+zip -q -r -y "$TMP" "${LIST[@]}" \
+  -x "*/n8n.old-*" "*/brain.retired-*" "*/.env.old-*" "*/node_modules/*" "*.log"
+start_again; STOPPED=(); trap - EXIT                       # restart right after zipping
+mv "$TMP" "$OUT"; chmod 600 "$OUT"
+unzip -tq "$OUT" >/dev/null || { echo "Zip check FAILED: $OUT"; exit 1; }
+ls -1t "$BACKUP_DIR"/lab-*.zip | tail -n +$((KEEP + 1)) | xargs -r rm -f   # keep the newest $KEEP
+echo "Backup OK: $OUT ($(du -h "$OUT" | cut -f1)), $(ls "$BACKUP_DIR"/lab-*.zip | wc -l) kept"
 EOF
 
 cat > /usr/local/bin/lab-restore-test <<'EOF'
 #!/usr/bin/env bash
-# Restore the latest backup into a temporary folder and check key files. Changes nothing live.
+# Unzip the newest backup into a temporary folder and check the key files. Changes nothing live.
 set -euo pipefail
-set -a; . /etc/free-ai-lab/backup.env; set +a
-R=(restic -o "s3.region=$S3_REGION")
+. /etc/free-ai-lab/backup.env
+LATEST=$(ls -1t "$BACKUP_DIR"/lab-*.zip 2>/dev/null | head -1)
+[ -n "$LATEST" ] || { echo "No backups yet. Run: sudo lab-backup"; exit 1; }
 DEST=$(mktemp -d /tmp/lab-restore-test.XXXX)
-echo "Snapshots in the repository:"; "${R[@]}" snapshots --compact
-echo; echo "Restoring the latest snapshot into $DEST ..."
-"${R[@]}" restore latest --target "$DEST" >/dev/null
-check() { if [ -e "$DEST$1" ]; then echo "  OK    $1"; else echo "  MISSING $1"; FAIL=1; fi; }
+echo "Testing $LATEST ..."
+unzip -q "$LATEST" -d "$DEST"
 FAIL=0
-# Every important file that exists on the server right now must be in the backup
-for f in "$LAB_DIR"/*/compose.yaml "$LAB_DIR"/*/.env "$LAB_DIR"/jarvis/n8n/database.sqlite "$LAB_DIR"/gateway/data/config.db; do
+check() { if [ -e "$DEST$1" ]; then echo "  OK      $1"; else echo "  MISSING $1"; FAIL=1; fi; }
+for f in "$LAB_DIR"/*/compose.yaml "$LAB_DIR"/*/.env "$LAB_DIR"/jarvis/n8n/database.sqlite $EXTRA_FILES; do
   [ -e "$f" ] && check "$f"
 done
-echo "  Restored size: $(du -sh "$DEST" | cut -f1)"
+[ -d "$LAB_DIR/gateway/data" ] && check "$LAB_DIR/gateway/data"
+echo "  Unzipped size: $(du -sh "$DEST" | cut -f1)"
 rm -rf "$DEST"
 [ "$FAIL" -eq 0 ] && echo "RESTORE TEST PASSED" || { echo "RESTORE TEST FAILED"; exit 1; }
+EOF
+
+cat > /usr/local/bin/lab-restore <<'EOF'
+#!/usr/bin/env bash
+# Put a backup back:  sudo lab-restore /data/backups/lab-YYYYMMDD-HHMM.zip
+# Takes a safety backup of the current state first, then replaces ~/lab and the n8n/Bifrost config.
+set -euo pipefail
+. /etc/free-ai-lab/backup.env
+[ "$(id -u)" -eq 0 ] || { echo "Run with sudo"; exit 1; }
+ZIP="${1:-}"; [ -f "$ZIP" ] || { echo "Usage: sudo lab-restore <zip>   (see: sudo ls -lt $BACKUP_DIR)"; exit 1; }
+unzip -tq "$ZIP" >/dev/null || { echo "That zip is damaged."; exit 1; }
+read -r -p "Replace the current n8n + Bifrost data with $(basename "$ZIP")? Type RESTORE: " a
+[ "$a" = RESTORE ] || { echo "Cancelled."; exit 1; }
+echo "Safety backup of the current state first..."; lab-backup
+for d in "$LAB_DIR"/jarvis "$LAB_DIR"/gateway; do [ -f "$d/compose.yaml" ] && (cd "$d" && docker compose down >/dev/null 2>&1 || true); done
+SAFE="$LAB_DIR.before-restore-$(date +%Y%m%d-%H%M)"; mv "$LAB_DIR" "$SAFE"
+unzip -q -o -X "$ZIP" -d /                                 # -X restores file owners (n8n and Bifrost run as uid 1000)
+OWNER=$(stat -c %U "$SAFE"); chown "$OWNER:$OWNER" "$LAB_DIR"
+for d in "$LAB_DIR"/gateway "$LAB_DIR"/jarvis "$LAB_DIR"/autoheal; do [ -f "$d/compose.yaml" ] && (cd "$d" && docker compose up -d >/dev/null); done
+apache2ctl configtest >/dev/null 2>&1 && systemctl reload apache2
+systemctl restart fail2ban 2>/dev/null || true
+echo "Restored. The previous state is kept in $SAFE (delete it when all is fine)."
 EOF
 
 cat > /usr/local/bin/lab-status <<'EOF'
@@ -168,82 +135,57 @@ docker ps -a --format '  {{.Names}}\t{{.Status}}' | sed -e "s/(healthy)/$(printf
 MEM=$(awk '/MemTotal/{t=$2}/MemAvailable/{a=$2}END{printf "%d", (t-a)*100/t}' /proc/meminfo)
 DISK=$(df --output=pcent / | tail -1 | tr -dc '0-9')
 echo; echo "Server:"
-echo "  Memory used : ${MEM}%  $([ "$MEM" -lt 20 ] && printf "$Y(below 20%%: Oracle may treat an idle A1 VM as reclaimable, see Lesson 08)$N")"
-echo "  Disk used   : ${DISK}%  $([ "$DISK" -gt 85 ] && printf "$Rd(getting full: docker image prune)$N")"
-echo "  Swap        : $(free -h | awk '/Swap/{print $3" / "$2}')"
+echo "  Memory used : ${MEM}%  $([ "$MEM" -lt 20 ] && printf "$Y(below 20%%: see Lesson 08, Part E)$N")"
+echo "  Disk used   : ${DISK}%  $([ "$DISK" -gt 85 ] && printf "$Rd(getting full)$N")"
 echo "  Load (1m)   : $(cut -d' ' -f1 /proc/loadavg) on $(nproc) CPUs"
 echo "  Uptime      : $(uptime -p)"
-command -v tailscale >/dev/null && echo "  Tailscale   : $(tailscale status --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("BackendState","?"), d["Self"]["DNSName"].rstrip("."))' 2>/dev/null || echo unknown)"
 if [ "$(id -u)" -eq 0 ] && [ -f /etc/free-ai-lab/backup.env ]; then
-  set -a; . /etc/free-ai-lab/backup.env; set +a
-  LAST=$(restic -o "s3.region=$S3_REGION" snapshots --latest 1 --json 2>/dev/null | python3 -c 'import json,sys; s=json.load(sys.stdin); print(s[-1]["time"][:16].replace("T"," ") if s else "none")' 2>/dev/null || echo "unreachable")
-  echo; echo "Backups:"; echo "  Last backup : $LAST (UTC)"
+  . /etc/free-ai-lab/backup.env
+  LAST=$(ls -1t "$BACKUP_DIR"/lab-*.zip 2>/dev/null | head -1)
+  echo; echo "Backups ($BACKUP_DIR):"
+  if [ -n "$LAST" ]; then
+    AGE=$(( ($(date +%s) - $(stat -c %Y "$LAST")) / 3600 ))
+    echo "  Last backup : $(basename "$LAST") ($(du -h "$LAST" | cut -f1)), ${AGE}h ago $([ "$AGE" -gt 30 ] && printf "$Rd(older than a day!)$N")"
+  else echo -e "  Last backup : ${Rd}none yet${N}"; fi
+  echo "  Kept        : $(ls "$BACKUP_DIR"/lab-*.zip 2>/dev/null | wc -l) zips, $(du -sh "$BACKUP_DIR" | cut -f1) in total"
   echo "  Next run    : $(systemctl list-timers lab-backup.timer --no-legend 2>/dev/null | awk '{print $1, $2, $3}')"
-  echo "  Alerts      : $([ -n "${HC_HEARTBEAT_URL:-}" ] && echo "healthchecks.io on" || printf "${Y}off (no healthchecks.io URLs)${N}")"
 else
   echo; echo "(run 'sudo lab-status' to include backups)"
 fi
 EOF
-cat > /usr/local/bin/lab-heartbeat <<'HB'
-#!/usr/bin/env bash
-# Every 5 minutes: tell healthchecks.io we're alive.
-set -a; . /etc/free-ai-lab/backup.env; set +a
-[ -z "${HC_HEARTBEAT_URL:-}" ] || curl -fsS -m 10 --retry 3 "$HC_HEARTBEAT_URL" >/dev/null
-HB
-chmod 755 /usr/local/bin/lab-backup /usr/local/bin/lab-restore-test /usr/local/bin/lab-status /usr/local/bin/lab-heartbeat
+chmod 755 /usr/local/bin/lab-backup /usr/local/bin/lab-restore-test /usr/local/bin/lab-restore /usr/local/bin/lab-status
+echo "lab-backup, lab-restore-test, lab-restore, lab-status installed."
 
-# ---------- 5. timers ----------
-step "5/6  Scheduling: backup nightly at 03:30, heartbeat every 5 minutes"
+step "4/5  Nightly timer (03:30)"
 cat > /etc/systemd/system/lab-backup.service <<'EOF'
 [Unit]
-Description=free-ai-lab nightly backup (restic -> Oracle Object Storage)
-Wants=network-online.target
-After=network-online.target docker.service
+Description=free-ai-lab nightly zip backup
+After=docker.service
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/lab-backup
-Nice=10
-IOSchedulingClass=idle
 EOF
 cat > /etc/systemd/system/lab-backup.timer <<'EOF'
 [Unit]
-Description=Run free-ai-lab backup every night
+Description=free-ai-lab nightly zip backup at 03:30
 [Timer]
 OnCalendar=*-*-* 03:30:00
-RandomizedDelaySec=10m
 Persistent=true
+RandomizedDelaySec=5m
 [Install]
 WantedBy=timers.target
 EOF
-cat > /etc/systemd/system/lab-heartbeat.service <<'EOF'
-[Unit]
-Description=free-ai-lab heartbeat: keep the private model loaded + ping healthchecks.io
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/lab-heartbeat
-EOF
-cat > /etc/systemd/system/lab-heartbeat.timer <<'EOF'
-[Unit]
-Description=free-ai-lab heartbeat every 5 minutes
-[Timer]
-OnBootSec=2m
-OnUnitActiveSec=5m
-[Install]
-WantedBy=timers.target
-EOF
+# remove leftovers from the older cloud-backup version, if any
+systemctl disable --now lab-heartbeat.timer >/dev/null 2>&1 || true
+rm -f /etc/systemd/system/lab-heartbeat.* /usr/local/bin/lab-heartbeat
 systemctl daemon-reload
-systemctl enable --now lab-backup.timer lab-heartbeat.timer >/dev/null
-echo "Timers active:"; systemctl list-timers 'lab-*' --no-legend | sed 's/^/  /'
+systemctl enable --now lab-backup.timer >/dev/null
+echo "Next run: $(systemctl list-timers lab-backup.timer --no-legend | awk '{print $1, $2, $3}')"
 
-# ---------- 6. first backup + restore test ----------
-step "6/6  First backup now, then a restore test"
+step "5/5  First backup and restore test"
 /usr/local/bin/lab-backup
-echo
 /usr/local/bin/lab-restore-test
 
 step "Done!"
-echo "  sudo lab-status        health of the whole lab"
-echo "  sudo lab-backup        back up right now"
-echo "  sudo lab-restore-test  prove the latest backup restores"
-[ -z "$(conf_get HC_HEARTBEAT_URL)" ] && warn "No healthchecks.io URLs set: nobody will email you if the server or a backup dies. See Lesson 08, Part E."
-true
+echo "  Backups: $BACKUP_DIR (newest $KEEP kept). Check any time: sudo lab-status"
+echo "  Copy one to your laptop now and then (Lesson 08, Part D): the zips are on the same disk as the data."
