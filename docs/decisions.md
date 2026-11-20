@@ -192,3 +192,14 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - The IP lock (and `--allow`) still failed for the user: IPs differ between Cloud Shell, laptop and phone and change over
   time. Replaced with: **admin login exists → page fully open, Bifrost's login protects it**; **no admin yet → private
   unlock link** (`?unlock=<token>` sets a 24 h cookie via Apache mod_rewrite; any IP). The installer detects which case applies.
+
+## 2026-11-20 — Jarvis Live: AI providers you configure yourself
+
+- The Models dialog only listed what Bifrost reported, so the user couldn't add or fix providers from Jarvis. Replaced
+  with an **AI providers** screen: add / edit / delete / test any OpenAI-compatible provider (ready-made: Groq, Google
+  Gemini, OpenRouter, NVIDIA, Mistral, Cerebras, SambaNova, Cohere, Cloudflare, Bifrost; or custom), **Fetch models**
+  or type names, and one ordered line of models **across providers** with fallback.
+- Bifrost is now **optional**: just one provider. The installer no longer asks for a Bifrost key; older installs are
+  migrated (the Bifrost key and chosen models become the first provider).
+- Keys are stored in `~/lab/live/data/providers.json` (mode 600) and never returned to the browser (last 4 only).
+- Addresses must be `https://`; `http://` only for single-name hosts inside the server (`http://bifrost:8080/v1`).

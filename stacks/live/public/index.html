@@ -15,10 +15,10 @@
   <div class="brand"><span class="logo"></span>Jarvis <em>your personal AI operating system</em></div>
   <div class="top-right">
     <div class="brain" role="radiogroup" aria-label="Who answers">
-      <button type="button" role="radio" data-brain="bifrost" aria-checked="true">Bifrost <small id="bifrostState">checking…</small></button>
+      <button type="button" role="radio" data-brain="models" aria-checked="true">My AI models <small id="brainState">checking…</small></button>
       <button type="button" role="radio" data-brain="live" aria-checked="false">Gemini Live</button>
     </div>
-    <button id="openModels" class="ghost" type="button">Models</button>
+    <button id="openModels" class="ghost" type="button">AI providers</button>
     <span id="clock" class="num"></span>
     <span id="linkState" class="pill">offline</span>
     <form method="post" action="/logout"><button class="ghost" type="submit">Sign out</button></form>
@@ -86,7 +86,7 @@
   <select id="lang" class="lang" aria-label="Language you speak">
     <option value="en-US">English</option><option value="ur-PK">اردو</option>
   </select>
-  <button id="speakToggle" class="speak" type="button" aria-pressed="true" title="Read Bifrost replies aloud">🔊</button>
+  <button id="speakToggle" class="speak" type="button" aria-pressed="true" title="Read replies aloud">🔊</button>
   <form id="cmdForm" class="cmd">
     <input id="cmd" autocomplete="off" placeholder="Ask Jarvis anything, or tap the mic and talk">
     <button type="submit" class="send" aria-label="Send">➤</button>
@@ -94,19 +94,49 @@
 </footer>
 
 <dialog id="models" class="models" aria-labelledby="modelsTitle">
-  <form method="dialog" class="models-inner">
-    <h2 id="modelsTitle">Jarvis's models</h2>
-    <p class="note">Jarvis tries these in order. If one is busy or out of free quota, the next one answers. Add new free models in Bifrost's page; they show up in the list below.</p>
-    <ol id="chosen" class="chosen"></ol>
-    <p id="chosenEmpty" class="note" hidden></p>
-    <label class="search">All models in Bifrost <input id="modelSearch" type="search" placeholder="Filter, e.g. groq, gemini, llama"></label>
-    <ul id="available" class="available"></ul>
-    <p id="modelsError" class="err" hidden></p>
-    <div class="models-actions">
-      <button value="cancel" class="ghost" type="submit">Close</button>
-      <button id="saveModels" class="primary" type="button">Save order</button>
-    </div>
-  </form>
+  <div class="models-inner">
+    <header class="models-head">
+      <h2 id="modelsTitle">AI providers and models</h2>
+      <button id="closeModels" class="ghost" type="button">Close</button>
+    </header>
+
+    <section>
+      <h3>Your providers</h3>
+      <ul id="provList" class="prov-list"></ul>
+    </section>
+
+    <section class="prov-form-wrap">
+      <h3 id="provFormTitle">Add a provider</h3>
+      <form id="provForm" class="prov-form" autocomplete="off">
+        <label>Ready-made
+          <select id="pvPreset"></select>
+        </label>
+        <label>Name <input id="pvName" required maxlength="40" placeholder="e.g. Groq"></label>
+        <label class="wide">Address (OpenAI-compatible) <input id="pvUrl" required placeholder="https://api.groq.com/openai/v1"></label>
+        <label class="wide">API key <input id="pvKey" type="password" placeholder="Paste the key (kept on your server only)"></label>
+        <label class="wide">Models <small>one per line; or save, then use “Fetch models”</small>
+          <textarea id="pvModels" rows="3" placeholder="openai/gpt-oss-120b"></textarea></label>
+        <p id="pvHelp" class="note wide"></p>
+        <div class="wide prov-actions">
+          <button id="pvCancel" type="button" class="ghost" hidden>Cancel edit</button>
+          <button type="submit" class="primary">Save provider</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h3>Jarvis tries these, in order</h3>
+      <p class="note">If one is busy, out of free quota or failing, the next answers. Mix providers so one daily limit never stops Jarvis.</p>
+      <ol id="chosen" class="chosen"></ol>
+      <p id="chosenEmpty" class="note" hidden>Nothing in line yet. Add models below.</p>
+      <div class="add-row">
+        <select id="addFrom" aria-label="Provider"></select>
+        <input id="modelSearch" type="search" placeholder="Filter models">
+      </div>
+      <ul id="available" class="available"></ul>
+    </section>
+    <p id="modelsError" class="err" role="alert" hidden></p>
+  </div>
 </dialog>
 
 <script src="/app.js" type="module"></script>

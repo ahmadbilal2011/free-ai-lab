@@ -34,7 +34,7 @@ Rules for the whole course:
 | 06 | **n8n online and safe**: Apache, HTTPS, login + 2FA, fail2ban, next to the SAR site | The engine every Jarvis skill runs on, reachable anywhere |
 | 07 | **Jarvis on Telegram**: instant trigger, ElevenLabs ears and voice, free Gemini backups | Text or voice → Jarvis answers in text, and in voice when spoken to |
 | 08 | **Backups**: nightly .zip in `/data/backups` on the server, a copy on the laptop now and then | Undo any mistake; survive losing the VM |
-| 09 | **Jarvis Live**: holographic dashboard with an AI sentinel; brains Bifrost (free models, default) and Gemini Live (voice calls); agents come from n8n (none yet) | Talk to Jarvis; every agent built later appears here by itself |
+| 09 | **Jarvis Live**: holographic dashboard with an AI sentinel; brains: AI providers you add on the dashboard (any OpenAI-compatible, incl. Bifrost) and Gemini Live (voice calls); agents come from n8n (none yet) | Talk to Jarvis; every agent built later appears here by itself |
 
 ## Part 3 — Jarvis's hands (my Windows laptop)
 

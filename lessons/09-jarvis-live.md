@@ -1,17 +1,18 @@
 # Lesson 09 — Jarvis Live: the dashboard of your personal AI operating system
 
 **Goal:**
-- Open one screen and **talk** to Jarvis (or type). Its main brain is **Bifrost**, the switchboard of your free AI models from Lesson 05; **Gemini Live** is there for real-time voice calls.
+- Open one screen and **talk** to Jarvis (or type). Its main brain is **your AI models**: providers you add yourself on the dashboard (Groq, Google Gemini, OpenRouter, NVIDIA, Mistral, Bifrost or any OpenAI-compatible service). **Gemini Live** is there for real-time voice calls.
 - See an animated AI sentinel answer you, a globe with your server, live server health, and a command log.
 - Connect the dashboard to the **n8n** you installed in Lesson 06, so that every **agent** you build in upcoming lessons appears here and can be used by voice.
 
-**This lesson adds no agents.** Today Jarvis can talk and answer general questions, through your free Bifrost models. Actions such as your calendar, email, SAR desk or your PC come one per lesson, built in n8n.
+**This lesson adds no agents.** Today Jarvis can talk and answer general questions, through the free models you add. Actions such as your calendar, email, SAR desk or your PC come one per lesson, built in n8n.
 
 **Time:** about 40 minutes. **Cost:** $0. **Before you start:** Lessons 06–07 are done (n8n online, Telegram bot working).
 
 **Status:** ⚠️ Written. Tested locally in a browser with a stand-in n8n:
 - sign-in, live metrics, the sentinel's three states
-- the Bifrost brain answering, and calling an n8n agent when one exists
+- your own AI providers and models, added and ordered on the dashboard
+- Jarvis answering through them, and calling an n8n agent when one exists
 - the empty agent list, and agents appearing by themselves when n8n lists them
 - alerts, and desktop and phone layouts
 
@@ -27,13 +28,13 @@ Real voice calls need your server and Google: the first call happens there.
  you: text, or speech ──► Jarvis dashboard (browser): sentinel · globe + agent orbit · timeline · system · log
                                   │                                          ▲ live events
               ┌───────────────────┴─────────────────────┐                    │
-   Brain 1: BIFROST (default)                  Brain 2: GEMINI LIVE          │
-   your free models, automatic fallback        real-time voice call,         │
+   Brain 1: YOUR AI MODELS (default)           Brain 2: GEMINI LIVE          │
+   providers you add, fallback in your order   real-time voice call,         │
    (Lesson 05) · text + push-to-talk           interruptions                 │
               └──────────── both call the same agents ──┘                    │
                                   ▼                                          │
                      jarvis-live (small server on your VM) ──────────────────┘
-                     • keeps the Bifrost and Gemini keys on the server
+                     • keeps every provider key and the Gemini key on the server
                      • server health + alerts by itself
                      • asks n8n: "which agents exist?" / "do this task"
                                   ▼
@@ -46,7 +47,7 @@ Real voice calls need your server and Google: the first call happens there.
 
 | Brain | How you talk | Why |
 |---|---|---|
-| **Bifrost** (default, pick it at the top) | Type, or tap the mic and speak: your browser turns speech into text (English or Urdu). The reply is shown and read aloud | Uses **all your free models** with Bifrost's automatic fallback, the same models your n8n agents use |
+| **My AI models** (default, pick it at the top) | Type, or tap the mic and speak: your browser turns speech into text (English or Urdu). The reply is shown and read aloud | Uses the providers and models **you add** under *AI providers*, tried in your order |
 | **Gemini Live** | Tap the mic for a real-time call: talk back and forth, interrupt it | The most natural voice conversation |
 
 **Why agents live in n8n, not in the dashboard:**
@@ -63,7 +64,7 @@ Real voice calls need your server and Google: the first call happens there.
 | Lesson 17 · Memory (RAG) | Jarvis remembers preferences, past talks, documents | a `memory` agent in n8n |
 | Lesson 18 · Routines | Morning briefing, SAR desk alerts, spoken by Jarvis | n8n schedules + events to the dashboard |
 | Lessons 10–12 · Laptop hands | "Open my QA report" on your PC | a `laptop` agent: n8n → OpenJarvis |
-| Later · premium brain | Claude for hard jobs, only when you choose | add it in Bifrost, then set `CHAT_MODEL` (Jarvis) or pick it in an n8n agent |
+| Later · premium brain | Claude for hard jobs, only when you choose | add it under *AI providers* (Jarvis) or pick it in an n8n agent |
 
 ## Part B — The dashboard
 
@@ -75,8 +76,8 @@ Real voice calls need your server and Google: the first call happens there.
 | Below | **Task timeline** | Gantt chart of the last 3 minutes of agent tasks |
 | Top right | **Jarvis** | The **AI sentinel**, described below |
 | Below | **Live command log** | What you said, what Jarvis said, agent steps and alerts, time-stamped |
-| Top bar | **Brain switch** | **Bifrost** (with its status, e.g. *● 12 models*) or **Gemini Live** |
-| Top bar | **Models** | Pick as many of your Bifrost models as you like and put them in order (Part E2) |
+| Top bar | **Brain switch** | **My AI models** (with its status, e.g. *● 2 providers · 3 models in line*) or **Gemini Live** |
+| Top bar | **AI providers** | Add, edit, test and delete providers; choose and order their models (Part E2) |
 | Bottom | **Command bar** | Mic, waveform, language (English or اردو) for speech, 🔊 read replies aloud on/off, text input |
 
 Drag the thin lines between panels to resize; the layout is remembered. On a phone, the panels stack.
@@ -102,11 +103,12 @@ curl -fsSLO https://raw.githubusercontent.com/ahmadbilal2011/free-ai-lab/main/sc
 bash 09-install-live.sh
 ```
 
-It asks for four things:
+It asks for three things:
 1. Your **Gemini API key**: free from aistudio.google.com/apikey, from a project without billing. It's typed hidden and checked with Google.
 2. A **page password** (12+ characters, hidden). It's stored only as a hash.
 3. Your first name, which is how Jarvis addresses you.
-4. Your **Bifrost `smart` virtual key** (Bifrost page → Virtual Keys), typed hidden. This is Jarvis's main brain.
+
+AI providers are **not** asked here: you add them on the dashboard in Part E2.
 
 **Expected tests at the end:**
 
@@ -118,7 +120,6 @@ It asks for four things:
 | `/api/event` from the internet | **403** (only n8n inside the server may push events) |
 | n8n → jarvis-live | **yes** |
 | jarvis-live → n8n agents | **404** before Part D, **200** after it |
-| jarvis-live → Bifrost | **200** (brain ready); **401** means the key is wrong |
 
 It also prints the **Jarvis secret** for Part D. Keep the terminal open.
 
@@ -139,31 +140,56 @@ Each upcoming lesson adds one entry to the list, for example `{ "id": "calendar"
 
 ## Part E — First talk
 
-1. Open `https://live-<your-ip-with-dashes>.sslip.io` on your phone or PC and sign in. The top bar should show **Bifrost ● … models**.
+1. Open `https://live-<your-ip-with-dashes>.sslip.io` on your phone or PC and sign in. The top bar says **My AI models ● add a provider**. Do Part E2 first, then come back to step 2.
 
-**With Bifrost (default):**
+### Part E2 — Add your AI providers and models (as many as you want)
+
+![AI providers screen](../docs/images/09-models.png)
+
+Click **AI providers** (top right). Everything about models is managed here; nothing needs the terminal.
+
+**Add a provider**
+
+1. **Ready-made**: choose one (Groq, Google Gemini, OpenRouter, NVIDIA Build, Mistral, Cerebras, SambaNova, Cohere, Cloudflare, Bifrost) or **Other (custom)**. The name and address fill in, and a line tells you where to get the free key.
+2. **API key**: paste it. It's saved on your server only (`~/lab/live/data/providers.json`, readable by root only). The browser later sees only its last 4 characters.
+3. **Models**: leave empty, or type model names, one per line.
+4. Click **Save provider**.
+
+**Get its models**
+
+5. On the provider's row click **Fetch models**: Jarvis asks the provider for its model list. If a provider has no list, click **Edit** and type the model names yourself.
+6. Click **Test**: it should say *Works: … replied "ready" in … ms*. *HTTP 401* means the key is wrong (Edit → paste it again).
+
+**Put models in line**
+
+7. Under *Jarvis tries these, in order*, choose the provider, filter (e.g. `70b`, `flash`, `:free`), and click **Add** on each model you want.
+8. Order them with ↑ ↓; remove with ✕. Changes save at once.
+
+Jarvis tries the line **top to bottom**: if one is busy, out of free quota or failing, the next answers, and the log says so. Hover over a reply to see every model it tried.
+
+Tip: put a **fast** model first (Groq), then a **big** one, then models from **other providers** (Gemini Flash-Lite, OpenRouter `:free`), so that one daily limit never stops Jarvis.
+
+| Provider | Address to use | Notes |
+|---|---|---|
+| Groq | `https://api.groq.com/openai/v1` | free, very fast |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | key from a project without billing |
+| OpenRouter | `https://openrouter.ai/api/v1` | use models ending in `:free` |
+| Bifrost (Lesson 05) | `http://bifrost:8080/v1` | key = a Bifrost virtual key; optional |
+| Anything else | its OpenAI-compatible address | must be `https://`; `http://` only for services inside your server |
+
+Edit or delete any provider at any time from the same screen. Deleting one also removes its models from the line.
+
+**Talk with your models:**
 
 2. Type *"Hi Jarvis, who are you?"* and press Enter. The sentinel thinks (ripple), then the answer appears and is read aloud. Hover over the answer to see which model replied.
 3. Choose **اردو** next to the mic, tap the mic and say *"آج کا دن کیسے منظم کروں؟"*. Your words appear in the log, then Jarvis answers.
 4. Ask for an action, such as *"What's on my calendar?"*. Jarvis should say that skill arrives when its agent is added. It must **not** make up an answer.
 
-### Part E2 — Choose Jarvis's models (as many as you want)
-
-![Picking models](../docs/images/09-models.png)
-
-1. **Add free models in Bifrost first.** Open Bifrost's page (Lesson 05) → *Models → Model Providers*, add providers and their keys. Every model you add there shows up in Jarvis.
-2. On the dashboard, click **Models** (top right). You see every model Bifrost offers. Filter by typing, e.g. `groq`, `gemini`, `free`.
-3. Click **Add** on each model you want, then put them in order with ↑ ↓. Click **Save order**.
-
-Jarvis tries them **top to bottom**: if one is busy, out of free quota or failing, the next answers, and the log says which one did (hover over a reply to see every model it tried). With nothing picked, Jarvis uses `CHAT_MODEL` from the installer.
-
-Tip: put a **fast** model first (e.g. a Groq one), then a **big** one, then models from **other providers**, so that one provider's daily limit never stops Jarvis.
-
 **With Gemini Live:**
 
 5. Click **Gemini Live** at the top, tap the mic and allow the microphone. Talk back and forth, and interrupt it mid-sentence: it stops and listens. Tap again to end.
 
-> Speech-to-text in Bifrost mode is done by your browser (Chrome, Edge, Android and Safari support it). The read-aloud voice is your device's own. Urdu read-aloud needs an Urdu voice on the device; otherwise the text still shows.
+> Speech-to-text in *My AI models* mode is done by your browser (Chrome, Edge, Android and Safari support it). The read-aloud voice is your device's own. Urdu read-aloud needs an Urdu voice on the device; otherwise the text still shows.
 
 ## Part F — Events: n8n can make Jarvis speak up
 
@@ -186,7 +212,7 @@ The server also watches itself: memory above 85% or CPU above 90% for a minute �
 | Lock | What it stops |
 |---|---|
 | HTTPS + page password (scrypt hash) + fail2ban (5 tries / 10 min → 1 h ban) | Strangers using your Jarvis |
-| Gemini and Bifrost keys stay on the server; browsers get one-time Gemini tokens and never see the Bifrost key | Key theft from a phone or browser |
+| Provider keys and the Gemini key stay on the server; browsers get one-time Gemini tokens and only the last 4 characters of provider keys | Key theft from a phone or browser |
 | Jarvis can only call agents that n8n lists; every call carries the secret | Jarvis being tricked into random actions |
 | `/api/event` blocked from the internet | Fake alerts from outside |
 | Container read-only, no extra rights, 128 MB, server stats read-only | A bug harming the server |
@@ -199,19 +225,20 @@ The server also watches itself: memory above 85% or CPU above 90% for a minute �
 | `bash 09-install-live.sh --password` | Change the page password |
 | `bash 09-install-live.sh --off` | Stop it and take the page offline |
 | `LIVE_MODEL=<name> bash 09-install-live.sh` | Force another Gemini Live model |
-| Dashboard → **Models** | Pick and order Jarvis's models (saved in `~/lab/live/data`, included in backups) |
+| Dashboard → **AI providers** | Add, test, edit and delete providers; order their models (saved in `~/lab/live/data`, included in backups) |
 | `docker logs --tail 30 jarvis-live` | Errors and agent calls |
 
 ## If something goes wrong
 
 | Problem | Fix |
 |---|---|
-| Top bar says *no Bifrost key set* or *Bifrost refused the key* | Re-run the installer and paste the `smart` virtual key; check it in Bifrost → Virtual Keys |
-| Models list is empty | Add providers and models in Bifrost's page first; your virtual key must allow those providers (Bifrost → Virtual Keys) |
-| A reply says *None of your models answered* | All picked models failed (quota, keys). Open **Models**, add models from another provider |
-| Top bar says *Bifrost not reachable* | `docker ps` should show `bifrost` running (Lesson 05) |
-| "Bifrost answered 404/400" in the log | The model in `CHAT_MODEL` (`~/lab/live/.env`) isn't in Bifrost: pick one from Bifrost's Models page and re-run the installer |
-| Mic does nothing in Bifrost mode | The browser has no speech-to-text: use Chrome or Edge, type instead, or switch to Gemini Live |
+| Top bar says *add a provider* or *pick models* | Open **AI providers**: add one, then add its models to the line |
+| **Test** says *HTTP 401* | Wrong key: **Edit** the provider and paste the key again |
+| **Test** says *HTTP 404* or *model not found* | The model name is wrong for that provider: use **Fetch models** or check its docs |
+| **Fetch models** fails | Some providers have no model list: **Edit** and type model names yourself |
+| A reply says *None of your models answered* | Every model in the line failed (quota, keys). Add models from another provider |
+| Bifrost provider fails | `docker ps` should show `bifrost` running (Lesson 05); address `http://bifrost:8080/v1` |
+| Mic does nothing in *My AI models* mode | The browser has no speech-to-text: use Chrome or Edge, type instead, or switch to Gemini Live |
 | Agents says *n8n not reachable* | `docker ps` should show `n8n` healthy; both containers must be on the `jarvis` network (the installers do this) |
 | Agents says *workflow isn't published yet* | Part D: import and **Publish** "Jarvis agents" |
 | Agents says *n8n refused the Jarvis secret* | The Header Auth value in n8n differs from `N8N_TOOL_SECRET` in `~/lab/live/.env` |

@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Jarvis: AI providers you add yourself
+
+- New **AI providers** screen on the dashboard: add, edit, delete and test any provider (Groq, Gemini, OpenRouter, NVIDIA, Mistral, Bifrost, any OpenAI-compatible), fetch or type its models, and order models across providers
+- Bifrost is optional now; the installer no longer asks for its key (an existing Bifrost key is carried over automatically)
+- Tested locally: two providers added through the screen, wrong key shows HTTP 401, first model out of quota → second provider answered
+
 ## 2026-11-20 — Models dialog; Bifrost "Forbidden" fix
 
 - Bifrost page showed Forbidden: the setup lock was on the Cloud Shell IP. Now: once the admin login exists the page is open (Bifrost login only); before that, a private unlock link works from any network

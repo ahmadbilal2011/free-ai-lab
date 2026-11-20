@@ -6,7 +6,8 @@
 //                                             └── /api/event  : n8n pushes events in (private network only)
 //
 // Two brains, one set of agents:
-//   • Bifrost (Lesson 05): your free models with automatic fallback — text and push-to-talk (/api/chat)
+//   • Your AI models: providers YOU add on the dashboard (Groq, Gemini, OpenRouter, NVIDIA, Mistral, Bifrost, any
+//     OpenAI-compatible service), tried in your order with fallback — text and push-to-talk (/api/chat)
 //   • Gemini Live (free tier): real-time voice calls with interruptions
 // Both decide which agents to call.
 // Jarvis Live has NO agents of its own. Agents live in n8n (Lesson 06): n8n publishes the list of agents
@@ -29,15 +30,35 @@ const N8N_TOOL_URL = env('N8N_TOOL_URL', 'http://n8n:5678/webhook/jarvis-live-to
 const N8N_AGENTS_URL = env('N8N_AGENTS_URL', 'http://n8n:5678/webhook/jarvis-agents');
 const JARVIS_SECRET = env('N8N_TOOL_SECRET', '');                             // shared with n8n, both directions
 const OWNER_NAME = env('OWNER_NAME', 'friend');
-const BIFROST_URL = env('BIFROST_URL', 'http://bifrost:8080/v1');                    // Lesson 05
-const BIFROST_KEY = env('BIFROST_KEY', '');                                           // a Bifrost virtual key ("smart")
-const CHAT_MODEL = env('CHAT_MODEL', 'groq/openai/gpt-oss-120b');                 // used until you pick models
-const DATA_DIR = env('DATA_DIR', '/app/data');                                        // settings chosen on the dashboard
-const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
-let settings = { models: [] };
-try { settings = { ...settings, ...JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')) }; } catch {}
-function saveSettings() { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), { mode: 0o600 }); }
-const chatModels = () => (settings.models.length ? settings.models : [CHAT_MODEL]);
+// ---------- AI providers you add on the dashboard (stored on the server only; keys never go back to the browser) ----------
+const DATA_DIR = env('DATA_DIR', '/app/data');
+const PROVIDERS_FILE = path.join(DATA_DIR, 'providers.json');
+const readJson = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
+let store = readJson(PROVIDERS_FILE, null);
+if (!store) {                                  // first start: carry over the Bifrost key from older installs, if any
+  const legacy = readJson(path.join(DATA_DIR, 'settings.json'), {}).models || [];
+  store = { providers: [], order: [] };
+  if (env('BIFROST_KEY', '')) {
+    const models = legacy.length ? legacy : [env('CHAT_MODEL', 'groq/openai/gpt-oss-120b')];
+    store.providers.push({ id: 'bifrost', name: 'Bifrost', baseUrl: env('BIFROST_URL', 'http://bifrost:8080/v1'), key: env('BIFROST_KEY', ''), models });
+    store.order = models.map((m) => `bifrost::${m}`);
+  }
+}
+function saveStore() { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(PROVIDERS_FILE, JSON.stringify(store, null, 2), { mode: 0o600 }); }
+const findProvider = (id) => store.providers.find((p) => p.id === id);
+function chain() {                              // [{ provider, model }] in your order; first model of the first provider if none picked
+  const list = store.order.map((e) => { const [pid, ...m] = e.split('::'); return { provider: findProvider(pid), model: m.join('::') }; }).filter((x) => x.provider && x.model);
+  if (list.length) return list;
+  const p = store.providers.find((x) => x.models?.length);
+  return p ? [{ provider: p, model: p.models[0] }] : [];
+}
+const publicProvider = (p) => ({ id: p.id, name: p.name, baseUrl: p.baseUrl, models: p.models || [], keyHint: p.key ? (p.key.length > 12 ? `…${p.key.slice(-4)}` : "saved") : '' });
+function cleanBaseUrl(u) {
+  let url; try { url = new URL(String(u).trim()); } catch { throw new Error('That address is not a valid URL'); }
+  const internal = !url.hostname.includes('.') || url.hostname === 'localhost';   // e.g. http://bifrost:8080/v1 on the private network
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && internal)) throw new Error('Use an https:// address (http:// only for services inside the server, like http://bifrost:8080/v1)');
+  return url.toString().replace(/\/+$/, '');
+}
 const HOST_PROC = fs.existsSync('/host/proc/stat') ? '/host/proc' : '/proc';
 const SESSION_HOURS = 12;
 const PUBLIC_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), 'public');
@@ -88,23 +109,16 @@ async function refreshAgents() {
 }
 setInterval(refreshAgents, 60e3); refreshAgents();
 
-// ---------- Bifrost: is the free-model switchboard reachable? ----------
-let bifrost = { ok: false, note: BIFROST_KEY ? 'not checked yet' : 'no Bifrost key set' };
-async function checkBifrost() {
-  let next;
-  if (!BIFROST_KEY) next = { ok: false, note: 'no Bifrost key set' };
-  else {
-    try {
-      const r = await fetch(`${BIFROST_URL}/models`, { headers: { Authorization: `Bearer ${BIFROST_KEY}` }, signal: AbortSignal.timeout(8000) });
-      if (r.status === 401 || r.status === 403) next = { ok: false, note: 'Bifrost refused the key' };
-      else if (!r.ok) next = { ok: false, note: `Bifrost answered HTTP ${r.status}` };
-      else { const j = await r.json().catch(() => ({})); const n = Array.isArray(j.data) ? j.data.length : 0; next = { ok: true, note: `connected${n ? ` · ${n} models` : ''}`, model: chatModels()[0], chosen: chatModels().length }; }
-    } catch { next = { ok: false, note: 'Bifrost not reachable' }; }
-  }
-  const changed = next.note !== bifrost.note || next.model !== bifrost.model || next.chosen !== bifrost.chosen; bifrost = next;
-  if (changed) broadcast('bifrost', { bifrost }, false);
+// ---------- brain status: how many providers and models Jarvis can use ----------
+let brain = {};
+function brainStatus() {
+  const c = chain();
+  const next = c.length
+    ? { ok: true, note: `${store.providers.length} provider${store.providers.length > 1 ? 's' : ''} · ${c.length} model${c.length > 1 ? 's' : ''} in line`, first: `${c[0].provider.name} · ${c[0].model}` }
+    : { ok: false, note: store.providers.length ? 'pick models' : 'add a provider' };
+  if (JSON.stringify(next) !== JSON.stringify(brain)) { brain = next; broadcast('brain', { brain }, false); }
 }
-setInterval(checkBifrost, 60e3); checkBifrost();
+brainStatus();
 
 function brief(mode = 'voice') {
   const base = `You are Jarvis, ${OWNER_NAME}'s personal AI operating system${mode === 'voice' ? ', speaking live by voice' : ''}.
@@ -165,39 +179,39 @@ function openaiTools() {
     }, required: ['agent', 'task'] },
   } }];
 }
-async function listModels() {
-  const r = await fetch(`${BIFROST_URL}/models`, { headers: { Authorization: `Bearer ${BIFROST_KEY}` }, signal: AbortSignal.timeout(10e3) });
-  if (!r.ok) throw new Error(`Bifrost answered ${r.status}`);
+async function providerModels(p) {
+  const r = await fetch(`${p.baseUrl}/models`, { headers: { Authorization: `Bearer ${p.key}` }, signal: AbortSignal.timeout(12e3) });
+  if (!r.ok) throw new Error(`${p.name} answered HTTP ${r.status} for its model list. You can type model names yourself.`);
   const j = await r.json().catch(() => ({}));
-  return [...new Set((j.data || []).map((m) => String(m.id || '')).filter(Boolean))].sort();
+  const raw = j.data || j.models || [];
+  return [...new Set(raw.map((m) => String(m.id || m.name || m.model || '')).filter(Boolean))].sort();
 }
-async function bifrostCall(messages, model) {
-  const body = { model, messages, temperature: 0.5, max_tokens: 700 };
-  const t = openaiTools(); if (t) body.tools = t;
-  const r = await fetch(`${BIFROST_URL}/chat/completions`, {
+async function modelCall(p, model, messages, extra = {}) {
+  const body = { model, messages, temperature: 0.5, max_tokens: 700, ...extra };
+  const t = openaiTools(); if (t && !extra.noTools) body.tools = t; delete body.noTools;
+  const r = await fetch(`${p.baseUrl}/chat/completions`, {
     method: 'POST', signal: AbortSignal.timeout(60e3),
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${BIFROST_KEY}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${p.key}` },
     body: JSON.stringify(body),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(`${model}: Bifrost answered ${r.status} ${JSON.stringify(j.error || j).slice(0, 160)}`), { status: r.status });
-  return { msg: j.choices?.[0]?.message || {}, model: j.model || model };
+  if (!r.ok) throw Object.assign(new Error(`${p.name} · ${model}: HTTP ${r.status} ${JSON.stringify(j.error || j).slice(0, 160)}`), { status: r.status });
+  return { msg: j.choices?.[0]?.message || {}, model: `${p.name} · ${j.model || model}` };
 }
-// your models, in your order: if one is busy, out of free quota or failing, the next one answers
+// your models, in your order, across providers: if one is busy, out of free quota or failing, the next one answers
 async function callWithFallback(messages, tried) {
-  let lastErr;
-  for (const model of chatModels()) {
-    try { const out = await bifrostCall(messages, model); tried.push(model); return out; }
+  const c = chain(); let lastErr;
+  if (!c.length) throw new Error('No AI provider yet: open "AI providers" at the top and add one.');
+  for (const { provider, model } of c) {
+    try { const out = await modelCall(provider, model, messages); tried.push(`${provider.name} · ${model}`); return out; }
     catch (e) {
-      tried.push(`${model} ✗`); lastErr = e;
-      if (e.status === 401 || e.status === 403) throw new Error('Bifrost refused the key: re-run 09-install-live.sh with your "smart" virtual key');
-      broadcast('agent', { agent: 'core', status: 'info', task: `${model} didn't answer, trying the next model`, detail: '' });
+      tried.push(`${provider.name} · ${model} ✗`); lastErr = e;
+      broadcast('agent', { agent: 'core', status: 'info', task: `${provider.name} · ${model} didn't answer${e.status ? ` (HTTP ${e.status})` : ''}, trying the next one`, detail: '' });
     }
   }
-  throw new Error(`None of your ${chatModels().length} model(s) answered. Last error: ${lastErr?.name === 'TimeoutError' ? 'took too long' : lastErr?.message}`);
+  throw new Error(`None of your ${c.length} model(s) answered. Last error: ${lastErr?.name === 'TimeoutError' ? 'took too long' : lastErr?.message}`);
 }
 async function chat(history) {
-  if (!BIFROST_KEY) throw new Error('No Bifrost key set: re-run 09-install-live.sh and paste your "smart" virtual key');
   const messages = [{ role: 'system', content: brief('text') },
     ...history.slice(-16).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) }))];
   const tried = [];
@@ -212,7 +226,7 @@ async function chat(history) {
     }));
     messages.push(...results);
   }
-  return { reply: 'I asked the agents several times without finishing. Please try a simpler request.', model: chatModels()[0], tried };
+  return { reply: 'I asked the agents several times without finishing. Please try a simpler request.', model: tried[tried.length - 1] || '', tried };
 }
 
 // ---------- server health (shown on the dashboard; alerts by itself) ----------
@@ -339,24 +353,60 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
-      res.write(`event: hello\ndata: ${JSON.stringify({ agents, n8n, bifrost, recent, metrics, model: LIVE_MODEL, owner: OWNER_NAME })}\n\n`);
+      res.write(`event: hello\ndata: ${JSON.stringify({ agents, n8n, brain, recent, metrics, model: LIVE_MODEL, owner: OWNER_NAME })}\n\n`);
       clients.add(res);
       const ping = setInterval(() => res.write(': ping\n\n'), 15e3);
       req.on('close', () => { clearInterval(ping); clients.delete(res); });
       return;
     }
-    if (req.method === 'POST' && url.pathname === '/api/agents/refresh') { await Promise.all([refreshAgents(), checkBifrost()]); return send(res, 200, { agents, n8n, bifrost }); }
-    if (req.method === 'GET' && url.pathname === '/api/models') {
-      if (!BIFROST_KEY) return send(res, 200, { available: [], chosen: settings.models, fallback: CHAT_MODEL, error: 'No Bifrost key set' });
-      try { return send(res, 200, { available: await listModels(), chosen: settings.models, fallback: CHAT_MODEL }); }
-      catch (e) { return send(res, 200, { available: [], chosen: settings.models, fallback: CHAT_MODEL, error: e.message }); }
+    if (req.method === 'POST' && url.pathname === '/api/agents/refresh') { await refreshAgents(); brainStatus(); return send(res, 200, { agents, n8n, brain }); }
+    // ----- AI providers & models (all managed on the dashboard) -----
+    if (url.pathname === '/api/providers' && req.method === 'GET') {
+      return send(res, 200, { providers: store.providers.map(publicProvider), order: store.order });
     }
-    if (req.method === 'POST' && url.pathname === '/api/models') {
-      const { models } = JSON.parse(await readBody(req));
-      if (!Array.isArray(models)) return send(res, 400, { error: 'models must be a list' });
-      settings.models = [...new Set(models.map((m) => String(m).trim()).filter((m) => /^[\w.:/@+-]{1,120}$/.test(m)))].slice(0, 40);
-      saveSettings(); await checkBifrost();
-      return send(res, 200, { chosen: settings.models });
+    if (url.pathname === '/api/providers' && req.method === 'POST') {          // add or edit one provider
+      const b = JSON.parse(await readBody(req));
+      const name = String(b.name || '').trim().slice(0, 40);
+      if (!name) return send(res, 400, { error: 'Give the provider a name' });
+      let baseUrl; try { baseUrl = cleanBaseUrl(b.baseUrl); } catch (e) { return send(res, 400, { error: e.message }); }
+      const models = Array.isArray(b.models) ? [...new Set(b.models.map((m) => String(m).trim()).filter((m) => m && m.length <= 160))].slice(0, 200) : undefined;
+      let p = b.id ? findProvider(b.id) : null;
+      if (b.id && !p) return send(res, 404, { error: 'Provider not found' });
+      if (!p) {
+        if (!b.key) return send(res, 400, { error: 'Paste the API key' });
+        let id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'provider'; while (findProvider(id)) id += '-2';
+        p = { id, name, baseUrl, key: String(b.key).trim(), models: models || [] }; store.providers.push(p);
+      } else {
+        Object.assign(p, { name, baseUrl }); if (b.key) p.key = String(b.key).trim(); if (models) p.models = models;
+        store.order = store.order.filter((e) => !e.startsWith(`${p.id}::`) || p.models.includes(e.slice(p.id.length + 2)));
+      }
+      saveStore(); brainStatus();
+      return send(res, 200, { provider: publicProvider(p) });
+    }
+    if (url.pathname.startsWith('/api/providers/') && req.method === 'DELETE') {
+      const id = url.pathname.split('/')[3];
+      store.providers = store.providers.filter((p) => p.id !== id); store.order = store.order.filter((e) => !e.startsWith(`${id}::`));
+      saveStore(); brainStatus(); return send(res, 200, { ok: true });
+    }
+    if (url.pathname.match(/^\/api\/providers\/[\w-]+\/(fetch-models|test)$/) && req.method === 'POST') {
+      const [, , , id, action] = url.pathname.split('/'); const p = findProvider(id);
+      if (!p) return send(res, 404, { error: 'Provider not found' });
+      if (action === 'fetch-models') {
+        try { return send(res, 200, { models: await providerModels(p) }); } catch (e) { return send(res, 502, { error: e.message }); }
+      }
+      const { model } = JSON.parse(await readBody(req)); const m = String(model || p.models?.[0] || '');
+      if (!m) return send(res, 400, { error: 'Pick or type a model first' });
+      const t0 = Date.now();
+      try {
+        const out = await modelCall(p, m, [{ role: 'user', content: 'Reply with the single word: ready' }], { max_tokens: 20, noTools: true });
+        return send(res, 200, { ok: true, reply: String(out.msg.content || '').slice(0, 80), ms: Date.now() - t0 });
+      } catch (e) { return send(res, 200, { ok: false, error: e.name === 'TimeoutError' ? 'took too long' : e.message }); }
+    }
+    if (url.pathname === '/api/order' && req.method === 'POST') {             // the line-up Jarvis tries, across providers
+      const { order } = JSON.parse(await readBody(req));
+      if (!Array.isArray(order)) return send(res, 400, { error: 'order must be a list' });
+      store.order = [...new Set(order.map(String))].filter((e) => { const [pid, ...m] = e.split('::'); return findProvider(pid) && m.join('::'); }).slice(0, 60);
+      saveStore(); brainStatus(); return send(res, 200, { order: store.order });
     }
     if (req.method === 'POST' && url.pathname === '/api/chat') {
       const { history } = JSON.parse(await readBody(req, 128 * 1024));

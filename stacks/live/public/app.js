@@ -11,7 +11,7 @@ import { Globe } from '/globe.js';
 const WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
 const $ = (id) => document.getElementById(id);
 const state = { agents: [], byId: {}, tasks: [], active: new Map(), metrics: {}, hist: [], live: false, avatar: 'idle',
-  brain: localStorage.getItem('jarvis.brain') || 'bifrost', history: [], speakReplies: localStorage.getItem('jarvis.speak') !== 'off', synthLevel: 0 };
+  brain: (localStorage.getItem('jarvis.brain') === 'live' ? 'live' : 'models'), history: [], speakReplies: localStorage.getItem('jarvis.speak') !== 'off', synthLevel: 0 };
 
 // ---------------------------------------------------------------- helpers
 const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -138,11 +138,11 @@ function connectEvents() {
   const es = new EventSource('/api/events');
   es.addEventListener('hello', (e) => {
     const d = JSON.parse(e.data); $('linkState').textContent = 'connected'; $('linkState').classList.add('on');
-    setupAgents(d.agents, d.n8n); showBifrost(d.bifrost); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
-    if (!$('log').children.length) { log('sys', `Connected. Brain: ${state.brain === 'bifrost' ? 'Bifrost (' + (d.bifrost?.note || '…') + ')' : 'Gemini Live (' + d.model + ')'}. ${d.n8n.ok ? 'n8n ' + d.n8n.note + '.' : d.n8n.note + '.'}`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
+    setupAgents(d.agents, d.n8n); showBrain(d.brain); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
+    if (!$('log').children.length) { log('sys', `Connected. Brain: ${state.brain === 'models' ? 'your AI models (' + (d.brain?.note || '…') + ')' : 'Gemini Live (' + d.model + ')'}. ${d.n8n.ok ? 'n8n ' + d.n8n.note + '.' : d.n8n.note + '.'}`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
   });
   es.addEventListener('agents', (e) => { const d = JSON.parse(e.data); setupAgents(d.agents, d.n8n); log('sys', `Agent list updated: n8n ${d.n8n.note}.`); });
-  es.addEventListener('bifrost', (e) => { const d = JSON.parse(e.data); showBifrost(d.bifrost); log('sys', `Bifrost: ${d.bifrost.note}.`); });
+  es.addEventListener('brain', (e) => { const d = JSON.parse(e.data); showBrain(d.brain); });
   es.addEventListener('metrics', (e) => showMetrics(JSON.parse(e.data)));
   es.addEventListener('agent', (e) => agentActivity(JSON.parse(e.data)));
   es.addEventListener('alert', (e) => {
@@ -280,15 +280,15 @@ function sendText(text, system = false) {
   session.ws.send(JSON.stringify({ realtimeInput: { text } }));
   if (!system) setAvatar('thinking');
 }
-// ---------------------------------------------------------------- Bifrost brain (text + push-to-talk)
-function showBifrost(b) { if (!b) return; const el = $('bifrostState'); el.textContent = b.ok ? '● ' + b.note.replace('connected · ', '') : '● ' + b.note; el.className = b.ok ? 'ok' : 'bad'; el.title = b.ok ? `Jarvis tries ${b.chosen || 1} model(s), first: ${b.model}` : b.note; }
+// ---------------------------------------------------------------- your AI models (text + push-to-talk)
+function showBrain(b) { if (!b) return; const el = $('brainState'); el.textContent = '● ' + b.note; el.className = b.ok ? 'ok' : 'bad'; el.title = b.ok ? `First in line: ${b.first}` : 'Open "AI providers" to set up'; }
 function setBrain(b) {
   if (b === state.brain) return;
   if (state.live) stopLive();
   stopListening(); speechSynthesis.cancel();
   state.brain = b; try { localStorage.setItem('jarvis.brain', b); } catch {}
   document.querySelectorAll('.brain button').forEach((x) => x.setAttribute('aria-checked', String(x.dataset.brain === b)));
-  log('sys', b === 'bifrost' ? 'Brain: Bifrost (your free models). Type, or tap the mic and speak.' : 'Brain: Gemini Live. Tap the mic for a real-time voice call.');
+  log('sys', b === 'models' ? 'Brain: your AI models. Type, or tap the mic and speak.' : 'Brain: Gemini Live. Tap the mic for a real-time voice call.');
 }
 document.querySelectorAll('.brain button').forEach((x) => x.addEventListener('click', () => setBrain(x.dataset.brain)));
 document.querySelectorAll('.brain button').forEach((x) => x.setAttribute('aria-checked', String(x.dataset.brain === state.brain)));
@@ -310,7 +310,7 @@ function speak(text) {
   speechSynthesis.speak(u);
 }
 let busy = false;
-async function askBifrost(text) {
+async function askModels(text) {
   if (busy) return; busy = true;
   state.history.push({ role: 'user', content: text });
   setAvatar('thinking'); const t0 = performance.now();
@@ -324,11 +324,11 @@ async function askBifrost(text) {
     const line = log('jarvis', `Jarvis: ${j.reply}`); line.title = `${j.model} · ${Math.round(performance.now() - t0)} ms${j.tried?.length > 1 ? ' · tried: ' + j.tried.join(', ') : ''}`;
     const tag = document.createElement('small'); tag.className = 'model-tag'; tag.textContent = ` · ${j.model}`; line.append(tag);
     speak(j.reply);
-  } catch (e) { state.history.pop(); log('err', `Bifrost: ${e.message}`); setAvatar('idle'); }
+  } catch (e) { state.history.pop(); log('err', e.message); setAvatar('idle'); }
   finally { busy = false; }
 }
 
-// push-to-talk for the Bifrost brain: the browser turns speech into text (Chrome, Edge, Android, Safari)
+// push-to-talk for your AI models: the browser turns speech into text (Chrome, Edge, Android, Safari)
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null;
 function stopListening() { if (rec) { try { rec.abort(); } catch {} rec = null; } $('talk').classList.remove('on'); $('liveDot').textContent = 'standby'; $('liveDot').classList.remove('on'); }
@@ -344,19 +344,19 @@ function listenOnce() {
     line = line || log('you', 'You: '); line.lastChild.textContent = 'You: ' + (finalText || interim);
   };
   rec.onerror = (e) => { if (e.error !== 'aborted') log('err', e.error === 'not-allowed' ? 'Microphone blocked: allow it in the browser’s site settings.' : `Speech recognition: ${e.error}`); };
-  rec.onend = () => { const said = finalText.trim(); stopListening(); if (said) askBifrost(said); else setAvatar('idle'); };
+  rec.onend = () => { const said = finalText.trim(); stopListening(); if (said) askModels(said); else setAvatar('idle'); };
   rec.start(); setAvatar('listening');
   $('talk').classList.add('on'); $('liveDot').textContent = 'listening'; $('liveDot').classList.add('on');
 }
 
 $('talk').addEventListener('click', () => {
-  if (state.brain === 'bifrost') return listenOnce();
+  if (state.brain === 'models') return listenOnce();
   return state.live ? stopLive() : startLive();
 });
 $('cmdForm').addEventListener('submit', (e) => {
   e.preventDefault(); const v = $('cmd').value.trim(); if (!v) return;
   log('you', `You (typed): ${v}`); $('cmd').value = '';
-  if (state.brain === 'bifrost' && !state.live) askBifrost(v); else sendText(v);
+  if (state.brain === 'models' && !state.live) askModels(v); else sendText(v);
 });
 
 // ---------------------------------------------------------------- resizable panels (drag the thin gutters)
@@ -380,46 +380,117 @@ document.querySelectorAll('.gutter').forEach((g) => {
 
 $('refreshAgents').addEventListener('click', async () => {
   const r = await fetch('/api/agents/refresh', { method: 'POST' }); if (!r.ok) return;
-  const d = await r.json(); setupAgents(d.agents, d.n8n); showBifrost(d.bifrost); log('sys', `Asked n8n for agents: ${d.n8n.ok ? 'n8n ' : ''}${d.n8n.note}.`);
+  const d = await r.json(); setupAgents(d.agents, d.n8n); showBrain(d.brain); log('sys', `Asked n8n for agents: ${d.n8n.ok ? 'n8n ' : ''}${d.n8n.note}.`);
 });
 
-// ---------------------------------------------------------------- models: pick and order your free models
+// ---------------------------------------------------------------- AI providers and models (you configure them here)
+const PRESETS = [
+  { name: 'Groq', url: 'https://api.groq.com/openai/v1', help: 'Free key: console.groq.com/keys · very fast' },
+  { name: 'Google Gemini', url: 'https://generativelanguage.googleapis.com/v1beta/openai', help: 'Free key: aistudio.google.com/apikey (project without billing). Flash / Flash-Lite are free.' },
+  { name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', help: 'Free key: openrouter.ai/keys · pick models ending in :free' },
+  { name: 'NVIDIA Build', url: 'https://integrate.api.nvidia.com/v1', help: 'Free key: build.nvidia.com' },
+  { name: 'Mistral', url: 'https://api.mistral.ai/v1', help: 'Free plan key: console.mistral.ai' },
+  { name: 'Cerebras', url: 'https://api.cerebras.ai/v1', help: 'Key: cloud.cerebras.ai (check it needs no card)' },
+  { name: 'SambaNova', url: 'https://api.sambanova.ai/v1', help: 'Free key: cloud.sambanova.ai' },
+  { name: 'Cohere', url: 'https://api.cohere.ai/compatibility/v1', help: 'Trial key: dashboard.cohere.com · type model names (e.g. command-a-03-2025)' },
+  { name: 'Cloudflare Workers AI', url: 'https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1', help: 'Put your account ID in the address. API token: dash.cloudflare.com' },
+  { name: 'Bifrost', url: 'http://bifrost:8080/v1', help: 'Your switchboard from Lesson 05. Key = a Bifrost virtual key.' },
+  { name: '', url: '', help: 'Any OpenAI-compatible service: paste its address (ending in /v1 or similar) and key.' },
+];
 const dlg = $('models');
-let modelState = { available: [], chosen: [], fallback: '' };
-function renderModels() {
+const pv = { list: [], order: [], editing: null, models: {} };
+const preset = $('pvPreset');
+preset.innerHTML = PRESETS.map((p, i) => `<option value="${i}">${p.name || 'Other (custom)'}</option>`).join('');
+preset.addEventListener('change', () => { const p = PRESETS[+preset.value]; $('pvName').value = p.name; $('pvUrl').value = p.url; $('pvHelp').textContent = p.help; });
+function err(msg) { const e = $('modelsError'); e.hidden = !msg; e.textContent = msg || ''; }
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  if (r.status === 401) { location.reload(); throw new Error('signed out'); }
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`); return j;
+}
+async function loadProviders() { const j = await api('/api/providers'); pv.list = j.providers; pv.order = j.order; renderAll(); }
+function button(label, cls, fn, aria) { const b = document.createElement('button'); b.type = 'button'; b.className = `mini ${cls || ''}`; b.textContent = label; if (aria) b.setAttribute('aria-label', aria); b.onclick = fn; return b; }
+function renderProviders() {
+  const ul = $('provList'); ul.innerHTML = '';
+  if (!pv.list.length) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'No providers yet. Add your first one below, e.g. Groq or Google Gemini (both free).'; ul.append(li); }
+  for (const p of pv.list) {
+    const li = document.createElement('li');
+    const n = document.createElement('span'); n.className = 'pname'; n.textContent = p.name;
+    const m = document.createElement('span'); m.className = 'pmeta'; m.textContent = `${p.baseUrl} · key ${p.keyHint || 'not set'} · ${p.models.length} model${p.models.length === 1 ? '' : 's'}`;
+    const res = document.createElement('span'); res.className = 'presult';
+    const btns = document.createElement('span'); btns.className = 'pbtns';
+    btns.append(
+      button('Fetch models', '', async () => {
+        res.className = 'presult'; res.textContent = 'Asking for its model list…';
+        try { const j = await api(`/api/providers/${p.id}/fetch-models`, { method: 'POST' });
+          await api('/api/providers', { method: 'POST', body: JSON.stringify({ id: p.id, name: p.name, baseUrl: p.baseUrl, models: j.models }) });
+          await loadProviders(); $('addFrom').value = p.id; renderAvailable(); flashResult(p.id, `ok`, `${j.models.length} models found. Add the ones you want to the line-up below.`);
+        } catch (e) { res.className = 'presult bad'; res.textContent = e.message; }
+      }, `Fetch models from ${p.name}`),
+      button('Test', '', async () => {
+        res.className = 'presult'; res.textContent = 'Testing…';
+        const model = pv.order.find((e) => e.startsWith(`${p.id}::`))?.slice(p.id.length + 2) || p.models[0];
+        try { const j = await api(`/api/providers/${p.id}/test`, { method: 'POST', body: JSON.stringify({ model }) });
+          res.className = j.ok ? 'presult ok' : 'presult bad'; res.textContent = j.ok ? `Works: ${model} replied “${j.reply}” in ${j.ms} ms` : j.error;
+        } catch (e) { res.className = 'presult bad'; res.textContent = e.message; }
+      }, `Test ${p.name}`),
+      button('Edit', '', () => editProvider(p), `Edit ${p.name}`),
+      button('Delete', 'danger', async () => { if (!confirm(`Delete ${p.name} and its models from Jarvis?`)) return; await api(`/api/providers/${p.id}`, { method: 'DELETE' }); await loadProviders(); }, `Delete ${p.name}`),
+    );
+    li.dataset.id = p.id; li.append(n, btns, m, res); ul.append(li);
+  }
+}
+function flashResult(id, kind, text) { const r = document.querySelector(`.prov-list li[data-id="${id}"] .presult`); if (r) { r.className = `presult ${kind}`; r.textContent = text; } }
+function editProvider(p) {
+  pv.editing = p.id; $('provFormTitle').textContent = `Edit ${p.name}`; $('pvCancel').hidden = false;
+  $('pvName').value = p.name; $('pvUrl').value = p.baseUrl; $('pvKey').value = ''; $('pvKey').placeholder = `Leave empty to keep the current key (${p.keyHint})`;
+  $('pvModels').value = p.models.join('\n'); $('pvHelp').textContent = ''; $('pvName').focus();
+}
+function resetForm() {
+  pv.editing = null; $('provFormTitle').textContent = 'Add a provider'; $('pvCancel').hidden = true; $('provForm').reset();
+  $('pvKey').placeholder = 'Paste the key (kept on your server only)'; preset.value = '0'; preset.dispatchEvent(new Event('change'));
+}
+$('pvCancel').addEventListener('click', resetForm);
+$('provForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); err('');
+  const body = { id: pv.editing || undefined, name: $('pvName').value, baseUrl: $('pvUrl').value, key: $('pvKey').value || undefined,
+    models: $('pvModels').value.split('\n').map((x) => x.trim()).filter(Boolean) };
+  try {
+    const j = await api('/api/providers', { method: 'POST', body: JSON.stringify(body) });
+    log('sys', `Provider ${pv.editing ? 'updated' : 'added'}: ${j.provider.name}.`); resetForm(); await loadProviders();
+    flashResult(j.provider.id, 'ok', j.provider.models.length ? 'Saved. Now add its models to the line-up below.' : 'Saved. Click “Fetch models”, or Edit to type model names.');
+  } catch (e2) { err(e2.message); }
+});
+function renderChosen() {
   const ch = $('chosen'); ch.innerHTML = '';
-  modelState.chosen.forEach((m, i) => {
-    const li = document.createElement('li'); const sp = document.createElement('span'); sp.textContent = m; li.append(sp);
-    for (const [label, fn, title] of [['↑', () => move(i, -1), 'Move up'], ['↓', () => move(i, 1), 'Move down'], ['✕', () => { modelState.chosen.splice(i, 1); renderModels(); }, 'Remove']]) {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.textContent = label; b.title = title; b.setAttribute('aria-label', `${title}: ${m}`); b.onclick = fn; li.append(b);
-    }
+  pv.order.forEach((entry, i) => {
+    const [pid, ...mm] = entry.split('::'); const p = pv.list.find((x) => x.id === pid);
+    const li = document.createElement('li'); const sp = document.createElement('span'); sp.textContent = mm.join('::');
+    const em = document.createElement('em'); em.textContent = p ? p.name : pid;
+    li.append(sp, em,
+      button('↑', '', () => moveOrder(i, -1), `Move up ${entry}`), button('↓', '', () => moveOrder(i, 1), `Move down ${entry}`),
+      button('✕', 'danger', () => { pv.order.splice(i, 1); saveOrder(); }, `Remove ${entry}`));
     ch.append(li);
   });
-  const empty = $('chosenEmpty'); empty.hidden = modelState.chosen.length > 0;
-  empty.textContent = `None picked yet: Jarvis uses ${modelState.fallback}. Add models below.`;
-  const q = $('modelSearch').value.trim().toLowerCase(), av = $('available'); av.innerHTML = '';
-  const list = modelState.available.filter((m) => !modelState.chosen.includes(m) && (!q || m.toLowerCase().includes(q)));
-  for (const m of list.slice(0, 300)) {
-    const li = document.createElement('li'); const sp = document.createElement('span'); sp.textContent = m;
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.textContent = 'Add'; b.setAttribute('aria-label', `Add ${m}`);
-    b.onclick = () => { modelState.chosen.push(m); renderModels(); };
-    li.append(sp, b); av.append(li);
-  }
-  if (!list.length) { const li = document.createElement('li'); li.textContent = modelState.available.length ? 'No match.' : 'No models found in Bifrost yet: add providers in its page first.'; li.style.color = 'var(--muted)'; av.append(li); }
+  $('chosenEmpty').hidden = pv.order.length > 0;
 }
-function move(i, d) { const j = i + d; if (j < 0 || j >= modelState.chosen.length) return; const c = modelState.chosen; [c[i], c[j]] = [c[j], c[i]]; renderModels(); }
-$('openModels').addEventListener('click', async () => {
-  dlg.showModal(); $('modelsError').hidden = true; $('available').innerHTML = '<li style="color:var(--muted)">Asking Bifrost for your models…</li>';
-  const r = await fetch('/api/models'); if (r.status === 401) return location.reload();
-  const j = await r.json(); modelState = { available: j.available || [], chosen: [...(j.chosen || [])], fallback: j.fallback };
-  if (j.error) { $('modelsError').hidden = false; $('modelsError').textContent = `Bifrost: ${j.error}`; }
-  renderModels(); $('modelSearch').focus();
-});
-$('modelSearch').addEventListener('input', renderModels);
-$('saveModels').addEventListener('click', async () => {
-  const r = await fetch('/api/models', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ models: modelState.chosen }) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) { $('modelsError').hidden = false; $('modelsError').textContent = j.error || 'Saving failed'; return; }
-  log('sys', j.chosen.length ? `Models saved. Jarvis tries: ${j.chosen.join(' → ')}.` : `Models cleared. Jarvis uses ${modelState.fallback}.`);
-  dlg.close();
-});
+function renderAvailable() {
+  const sel = $('addFrom'), keep = sel.value;
+  sel.innerHTML = pv.list.map((p) => `<option value="${p.id}">${p.name.replace(/</g, '&lt;')}</option>`).join('') || '<option value="">No providers yet</option>';
+  if (pv.list.some((p) => p.id === keep)) sel.value = keep;
+  const p = pv.list.find((x) => x.id === sel.value), q = $('modelSearch').value.trim().toLowerCase(), av = $('available'); av.innerHTML = '';
+  if (!p) return;
+  const list = p.models.filter((m) => !pv.order.includes(`${p.id}::${m}`) && (!q || m.toLowerCase().includes(q)));
+  for (const m of list.slice(0, 400)) {
+    const li = document.createElement('li'); const sp = document.createElement('span'); sp.textContent = m;
+    li.append(sp, button('Add', '', () => { pv.order.push(`${p.id}::${m}`); saveOrder(); }, `Add ${m}`)); av.append(li);
+  }
+  if (!list.length) { const li = document.createElement('li'); li.style.color = 'var(--muted)'; li.textContent = p.models.length ? 'All of this provider’s models are in the line-up, or none match.' : 'No models listed for this provider yet: click “Fetch models” above, or Edit it and type model names.'; av.append(li); }
+}
+function renderAll() { renderProviders(); renderChosen(); renderAvailable(); }
+function moveOrder(i, d) { const j = i + d; if (j < 0 || j >= pv.order.length) return; [pv.order[i], pv.order[j]] = [pv.order[j], pv.order[i]]; saveOrder(); }
+async function saveOrder() { try { const j = await api('/api/order', { method: 'POST', body: JSON.stringify({ order: pv.order }) }); pv.order = j.order; renderChosen(); renderAvailable(); } catch (e) { err(e.message); } }
+$('addFrom').addEventListener('change', renderAvailable);
+$('modelSearch').addEventListener('input', renderAvailable);
+$('openModels').addEventListener('click', async () => { err(''); dlg.showModal(); resetForm(); try { await loadProviders(); } catch (e) { err(e.message); } });
+$('closeModels').addEventListener('click', () => dlg.close());
