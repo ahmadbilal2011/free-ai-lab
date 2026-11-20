@@ -14,7 +14,7 @@ Without Docker, installing an app like n8n means installing Python, the right li
 
 With Docker, each app arrives as a **ready-made package** with everything it needs inside. It runs in its own box, can't break other apps, and can be removed in one command.
 
-Every app on Jarvis's server (the AI gateway, the private model, n8n, the voice service) will run in Docker.
+Every app on your server (the AI gateway, n8n) runs in Docker.
 
 ## Part B — The 6 ideas you need
 
@@ -194,7 +194,7 @@ cd ~
 ├── hello/        ← this lesson's practice
 ├── autoheal/     ← restarts frozen apps
 ├── gateway/      ← Lesson 05: Bifrost, the AI switchboard
-└── jarvis/       ← Lesson 06+: n8n
+└── jarvis/       ← Lesson 06+: n8n (the folder keeps this name)
 ```
 
 Each folder holds one `compose.yaml`. The same files live in this repo under [`stacks/`](../stacks/), so the whole lab can be rebuilt from GitHub.

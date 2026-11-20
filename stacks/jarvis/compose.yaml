@@ -1,9 +1,9 @@
-# Lesson 06: n8n — the automation engine that runs every Jarvis skill
+# Lesson 06: n8n — the automation engine you learn in the n8n track
 #
 # Light by design: built-in SQLite database (no extra Postgres container).
 # n8n listens on 127.0.0.1:5678 only. Apache publishes it at https://<N8N_PUBLIC_HOST>/ (scripts/06-install-n8n.sh)
 # with Let's Encrypt HTTPS, n8n's own login + 2FA, and fail2ban.
-# Joins the "jarvis" network to reach Bifrost (Lesson 05) at http://bifrost:8080/v1.
+# Joins the private "jarvis" network (an internal name, kept so nothing breaks) to reach Bifrost (Lesson 05) at http://bifrost:8080/v1.
 # Data lives in ./n8n next to this file, so the nightly backup (~/lab) includes it.
 # Secrets come from .env (created by the install script, never committed).
 

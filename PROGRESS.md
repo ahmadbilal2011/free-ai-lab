@@ -2,6 +2,13 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Clean-up: no Jarvis, learn n8n first
+
+- Removed Jarvis Live and OpenJarvis from the course and repo (Lessons 09, 10, 14, 15, their scripts, the dashboard code, the agents workflow, images). They remain only in the git history
+- `scripts/remove-jarvis.sh` removes Jarvis Live from the server (container, web page and certificate, fail2ban jail, folder; zipped copy kept in /data/backups) and unpublishes the *Jarvis agents* workflow
+- Lessons 00–08 reworded without Jarvis; Lesson 07 renamed *A Telegram AI bot*. Internal names `~/lab/jarvis` (n8n's folder) and the `jarvis` Docker network are kept so nothing on the server breaks
+- New plan: **the n8n track**, 14 step-by-step lessons; **n8n 01 — Your first workflow** written
+
 ## 2026-11-20 — Lesson 10: first agent (Reminders)
 
 - Lessons reordered: agents come first (Part 3, Lessons 10–13); the laptop part moved to Lessons 14–18

@@ -1,6 +1,6 @@
 # Lesson 08 — Backups: nightly .zip files on the server
 
-**Goal:** never lose Jarvis's workflows, credentials and keys to a mistake, a bad update or a `--fresh` by accident.
+**Goal:** never lose your n8n workflows, credentials and keys to a mistake, a bad update or a `--fresh` by accident.
 
 **Time:** about 10 minutes. **Cost:** $0. Nothing outside the server is used.
 
@@ -78,8 +78,8 @@ Source: [`08-install-backup.sh`](../scripts/08-install-backup.sh)
 On the **laptop**, in PowerShell (use your own key file and IP, as in Lesson 01):
 
 ```powershell
-mkdir $HOME\jarvis-backups -Force
-ssh -i $HOME\.ssh\oracle_key ubuntu@<server-ip> "sudo cat `$(sudo ls -1t /data/backups/lab-*.zip | head -1)" > $HOME\jarvis-backups\lab-latest.zip
+mkdir $HOME\lab-backups -Force
+ssh -i $HOME\.ssh\oracle_key ubuntu@<server-ip> "sudo cat `$(sudo ls -1t /data/backups/lab-*.zip | head -1)" > $HOME\lab-backups\lab-latest.zip
 ```
 
 - Open it in File Explorer to check it's a real zip.
@@ -108,7 +108,7 @@ Delete the `before-restore` folder once all is fine.
 1. Lessons 01–03 on a new server.
 2. Copy your laptop's zip to it:
    ```powershell
-   scp -i $HOME\.ssh\oracle_key $HOME\jarvis-backups\lab-latest.zip ubuntu@<new-ip>:
+   scp -i $HOME\.ssh\oracle_key $HOME\lab-backups\lab-latest.zip ubuntu@<new-ip>:
    ```
 3. Run `sudo bash 08-install-backup.sh` (its first backup fails because nothing is installed yet, which is fine),
    then `sudo lab-restore ~/lab-latest.zip`.
@@ -157,4 +157,4 @@ is ever reclaimed, only the copy on your laptop survives.
 
 ## Next
 
-**Lesson 09 — Jarvis Live**, or the next automation: SAR→PKR rate alert, new SAR request alert, morning summary.
+**The n8n track**: [n8n 01 — Your first workflow, step by step](n8n/01-first-workflow.md).

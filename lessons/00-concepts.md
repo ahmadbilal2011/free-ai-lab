@@ -1,54 +1,44 @@
-# Lesson 00 — The plan: what Jarvis is, and the ideas it's built on
+# Lesson 00 — The plan: learn n8n on your own free server
 
 Before creating anything, here's **what we're building** and the handful of ideas the whole course rests on. Nothing in this lesson costs money or changes any account.
 
 ---
 
-## 1. What Jarvis will do
+## 1. The goal
 
-By the end of the course you have your own assistant, **Jarvis**:
+Learn **n8n**, step by step, on a server you own:
 
-- You **talk or type** to it: on your phone (Telegram) or at your Windows PC (microphone).
-- It **answers by text and voice**, in your language.
-- It **does things**: reminders, calendar, web search, writing; and on your PC it opens apps, handles files and runs scripts.
-- It acts **only when you ask**, and asks **"Yes / No?"** before anything that can't be undone (sending, posting, deleting).
-- It costs **$0**: free and open-source software, Oracle's Always Free server, and free AI tiers. Paid subscriptions you may already have (like Gemini Pro or Claude Pro) are used only for the hardest jobs, and only if you want.
+- **First, the foundation (Lessons 01–08):** a free Oracle server, made safe, with Docker, a switchboard for free AI models (Bifrost), n8n online with HTTPS, and daily backups.
+- **Then n8n itself (the n8n track):** one idea per lesson, with a small workflow you build and test yourself: nodes and data, expressions, triggers, logic, APIs, code, errors, storage, AI, and finally small real projects.
+- It costs **$0**: free and open-source software, Oracle's Always Free server, and free AI tiers.
 
-## 2. The design: one brain, two hands
+New goals come after the n8n track.
+
+## 2. The design
 
 ```
- 📱 Phone ── Telegram (text + voice notes) ──┐
-                                             ▼
- ☁️  SERVER  (Oracle Always Free, on 24/7) — Jarvis's BRAIN and FRONT DOOR
-      • Apache ......... the one public door: HTTPS, logins, fail2ban
-      • n8n ............ reads your messages, decides what to do, runs routines
+ 📱 Phone / 💻 PC browser
+          │  HTTPS
+          ▼
+ ☁️  SERVER  (Oracle Always Free, on 24/7)
+      • Apache ......... the one public door: HTTPS, logins, fail2ban (the SAR→PKR site lives here too)
+      • n8n ............ where you build workflows, in a web page
       • Bifrost ........ AI switchboard: many free AI models, added in a web page, automatic fallback
-      • voice .......... understands voice notes, answers with a voice (inside n8n)
-                                             │
-                          private network (Tailscale, later), with a key
-                                             ▼
- 💻 WINDOWS LAPTOP (on when you're at it) — Jarvis's HANDS
-      • OpenJarvis ..... acts on the PC: apps, files, scripts; asks before risky steps
-      • microphone ..... talk to Jarvis at your desk
+      • backups ........ a zip every night in /data/backups
 ```
-
-Why split it this way:
 
 | Choice | Reason |
 |---|---|
-| The brain is on the server | It's on 24/7, so Jarvis answers your phone even when the laptop is off |
+| n8n runs on your own server | No monthly n8n bill, no limit on workflows or runs |
 | The thinking uses **free cloud AI** | Free cloud models are far smarter and faster than anything a free 2-CPU server can run |
-| The laptop is only the hands | Only your PC can act on your PC. It holds **no AI keys**; it borrows the server's |
-| Telegram is the front door | Free, phone + PC apps, voice notes built in; Telegram delivers messages to n8n's HTTPS address instantly |
+| One public door (Apache) | Each app gets its own HTTPS address with a login; nothing else is open |
 
 **Honest limits, up front:**
 
 | You might expect | Reality |
 |---|---|
-| "Jarvis calls me on the phone" | Bots can't place phone calls. Jarvis sends a **voice note with a loud notification** instead. Real calls need paid services |
-| Jarvis controls my phone's apps | Not in this course. A Jarvis phone app of our own may come later |
-| PC jobs while the laptop is off | They can't run; Jarvis tells you, and everything server-side still works |
-| Free AI forever, unchanged | Free tiers change often. The course checks them live and switches automatically |
+| Free AI forever, unchanged | Free tiers change often. Bifrost lets you swap models in a web page |
+| The free server is always yours | Oracle may reclaim idle Always Free VMs; keep real work running and keep backups |
 
 ## 3. Cloud and virtual machines (VM)
 
@@ -71,7 +61,7 @@ Warnings:
 
 - **Stay inside the limits.** Going over can mean charges, or Oracle disabling the instances.
 - **Free Trial vs Always Free.** New accounts get a 30-day trial. If A1 usage is above the free limit when it ends, *all* A1 instances can be disabled. We stay inside the free limit from day one.
-- **Idle servers can be reclaimed.** Oracle may reclaim an Always Free VM whose CPU, network **and** memory all stay very low for 7 days. Jarvis's server keeps real work running (including the private model, kept in memory), so it isn't idle.
+- **Idle servers can be reclaimed.** Oracle may reclaim an Always Free VM whose CPU, network **and** memory all stay very low for 7 days. Your server keeps real work running (including the private model, kept in memory), so it isn't idle.
 - **"Out of host capacity"** when creating an A1 server just means Oracle's free Arm machines are busy. We retry. It's not your mistake.
 
 ## 5. Arm vs x86
@@ -106,7 +96,7 @@ A **container** packages an app with everything it needs, so it runs the same ev
 - An **LLM (Large Language Model)** is the "brain" behind chat AI. Some are open source and can run on your own machine; the best ones run in big data centres.
 - An **API** lets a program use a service. With a free **API key**, our server can ask cloud models (Groq, NVIDIA, OpenRouter, Google Gemini...) questions. Each has a free daily limit.
 - A **gateway** (we use **Bifrost**) sits in front of all of them: you add providers and models in its web page, apps ask it for a level of work (`quick`, `smart`, `code`), and it picks a working free model, switching automatically when one hits its limit.
-- A **subscription** (Gemini Pro, Claude Pro) is not an API key. It powers command-line tools like Gemini CLI and Claude Code, which Jarvis can use on the laptop for hard jobs.
+- A **subscription** (Gemini Pro, Claude Pro) is not an API key. It powers command-line tools like Gemini CLI and Claude Code, which are separate from the free API keys this course uses.
 
 ## 10. Automation and agents
 
@@ -126,10 +116,10 @@ A **container** packages an app with everything it needs, so it runs the same ev
 
 ## Check your understanding
 
-1. Why does Jarvis's brain live on the server and not on the laptop?
+1. Why does n8n run on your own server instead of n8n's cloud?
 2. What's the difference between an API key and a subscription like Gemini Pro?
 3. What does the gateway do when a free model hits its daily limit?
-4. Why does Jarvis ask "Yes / No?" before sending or deleting anything?
+4. Why does every app sit behind one public door (Apache) instead of opening its own port?
 5. Why must we keep A1 usage at or below 2 OCPU / 12 GB?
 
 ## Next

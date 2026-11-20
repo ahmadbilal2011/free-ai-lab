@@ -14,7 +14,7 @@
 
 ## Part A — Why Tailscale
 
-Jarvis lives on two machines plus your phone. They need to talk to each other, from anywhere (home Wi-Fi, office, mobile data). Two ways to do that:
+Your server, your laptop and your phone may need a private link. They need to talk to each other, from anywhere (home Wi-Fi, office, mobile data). Two ways to do that:
 
 | | Open ports to the internet | **Tailscale** ✅ |
 |---|---|---|
@@ -36,7 +36,7 @@ Two Tailscale words you'll meet later:
 | Word | Meaning | Do we use it? |
 |---|---|---|
 | **serve** | Publish one app with HTTPS **inside your tailnet only** | Was used for the n8n editor; now Apache publishes it (Lesson 06) |
-| **funnel** | Publish an app **to the whole internet** | ❌ Never. Jarvis reaches out; nothing reaches in |
+| **funnel** | Publish an app **to the whole internet** | ❌ Never. Nothing reaches in |
 
 ## Part B — Put the server on the tailnet
 
@@ -63,7 +63,7 @@ You don't need Tailscale on the phone for Telegram (Lesson 07), but you will for
 
 Open [login.tailscale.com/admin/machines](https://login.tailscale.com/admin/machines):
 
-1. **Key expiry:** click **⋯** next to `free-ai-lab` → **Disable key expiry**. Without this, the server logs itself out after about 6 months, and Jarvis goes deaf.
+1. **Key expiry:** click **⋯** next to `free-ai-lab` → **Disable key expiry**. Without this, the server logs itself out after about 6 months, and private links stop working.
 2. **HTTPS:** on the **DNS** page, make sure **MagicDNS** is on and enable **HTTPS Certificates**. Later lessons use this for private `https://…ts.net` pages.
 
 ## Part E — Test it
@@ -101,7 +101,7 @@ That's the key you saved in Lesson 01. If it logs in, the private network works.
 
 1. What's the difference between `tailscale serve` and `tailscale funnel`, and why do we never use funnel?
 2. Why disable key expiry on the server but not on your phone?
-3. Why can Telegram reach Jarvis even when your phone isn't on Tailscale?
+3. Why can Telegram reach n8n even when your phone isn't on Tailscale?
 
 ## Next
 

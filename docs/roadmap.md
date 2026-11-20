@@ -1,89 +1,53 @@
-# Course roadmap: my own Jarvis at $0
+# Course roadmap: learn n8n at $0
 
-**The goal:** one assistant, **Jarvis**, that I control by **text and voice** from my **phone** and my **Windows PC**, that **does tasks** for me (reminders, calendar, search, writing, and work on my PC) **only when I ask**, and asks before anything irreversible. **$0**: open source, Oracle Always Free, free AI tiers. Subscriptions I already pay for (Gemini Pro, Claude Pro) are used only for hard jobs.
+**The goal:** learn **n8n** properly, one step at a time, on my own free Oracle server. New goals come after the n8n track.
 
-Design: [decisions.md](decisions.md). The server is Jarvis's always-on **brain and front door**; the laptop is its **hands**.
+Design choices: [decisions.md](decisions.md).
 
 Rules for the whole course:
 
 - **$0, no credit card.** Any provider that starts asking for one is dropped.
-- **Public only behind locks.** Since 2026-11-16 n8n and Bifrost are published through Apache (HTTPS, own login, fail2ban); AI endpoints and app ports stay private. Tailscale returns for the laptop part.
-- **Jarvis asks before acting.** Sending, posting, deleting, anything irreversible needs my "Yes". No payments, ever.
-- **Privacy rule:** personal data only goes to AI providers that don't train on it, or stays on my machines.
-- **Secrets never touch GitHub.** Keys live in `.env` files or app settings.
-- **Free tiers change.** Every lesson checks the live state and falls back automatically.
-- **Every lesson is tested for real** before the next one is written.
+- **Public only behind locks.** n8n and Bifrost are published through Apache (HTTPS, own login, fail2ban); app ports stay private.
+- **Privacy rule:** customer data (e.g. the SAR→PKR site) never goes to free AI tiers.
+- **Secrets never touch GitHub.** Keys live in `.env` files or in n8n credentials.
+- **One idea per lesson.** Each n8n lesson ends with a small workflow I build myself and a check that proves it works.
+- **Every step is tested** before the lesson is marked ✅ Tested.
 
 ---
 
-## Part 1 — Foundation (the server)
+## Part 1 — Foundation (done)
 
 | # | Lesson | What I get |
 |---|---|---|
-| 00 | **The plan**: what Jarvis is, and the ideas it's built on | The whole picture before touching anything |
+| 00 | **The plan** | The whole picture before touching anything |
 | 01 | **Create the Oracle VM** (one Cloud Shell command) | An Always Free Arm server |
 | 02 | **Secure the server** | Key-only SSH, automatic updates, fail2ban, swap |
-| 03 | **Docker** | Every app installed and removed cleanly |
-| 04 | **Tailscale** (paused) | A private network for the laptop part |
+| 03 | **Docker** | Every app in its own container |
+| 04 | **Tailscale** (optional, not used now) | A private network for my devices |
+| 05 | **Bifrost**: free AI models in a web page | One address for many free models, with fallback |
+| 06 | **n8n online and safe** | n8n at its own HTTPS name, owner login + 2FA |
+| 07 | **A Telegram AI bot** (text and voice) | Built early; rebuilt cleanly in n8n 13 |
+| 08 | **Backups** | Nightly zip of everything in /data/backups |
 
-## Part 2 — Jarvis's brain and front door
+## Part 2 — The n8n track
 
-| # | Lesson | What I get |
+| # | Lesson | What I can do after it |
 |---|---|---|
-| 05 | **The AI switchboard (Bifrost)**: free AI keys added in a web page; levels `quick` / `smart` / `code` | Many free AIs through one private address, with fallback |
-| 06 | **n8n online and safe**: Apache, HTTPS, login + 2FA, fail2ban, next to the SAR site | The engine every Jarvis skill runs on, reachable anywhere |
-| 07 | **Jarvis on Telegram**: instant trigger, ElevenLabs ears and voice, free Gemini backups | Text or voice → Jarvis answers in text, and in voice when spoken to |
-| 08 | **Backups**: nightly .zip in `/data/backups` on the server, a copy on the laptop now and then | Undo any mistake; survive losing the VM |
-| 09 | **Jarvis Live**: holographic dashboard with an AI sentinel; brains: AI providers you add on the dashboard (any OpenAI-compatible, incl. Bifrost) and Gemini Live (voice calls); agents come from n8n (none yet) | Talk to Jarvis; every agent built later appears here by itself |
+| n8n 01 | [Your first workflow](../lessons/n8n/01-first-workflow.md): trigger, nodes, run, items, the three data views, executions | Build and run a 3-node workflow and read its data |
+| n8n 02 | Data and expressions: `{{ }}`, `$json`, drag and drop, dates with `$now` | Calculate and reshape data (e.g. SAR → PKR) |
+| n8n 03 | Triggers: Schedule, Webhook (test vs production URL), Form; Publish | Workflows that start by themselves |
+| n8n 04 | Logic: If, Switch, Filter, Merge | Different paths for different data |
+| n8n 05 | Many items: lists, Split Out, Aggregate, Loop Over Items | Handle 1 or 1,000 records the same way |
+| n8n 06 | Talk to APIs: HTTP Request, credentials (free exchange-rate API) | Pull live data from any web service |
+| n8n 07 | The Code node: small JavaScript when nodes aren't enough | Custom logic in a few lines |
+| n8n 08 | Errors: error outputs, retries, an Error workflow that tells you on Telegram | Workflows that fail loudly and safely |
+| n8n 09 | Storing data: n8n Data tables | Keep lists and history between runs |
+| n8n 10 | AI nodes: Basic LLM Chain, structured output, Bifrost models | Summarise, classify and extract with free AI |
+| n8n 11 | AI Agent: tools and memory | An assistant that uses your workflows as tools |
+| n8n 12 | Sub-workflows: build once, reuse everywhere | Tidy, reusable building blocks |
+| n8n 13 | Projects: SAR→PKR rate alert; the Telegram voice bot rebuilt cleanly | Real automations from scratch |
+| n8n 14 | Good habits: names, notes, versions, export to GitHub, backups | Workflows you can trust and restore |
 
-## Part 3 — Jarvis does things (agents in n8n)
+## Later
 
-| # | Lesson | What I get |
-|---|---|---|
-| 10 | **First agent: Reminders**: the agent pattern (Agent list + branch + task format + ask-first), alerts pushed to Telegram and the dashboard | "Remind me tomorrow at 9" on the dashboard or Telegram |
-| 11 | **My free cloud tools**: calendar, email, web search; a real Yes / No button on Telegram before anything is sent | "What's on today?" |
-| 12 | **Memory and knowledge (RAG)**: vector database + embeddings, exposed as a `memory` agent | Jarvis remembers my preferences, past talks and documents |
-| 13 | **Routines**: SAR→PKR rate alert, new SAR request alert, morning summary | Jarvis works for me without being asked |
-
-## Part 4 — Jarvis's hands (my Windows laptop)
-
-| # | Lesson | What I get |
-|---|---|---|
-| 14 | **Prepare the Windows laptop** | A laptop ready for OpenJarvis |
-| 15 | **OpenJarvis on the laptop**, thinking through the server's models | Jarvis on the PC, no AI keys on the laptop |
-| 16 | **PC jobs from my phone**, with **Yes / No** on Telegram first | "Open my QA report" from Telegram |
-| 17 | **Talk to Jarvis at the desk** | Voice control on the PC itself |
-| 18 | **Hard jobs**: Gemini CLI / Claude Code (my subscriptions), only when asked | Coding and big automations without API bills |
-| later | **WhatsApp and Messenger through the laptop**, drafts I approve | Replies without risky unofficial bridges |
-
-## Part 5 — Jarvis creates, and a final check
-
-| # | Lesson | What I get |
-|---|---|---|
-| 19 | **Free image generation** | "Make an image of…" from Telegram |
-| 20 | **Video**: what's honestly possible for free | Real limits explained |
-| 21 | **Social media posting**: draft → I approve → it posts | Hands-free posting within each platform's rules |
-| 22 | **Security review** | Confidence Jarvis can't be tricked into harm |
-
-## Later (optional)
-
-| Track | What |
-|---|---|
-| **Jarvis phone app** | Our own Android app as a front door, if Telegram isn't enough |
-| **Kubernetes** | Move the server apps from Docker Compose to K3s: manifests, Helm, Traefik / Gateway API, cert-manager, probes |
-
----
-
-## Honest limits to know up front
-
-| Area | Reality |
-|---|---|
-| **Server (2 CPU / 12 GB)** | Coordinates; the thinking happens on free cloud models |
-| **The laptop** | PC jobs only run while it's on and logged in. The server keeps answering either way |
-| **"Call me"** | Bots can't place phone calls. Free: a loud Telegram voice note. Real calls need paid services |
-| **Free text AI** | Plenty of options, each with daily caps; the gateway rotates between them |
-| **Free voice** | ElevenLabs' free plan is about 10 minutes of speech a month; Gemini is the free backup |
-| **Free images / video** | Small, changing free tiers; video is the hardest. Lesson 20 is honest about it |
-| **Social media APIs** | Each platform has rules, approvals and limits; some are paid. Official APIs only, with my approval |
-| **Cloud tools** | Calendar, email and tasks are stored by their providers (Google, Microsoft). Truly private things stay off free AI tiers |
-| **"Does everything"** | Jarvis grows one ability per lesson; each works on its own |
+New goals, decided after the n8n track.

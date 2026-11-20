@@ -1,10 +1,10 @@
-# Lesson 07 — Jarvis on Telegram: text and voice in, text and voice out (built in n8n's web page)
+# Lesson 07 — A Telegram AI bot: text and voice in, text and voice out (built in n8n)
 
 **Before you start:** Lessons 05 (Bifrost) and 06 (n8n online) are done. Because n8n is online and its AI goes
 through Bifrost, this is simple:
 - Telegram delivers each message to n8n **instantly**, using n8n's built-in Telegram Trigger. No polling every 10 seconds.
 - The bot token sits in an **encrypted n8n credential**, never inside a node.
-- Every paid-by-credits step has a **free backup**, so Jarvis keeps working when ElevenLabs credits run out.
+- Every paid-by-credits step has a **free backup**, so the bot keeps working when ElevenLabs credits run out.
 
 **Time:** about 1 hour, all in n8n's web page. **Cost:** $0.
 
@@ -16,7 +16,7 @@ through Bifrost, this is simple:
 
 | Name | Type | Contents |
 |---|---|---|
-| `Jarvis bot` | Telegram API | token from @BotFather (`/mybots` → your bot → API Token) |
+| `Jarvis bot` (any name you like) | Telegram API | token from @BotFather (`/mybots` → your bot → API Token) |
 | `AI smart` | OpenAI | API key = Bifrost virtual key `smart` · Base URL `http://bifrost:8080/v1` |
 | `ElevenLabs` | Header Auth | Name `xi-api-key` · Value = the **secret** key (`sk_…`), with Speech to Text + Text to Speech access |
 | `Gemini` | Google Gemini (PaLM) API | free AI Studio key (project **without billing**) |
@@ -64,7 +64,7 @@ The AI Agent has **three** lines coming in: from Listen (**Success**), Backup te
 
 | Node | Settings |
 |---|---|
-| **AI Agent** | Source for Prompt: **Define below** · Prompt `{{ $json.text }}` · System message: *You are Jarvis, Ahmad's personal assistant. Reply briefly. Answer in the language the message is written in (Urdu or English).* |
+| **AI Agent** | Source for Prompt: **Define below** · Prompt `{{ $json.text }}` · System message: *You are Ahmad's personal assistant. Reply briefly. Answer in the language the message is written in (Urdu or English).* |
 | ↳ **OpenAI Chat Model** | credential `AI smart` · Model **By ID** `groq/openai/gpt-oss-120b` |
 | ↳ **Simple Memory** | Session ID: Define below `{{ $('Telegram Trigger').item.json.message.chat.id }}` · Context window 10 |
 | **Send a text message** (Telegram) | Chat ID `{{ $('Telegram Trigger').item.json.message.chat.id }}` · Text `{{ $json.output }}` · Append n8n Attribution **off** |
@@ -99,7 +99,7 @@ h.write('fmt ', 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUIn
 h.writeUInt32LE(rate, 24); h.writeUInt32LE(rate * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34);
 h.write('data', 36); h.writeUInt32LE(pcm.length, 40);
 const wav = Buffer.concat([h, pcm]);
-return { json: {}, binary: { data: { data: wav.toString('base64'), mimeType: 'audio/wav', fileName: 'jarvis.wav' } } };
+return { json: {}, binary: { data: { data: wav.toString('base64'), mimeType: 'audio/wav', fileName: 'reply.wav' } } };
 ```
 
 ## Part D — Tests
@@ -131,10 +131,9 @@ Then **Publish** the workflow.
 
 - **ElevenLabs free plan:** about 10 minutes of speech a month, pre-made voices only via the API. Replies are spoken up to 600 characters.
 - **Gemini free tier:** small per-minute and per-day limits, and Google may use free-tier data to improve its products. **Never send SAR customer data to free AI.**
-- When both voices fail, Jarvis still replies in text.
+- When both voices fail, the bot still replies in text.
 
 ## Next
 
 - **Lesson 08 — Backups**: protect everything built so far.
-- **Lesson 09 — Jarvis Live**: talk in real time, like a call.
 - Automations: SAR→PKR rate alert, new SAR request alert, morning summary.

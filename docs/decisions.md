@@ -215,3 +215,12 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
 - Registry gained `howTo` (task format) and `confirm` (ask-first actions). Ask-first is model-followed only; risky
   agents (email, money) will get a Telegram Yes / No button the model can't skip.
 - Plain Code nodes instead of Switch/If nodes, whose JSON changes between n8n versions.
+
+## 2026-11-20 — Jarvis and OpenJarvis dropped; learn n8n first
+
+- The user asked to stop the Jarvis direction and learn n8n step by step first; new goals come after.
+- Removed from the repo (kept in git history): Jarvis Live dashboard, the agents workflow, the laptop/OpenJarvis lessons.
+- Server: `remove-jarvis.sh` removes Jarvis Live; a zip of its folder stays in /data/backups.
+- Kept on purpose: n8n's folder `~/lab/jarvis` and the Docker network `jarvis`. They're internal names; renaming them
+  means moving n8n's database and re-wiring Bifrost and backups, a risk with no benefit right now.
+- The n8n track teaches one idea per lesson, built by hand in the n8n web UI, each with a check that proves it works.
