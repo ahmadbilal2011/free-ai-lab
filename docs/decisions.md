@@ -161,3 +161,14 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   Analyst, Planner); n8n agents come from one importable workflow (Messenger live; others stubbed for later lessons).
 - Design pass: sentence-case titles, technical display face (Bahnschrift, already on Windows), tabular numbers,
   boldness spent on the twin.
+
+## 2026-11-20 — No built-in agents; agents come from n8n; original avatar
+
+- User asked: no face, use something creative; no agents until their lessons; must connect to the n8n from Lesson 06.
+- Avatar: an **original AI sentinel** (faceted helm, visor eyes, voice-grille bars, orbit ring). Film characters such as
+  Transformers aren't reproduced (studio-owned designs).
+- jarvis-live has **no agents of its own**: it asks n8n `GET /webhook/jarvis-agents` for the list (refresh every 60 s,
+  on each call, on the ↻ button, or when n8n posts `{ "refresh": true }`) and sends tasks to `POST /webhook/jarvis-live-tool`.
+  The starter workflow `jarvis-agents.json` lists none. With no agents, Jarvis is told not to pretend to act.
+- Built-in AI agents (Web Scout, Writer, Analyst, Planner) and the Bifrost key prompt removed; future AI agents are
+  built in n8n with Bifrost models, so Telegram and Live share the same agents.

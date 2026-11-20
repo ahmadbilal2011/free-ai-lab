@@ -2,6 +2,12 @@
 
 Newest entries at the top.
 
+## 2026-11-20 — Jarvis Live: AI sentinel avatar, agents only from n8n
+
+- Avatar is now an original **AI sentinel** (no face). Dashboard ships with **no agents**: it shows "n8n connected · no agents yet" and Jarvis talks without pretending to act
+- Agents come from the n8n workflow **Jarvis agents** (import file in the repo); each upcoming lesson adds one there and it appears on the globe by itself
+- Tested locally: empty state, agents appearing when n8n lists them, refusal of unknown agents, phone + desktop. Pending: install and first run on the server
+
 ## 2026-11-20 — Jarvis Live: digital twin, globe, working agents
 
 - Avatar is now a holographic **digital twin** (no photo); center panel is a **globe** with your server and the agent ring

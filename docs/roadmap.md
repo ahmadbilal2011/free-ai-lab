@@ -34,7 +34,7 @@ Rules for the whole course:
 | 06 | **n8n online and safe**: Apache, HTTPS, login + 2FA, fail2ban, next to the SAR site | The engine every Jarvis skill runs on, reachable anywhere |
 | 07 | **Jarvis on Telegram**: instant trigger, ElevenLabs ears and voice, free Gemini backups | Text or voice → Jarvis answers in text, and in voice when spoken to |
 | 08 | **Backups**: nightly .zip in `/data/backups` on the server, a copy on the laptop now and then | Undo any mistake; survive losing the VM |
-| 09 | **Jarvis Live**: holographic HUD, my digital twin, globe of agents; Gemini Live orchestrates AI agents (free models via Bifrost) and n8n agents | Talk to Jarvis and watch its agents do real work |
+| 09 | **Jarvis Live**: holographic dashboard with an AI sentinel avatar; Gemini Live orchestrates; agents come from n8n (none yet) | Talk to Jarvis; every agent built later appears here by itself |
 
 ## Part 3 — Jarvis's hands (my Windows laptop)
 
@@ -51,7 +51,7 @@ Rules for the whole course:
 
 | # | Lesson | What I get |
 |---|---|---|
-| 15 | **Agents and tools**, approval before any action | Jarvis picks the right tool and asks before acting |
+| 15 | **Agents and tools** (first agents in the n8n "Jarvis agents" workflow), approval before any action | Jarvis picks the right agent and asks before acting |
 | 16 | **My free cloud tools**: calendar, reminders, email, web search | "Remind me tomorrow at 9" |
 | 17 | **Memory and knowledge (RAG)**: vector database + embeddings, exposed as a `memory` agent | Jarvis remembers my preferences, past talks and documents |
 | 18 | **Routines**: SAR→PKR rate alert, new SAR request alert, morning summary | Jarvis works for me without being asked |

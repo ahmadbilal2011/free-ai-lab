@@ -1,11 +1,11 @@
-# Lesson 09: Jarvis Live — holographic dashboard: digital twin, globe of agents, live voice, real agents
+# Lesson 09: Jarvis Live — holographic dashboard: AI sentinel, globe, live voice; agents come from n8n
 #
 # - The page is published by Apache at https://live-<ip>.sslip.io (scripts/09-install-live.sh), with its own
 #   password, HTTPS and fail2ban. Port 8090 is server-only.
 # - The Gemini API key stays here (.env, never committed). Browsers get one-time tokens valid for 1 minute.
 # - Agents: Jarvis's tool calls go to n8n on the private "jarvis" network (http://n8n:5678/webhook/jarvis-live-tool);
 #   n8n pushes live events back to http://jarvis-live:8080/api/event (blocked from the internet by Apache).
-# - AI agents (Web Scout, Writer, Analyst, Planner) use free models through Bifrost: http://bifrost:8080/v1
+# - The agent list comes from n8n (http://n8n:5678/webhook/jarvis-agents); empty until upcoming lessons add agents.
 
 name: live
 

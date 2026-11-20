@@ -80,6 +80,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .roster li.active .dot { background: var(--c); box-shadow: 0 0 10px var(--c); animation: blink 1s infinite; }
 .roster li.error .dot { background: var(--red); }
 .roster b { font-weight: 600; font-size: 13px; }
+.roster li.empty { display: block; border: 0; color: var(--muted); font-size: 13px; line-height: 1.5; padding: 4px 2px; }
+.roster li.empty b { color: var(--text); font-weight: 600; }
+#n8nState.ok { color: var(--green); } #n8nState.bad { color: var(--amber); }
+.icon { margin-left: auto; background: none; border: 1px solid var(--line); border-radius: 6px; padding: 0 7px; color: var(--muted); font-size: 13px; }
 .roster em { grid-column: 2; font-style: normal; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @keyframes blink { 50% { opacity: .35; } }
 

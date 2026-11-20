@@ -1,0 +1,57 @@
+{
+  "name": "Jarvis agents",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Jarvis agents (Lesson 09)\nJarvis Live asks this workflow two things:\n1. **Which agents exist?** (GET jarvis-agents) → the list in *Agent list*. It's empty until upcoming lessons add agents.\n2. **Do this task** (POST jarvis-live-tool) → each agent gets its own branch.\n\nTo add an agent later: add it to *Agent list*, route its tasks to its branch, and end the branch with *Respond to Webhook* returning `{ \"ok\": true, \"result\": \"…\" }`.",
+        "height": 300,
+        "width": 520
+      },
+      "id": "b2c0d1e2-0000-4a1b-9c01-000000000000",
+      "name": "How this works",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, -360]
+    },
+    {
+      "parameters": { "httpMethod": "GET", "path": "jarvis-agents", "authentication": "headerAuth", "responseMode": "responseNode", "options": {} },
+      "id": "b2c0d1e2-0001-4a1b-9c01-000000000001",
+      "name": "Jarvis asks: which agents?",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "jarvis-agents"
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "{ \"agents\": [] }", "options": {} },
+      "id": "b2c0d1e2-0002-4a1b-9c01-000000000002",
+      "name": "Agent list",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [260, 0]
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "jarvis-live-tool", "authentication": "headerAuth", "responseMode": "responseNode", "options": {} },
+      "id": "b2c0d1e2-0003-4a1b-9c01-000000000003",
+      "name": "Jarvis asks: do this task",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 260],
+      "webhookId": "jarvis-live-tool"
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={{ JSON.stringify({ ok: false, error: 'No agent called \"' + $json.body.agent + '\" is set up in n8n yet.' }) }}", "options": {} },
+      "id": "b2c0d1e2-0004-4a1b-9c01-000000000004",
+      "name": "No agents yet",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [260, 260]
+    }
+  ],
+  "connections": {
+    "Jarvis asks: which agents?": { "main": [[{ "node": "Agent list", "type": "main", "index": 0 }]] },
+    "Jarvis asks: do this task": { "main": [[{ "node": "No agents yet", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

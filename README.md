@@ -25,7 +25,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
       │                   also serves my separate SAR→PKR calculator site, untouched
       ├── Docker ........ every app in its own container (autoheal restarts frozen ones)
       ├── n8n ........... Jarvis's skills and routines (owner login + 2FA)
-      ├── Jarvis Live ... HUD dashboard: digital twin, globe of agents, live voice; AI agents on free models
+      ├── Jarvis Live ... HUD dashboard: AI sentinel, globe, live voice; shows the agents n8n provides
       ├── Bifrost ....... AI switchboard: free providers and models added in a web page,
       │                   automatic fallback; n8n reaches it privately at http://bifrost:8080/v1
       └── backups ....... nightly .zip in /data/backups (14 kept) + a copy on the laptop now and then
@@ -73,7 +73,7 @@ Full plan: **[docs/roadmap.md](docs/roadmap.md)** · Why it's built this way: **
 | 06 | [n8n: the engine behind every skill, online and safe](lessons/06-n8n.md) | ✅ Tested |
 | 07 | [Jarvis on Telegram: text and voice in and out, with free backups](lessons/07-telegram-jarvis-voice.md) | ✅ Tested (Gemini speaking backup: Written) |
 | 08 | [Backups: nightly .zip files on the server](lessons/08-backups-monitoring.md) | ⚠️ Written, not installed yet: **do next** |
-| 09 | [Jarvis Live: personal AI OS — digital twin, globe of agents, live voice, working agents](lessons/09-jarvis-live.md) | ⚠️ Tested locally, first run on the server pending |
+| 09 | [Jarvis Live: the dashboard of your personal AI OS — AI sentinel, globe, live voice, connected to n8n](lessons/09-jarvis-live.md) | ⚠️ Tested locally, first run on the server pending |
 
 **Part 3 — Jarvis's hands (my Windows laptop)**
 

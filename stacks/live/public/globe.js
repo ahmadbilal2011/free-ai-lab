@@ -94,7 +94,7 @@ export class Globe {
     if (homeVisible) {
       ctx.strokeStyle = `rgba(255,200,87,${1 - pulse})`; ctx.lineWidth = 1.5 * d; ctx.beginPath(); ctx.arc(hp.x, hp.y, (4 + pulse * 16) * d, 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = '#ffc857'; ctx.beginPath(); ctx.arc(hp.x, hp.y, 3 * d, 0, Math.PI * 2); ctx.fill();
-      ctx.font = `${11 * d}px "Chakra Petch", system-ui, sans-serif`; ctx.fillStyle = 'rgba(255,200,87,.9)'; ctx.fillText(this.home.label, hp.x + 8 * d, hp.y - 8 * d);
+      ctx.font = `${11 * d}px "Bahnschrift", system-ui, sans-serif`; ctx.fillStyle = 'rgba(255,200,87,.9)'; ctx.fillText(this.home.label, hp.x + 8 * d, hp.y - 8 * d);
     }
     // pings (events)
     this.pings = this.pings.filter((p) => now - p.t0 < 2400);
@@ -106,6 +106,11 @@ export class Globe {
     const rx = Math.min(W * (W < 520 * d ? 0.36 : 0.46), R * 1.75), ry = Math.min(H * 0.42, R * 1.12);
     ctx.strokeStyle = 'rgba(140,108,255,0.22)'; ctx.setLineDash([2 * d, 6 * d]); ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     const n = this.agents.length;
+    if (!n) {
+      ctx.textAlign = 'center'; ctx.font = `${12 * d}px "Bahnschrift", system-ui, sans-serif`; ctx.fillStyle = 'rgba(140,108,255,.85)';
+      ctx.fillText('Agent orbit is empty: agents arrive from n8n in upcoming lessons', cx, cy + ry + 2 * d - 6 * d > H ? H - 8 * d : Math.min(H - 8 * d, cy + ry + 16 * d));
+      ctx.textAlign = 'start';
+    }
     this.agents.forEach((a, i) => {
       const ang = -Math.PI / 2 + (i / n) * Math.PI * 2, x = cx + Math.cos(ang) * rx, y = cy + Math.sin(ang) * ry;
       const on = this.active.has(a.id);
@@ -119,7 +124,7 @@ export class Globe {
       ctx.fillStyle = 'rgba(2,4,10,.92)'; ctx.strokeStyle = a.color; ctx.lineWidth = (on ? 2.4 : 1.2) * d;
       if (on) { ctx.shadowColor = a.color; ctx.shadowBlur = 16 * d; }
       ctx.beginPath(); ctx.arc(x, y, (on ? 9 : 7) * d, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
-      ctx.textAlign = 'center'; ctx.font = `${(on ? 12 : 11) * d}px "Chakra Petch", system-ui, sans-serif`;
+      ctx.textAlign = 'center'; ctx.font = `${(on ? 12 : 11) * d}px "Bahnschrift", system-ui, sans-serif`;
       ctx.fillStyle = on ? '#e6f6ff' : 'rgba(180,210,230,.75)'; const below = y >= cy;
       ctx.fillText(a.name, x, y + (below ? 22 : -14) * d);
       if (on) { const task = this.active.get(a.id) || ''; ctx.font = `${10 * d}px system-ui, sans-serif`; ctx.fillStyle = 'rgba(180,210,230,.85)';

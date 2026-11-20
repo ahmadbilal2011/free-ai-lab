@@ -57,9 +57,17 @@ function drawSpark() {
 }
 
 // ---------------------------------------------------------------- agents: roster, graph, timeline
-function setupAgents(list) {
-  state.agents = list; state.byId = Object.fromEntries(list.map((a) => [a.id, a]));
-  globe.setAgents(list); $('roster').innerHTML = '';
+const CORE = { id: 'core', name: 'Jarvis', role: 'Orchestrator (Gemini Live)', color: '#38c8ff' };
+function setupAgents(list, link) {
+  state.agents = [CORE, ...list]; state.byId = Object.fromEntries(state.agents.map((a) => [a.id, a]));
+  for (const id of [...state.active.keys()]) if (!state.byId[id]) state.active.delete(id);
+  globe.setAgents(list); globe.setActive(state.active); $('roster').innerHTML = '';
+  if (link) { const el = $('n8nState'); el.textContent = link.ok ? `n8n ${link.note}` : link.note; el.className = link.ok ? 'ok' : 'bad'; }
+  if (!list.length) {
+    const li = document.createElement('li'); li.className = 'empty';
+    li.innerHTML = '<b>No agents yet.</b> Jarvis can talk and answer questions now. Agents are added in n8n, one per upcoming lesson (calendar, email, memory, SAR desk…), and appear here by themselves.';
+    $('roster').append(li);
+  }
   for (const a of list) {
     const li = document.createElement('li'); li.id = `ag-${a.id}`; li.style.setProperty('--c', a.color);
     li.innerHTML = `<span class="dot"></span><b></b><em></em>`;
@@ -68,10 +76,9 @@ function setupAgents(list) {
   }
 }
 function agentActivity(ev) {
-  const a = state.byId[ev.agent] || { id: ev.agent, name: ev.agent, color: '#9d7bff' };
-  if (!state.byId[ev.agent]) { state.agents.push(a); state.byId[a.id] = a; setupAgents(state.agents); }
+  const a = state.byId[ev.agent] || { id: ev.agent, name: ev.agent, color: '#8c6cff', unknown: true };
   const li = $(`ag-${a.id}`); const em = li?.querySelector('em');
-  if (ev.status === 'start') {
+  if (ev.status === 'start' && !a.unknown) {
     state.active.set(a.id, ev.task); state.tasks.push({ agent: a.id, task: ev.task, start: ev.ts, end: null });
     li?.classList.add('active'); li?.classList.remove('error'); if (em) em.textContent = ev.task;
     log('agent', `${a.name}: ${ev.task}`, ev.ts);
@@ -101,7 +108,7 @@ function agentActivity(ev) {
 const SVGNS = 'http://www.w3.org/2000/svg';
 function drawGantt() {
   const { ctx, w, h, d } = fitCanvas($('gantt')); ctx.clearRect(0, 0, w, h);
-  const now = Date.now(), span = 3 * 60e3, left = 118 * d, rows = state.agents, rh = Math.min(26 * d, (h - 18 * d) / Math.max(1, rows.length));
+  const now = Date.now(), span = 3 * 60e3, left = 118 * d, rows = state.agents.length > 1 ? state.agents : [], rh = Math.min(26 * d, (h - 18 * d) / Math.max(1, rows.length));
   ctx.font = `${11 * d}px Segoe UI, sans-serif`; ctx.textBaseline = 'middle';
   for (let s = 0; s <= 180; s += 30) {                                 // grid every 30 s
     const x = left + ((span - s * 1000) / span) * (w - left);
@@ -119,7 +126,8 @@ function drawGantt() {
       ctx.fillRect(Math.min(x1, x2 - 8 * d), y + rh * 0.22, Math.max(8 * d, x2 - x1), rh * 0.56); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     }
   });
-  ctx.strokeStyle = '#4cc9ff'; ctx.beginPath(); ctx.moveTo(w - 1, 0); ctx.lineTo(w - 1, h - 14 * d); ctx.stroke();
+  if (!rows.length) { ctx.fillStyle = '#6a8aa3'; ctx.font = `${13 * d}px Segoe UI, sans-serif`; ctx.fillText('Agent tasks appear here once agents are added in n8n.', 12 * d, 22 * d); }
+  ctx.strokeStyle = '#38c8ff'; ctx.beginPath(); ctx.moveTo(w - 1, 0); ctx.lineTo(w - 1, h - 14 * d); ctx.stroke();
 }
 setInterval(drawGantt, 1000);
 addEventListener('resize', () => { drawGantt(); drawSpark(); });
@@ -129,13 +137,14 @@ function connectEvents() {
   const es = new EventSource('/api/events');
   es.addEventListener('hello', (e) => {
     const d = JSON.parse(e.data); $('linkState').textContent = 'connected'; $('linkState').classList.add('on');
-    setupAgents(d.agents); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
-    if (!$('log').children.length) { log('sys', `Connected. Orchestrator: Gemini Live (${d.model}). ${d.agents.length - 1} agents ready.`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
+    setupAgents(d.agents, d.n8n); if (d.metrics?.mem !== undefined) showMetrics(d.metrics);
+    if (!$('log').children.length) { log('sys', `Connected. Orchestrator: Gemini Live (${d.model}). ${d.n8n.ok ? 'n8n ' + d.n8n.note + '.' : d.n8n.note + '.'}`); for (const ev of d.recent) if (ev.type === 'agent' && Date.now() - ev.ts < 3 * 60e3) agentActivity(ev); }
   });
+  es.addEventListener('agents', (e) => { const d = JSON.parse(e.data); setupAgents(d.agents, d.n8n); log('sys', `Agent list updated: n8n ${d.n8n.note}.`); });
   es.addEventListener('metrics', (e) => showMetrics(JSON.parse(e.data)));
   es.addEventListener('agent', (e) => agentActivity(JSON.parse(e.data)));
   es.addEventListener('alert', (e) => {
-    const a = JSON.parse(e.data); log('alert', `⚠ ${state.byId[a.agent]?.name || a.agent}: ${a.text}`, a.ts); flash('pLog');
+    const a = JSON.parse(e.data); log('alert', `${state.byId[a.agent]?.name || a.agent}: ${a.text}`, a.ts); flash('pLog');
     if (a.speak && session.ws?.readyState === WebSocket.OPEN) sendText(`[EVENT from ${a.agent}] ${a.text}`, true);
   });
   es.onerror = () => { $('linkState').textContent = 'reconnecting…'; $('linkState').classList.remove('on'); fetch('/api/events', { method: 'HEAD' }).then((r) => { if (r.status === 401) location.reload(); }).catch(() => {}); };
@@ -291,4 +300,9 @@ document.querySelectorAll('.gutter').forEach((g) => {
     const up = () => { g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch {} };
     g.addEventListener('pointermove', move); g.addEventListener('pointerup', up);
   });
+});
+
+$('refreshAgents').addEventListener('click', async () => {
+  const r = await fetch('/api/agents/refresh', { method: 'POST' }); if (!r.ok) return;
+  const d = await r.json(); setupAgents(d.agents, d.n8n); log('sys', `Asked n8n for agents: ${d.n8n.ok ? 'n8n ' : ''}${d.n8n.note}.`);
 });
