@@ -73,7 +73,7 @@ LIST=("$LAB_DIR")
 for f in $EXTRA_FILES; do [ -e "$f" ] && LIST+=("$f"); done
 rm -f "$TMP"
 zip -q -r -y "$TMP" "${LIST[@]}" \
-  -x "*/n8n.old-*" "*/brain.retired-*" "*/.env.old-*" "*/node_modules/*" "*.log"
+  -x "*/n8n.old-*" "*.retired-*" "*/.env.old-*" "*.before-restore-*" "*/node_modules/*" "*.log"
 start_again; STOPPED=(); trap - EXIT                       # restart right after zipping
 mv "$TMP" "$OUT"; chmod 600 "$OUT"
 unzip -tq "$OUT" >/dev/null || { echo "Zip check FAILED: $OUT"; exit 1; }
@@ -94,6 +94,7 @@ unzip -q "$LATEST" -d "$DEST"
 FAIL=0
 check() { if [ -e "$DEST$1" ]; then echo "  OK      $1"; else echo "  MISSING $1"; FAIL=1; fi; }
 for f in "$LAB_DIR"/*/compose.yaml "$LAB_DIR"/*/.env "$LAB_DIR"/jarvis/n8n/database.sqlite $EXTRA_FILES; do
+  case "$f" in *.old-*|*.retired-*|*.before-restore-*) continue ;; esac   # left out of backups on purpose
   [ -e "$f" ] && check "$f"
 done
 [ -d "$LAB_DIR/gateway/data" ] && check "$LAB_DIR/gateway/data"
