@@ -4,8 +4,9 @@
 #
 # Run ON THE VM as ubuntu:
 #   bash install-gateway.sh          # install / update (web page locked to YOUR IP until you create the admin)
-#   bash 05-install-gateway.sh --allow [IP] # setup lock: let YOUR browser in (no IP = the last blocked visitor)
-#   bash install-gateway.sh --open   # after creating the admin login: open the page from anywhere
+#   bash 05-install-gateway.sh --unlock  # before the admin login exists: print the one-time unlock link again
+#   bash 05-install-gateway.sh --open    # after creating the admin login: open the page from anywhere
+#   (re-running the installer does the right thing by itself: open if the admin login exists, unlock link if not)
 #   bash install-gateway.sh --off    # stop it and take its web page offline (data kept)
 #   AI_DOMAIN=ai.example.org bash install-gateway.sh   # use your own name instead of sslip.io
 #
@@ -37,11 +38,13 @@ env_get() { grep -E "^$1=" "$ENVF" 2>/dev/null | head -1 | cut -d= -f2- || true;
 env_set() { local t; t=$(mktemp); grep -vE "^$1=" "$ENVF" > "$t" 2>/dev/null || true
             printf '%s=%s\n' "$1" "$2" >> "$t"; cat "$t" > "$ENVF"; rm -f "$t"; chmod 600 "$ENVF"; }
 
-write_site() {   # $1 = IP to lock to, or empty for open
-  local LOCKBLOCK=""
-  if [ -n "${1:-}" ]; then LOCKBLOCK="    <Location />
-        Require ip $1
-    </Location>"; fi
+write_site() {   # $1 = unlock token (setup lock), or empty = open (Bifrost's own login protects it)
+  local LOCKBLOCK="    # (no setup lock: Bifrost's admin login protects the page)"
+  if [ -n "${1:-}" ]; then LOCKBLOCK="    # Setup lock: until the admin login exists, only a browser that opened the unlock link gets in (any IP, any network)
+    RewriteCond %{QUERY_STRING} (^|&)unlock=$1(&|\$)
+    RewriteRule ^ / [QSD,CO=bf_unlock:$1:$DOMAIN:1440:/:secure:httponly,R=302,L]
+    RewriteCond %{HTTP_COOKIE} !(^|;\\s*)bf_unlock=$1(;|\$)
+    RewriteRule ^ - [F,L]"; fi
   sudo tee "$SITE" >/dev/null <<EOF
   # free-ai-lab: Bifrost web page published by Apache. AI endpoints stay private (n8n uses them inside the server).
   <VirtualHost *:80>
@@ -64,8 +67,6 @@ write_site() {   # $1 = IP to lock to, or empty for open
       Header always set Referrer-Policy "same-origin"
       Header always set X-Frame-Options "SAMEORIGIN"
   
-      # Setup lock: until the admin login exists, only your own IP may open the page
-  $LOCKBLOCK
       # AI and metrics endpoints: never from the internet
       <LocationMatch "^/(v1|openai|anthropic|genai|gemini|bedrock|cohere|litellm|langchain|pydanticai|mcp|metrics)(/|$)">
           Require all denied
@@ -75,6 +76,7 @@ write_site() {   # $1 = IP to lock to, or empty for open
       ProxyRequests Off
       RequestHeader set X-Forwarded-Proto "https"
       RewriteEngine On
+  $LOCKBLOCK
       RewriteCond %{HTTP:Upgrade} =websocket [NC]
       RewriteRule ^/?(.*) ws://127.0.0.1:8080/\$1 [P,L]
       ProxyPass        / http://127.0.0.1:8080/
@@ -93,7 +95,9 @@ EOF
 [ "$(id -u)" -ne 0 ] || die "Run WITHOUT sudo:  bash $0 $MODE"
 command -v docker >/dev/null || die "Docker isn't installed (Lesson 03)."
 systemctl is-active --quiet apache2 || die "Apache isn't running."
-case "$MODE" in ""|--off|--open|--allow) ;; *) die "Unknown option '$MODE'. Use --allow, --open, --off or nothing." ;; esac
+case "$MODE" in ""|--off|--open|--unlock|--allow) ;; *) die "Unknown option '$MODE'. Use --unlock, --open, --off or nothing." ;; esac
+has_admin() { [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:8080/api/config || true)" = 401 ]; }
+unlock_token() { local t; t=$(env_get BIFROST_UNLOCK); [ -n "$t" ] || { t=$(openssl rand -hex 20); env_set BIFROST_UNLOCK "$t"; }; echo "$t"; }
 
 if [ "$MODE" = "--off" ]; then
   step "Stopping Bifrost and taking its web page offline (data kept in $DIR/data)"
@@ -104,20 +108,13 @@ if [ "$MODE" = "--off" ]; then
   echo "Done."; exit 0
 fi
 
-if [ "$MODE" = "--allow" ]; then
-  step "Setup lock: letting your browser in"
+if [ "$MODE" = "--unlock" ] || [ "$MODE" = "--allow" ]; then
   DOMAIN=$(env_get AI_PUBLIC_HOST); [ -n "$DOMAIN" ] || die "Install first: bash $0"
-  IP="${2:-}"
-  if [ -z "$IP" ]; then
-    IP=$(sudo grep -h "client denied" /var/log/apache2/ai-gateway-error.log 2>/dev/null | tail -1 | grep -oE '\[client [^]]+\]' | tail -1 | sed -E 's/^\[client //; s/\]$//; s/:[0-9]+$//')
-    [ -n "$IP" ] || die "No blocked visit found yet. Open https://$DOMAIN in your browser first (you'll see Forbidden), then run this again."
-    echo "  The last browser that was blocked came from: $IP"
-    read -r -p "  Is that you (you opened the page a moment ago)? (y/N): " ok
-    [ "${ok,,}" = y ] || die "Cancelled. Or give the IP yourself: bash $0 --allow <your-ip>  (search 'what is my ip' on the laptop)"
-  fi
-  [[ "$IP" =~ ^[0-9a-fA-F.:]+$ ]] || die "That doesn't look like an IP address: $IP"
-  write_site "$IP"
-  echo "  Done. https://$DOMAIN now opens for $IP only. Create the admin login there, then run: bash $0 --open"; exit 0
+  if has_admin; then write_site ""; echo "The admin login already exists, so the page is open: https://$DOMAIN (log in there)."; exit 0; fi
+  write_site "$(unlock_token)"
+  echo -e "Open this link once in your browser (any network, phone or laptop):\n  ${c_ok}https://$DOMAIN/?unlock=$(env_get BIFROST_UNLOCK)${c_off}"
+  echo "Setup token for Bifrost's first screen: $(env_get BIFROST_SETUP_TOKEN)"
+  echo "After creating the admin login: bash $0 --open"; exit 0
 fi
 
 if [ "$MODE" = "--open" ]; then
@@ -176,11 +173,15 @@ else sudo certbot certonly --apache -d "$DOMAIN" --non-interactive --agree-tos -
 # ---------- 5. Apache: web page only ----------
 step "5/6  Apache site (web page only; AI endpoints blocked from the internet)"
 sudo a2enmod -q ssl proxy proxy_http proxy_wstunnel headers rewrite >/dev/null
-MYIP="${SSH_CLIENT%% *}"
-[ -n "$MYIP" ] || die "Run this over SSH (needed to lock the page to your IP during setup)."
-write_site "$MYIP"
-echo "Page is locked to your IP ($MYIP) until you create the admin login."
-echo "(Forbidden in your browser? You probably ran this from Cloud Shell or another network: use  bash $0 --allow)"
+if has_admin; then
+  write_site ""
+  echo "Bifrost's admin login exists: the page is open, protected by that login."
+  OPEN=yes
+else
+  write_site "$(unlock_token)"
+  echo "No admin login yet: the page opens only through your private unlock link (shown at the end)."
+  OPEN=no
+fi
 
 # ---------- 6. fail2ban ----------
 step "6/6  fail2ban: ban IPs that keep failing the Bifrost login"
@@ -208,16 +209,23 @@ step "Tests"
 c1=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$DOMAIN/" || true)
 c2=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST "https://$DOMAIN/v1/chat/completions" || true)
 c3=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://$PUBIP:8080/" || true)
-printf "  %-30s HTTP %s  (403 from the server itself = IP lock works ✓)\n" "https://$DOMAIN/" "$c1"
+if [ "$OPEN" = yes ]; then printf "  %-30s HTTP %s  (200 = page open, Bifrost login protects it ✓)\n" "https://$DOMAIN/" "$c1"
+else printf "  %-30s HTTP %s  (403 without the unlock link = setup lock works ✓)\n" "https://$DOMAIN/" "$c1"; fi
 printf "  %-30s HTTP %s  (403 = AI endpoints blocked from internet ✓)\n" "/v1 from internet" "$c2"
 printf "  %-30s HTTP %s  (000 = port 8080 not public ✓)\n" "http://<ip>:8080" "$c3"
 
-step "Done! Do this NOW (until you do, the page has no admin):"
-echo -e "  1) Open ${c_ok}https://$DOMAIN${c_off}"
-echo "  2) When it asks for the setup token, paste this (don't share it anywhere else):"
+if [ "$OPEN" = yes ]; then
+  step "Done!"
+  echo -e "  Open ${c_ok}https://$DOMAIN${c_off} and log in with your Bifrost admin login."
+  echo "  Undo: bash $0 --off"
+  exit 0
+fi
+step "Done! Create the admin login NOW (until then only your unlock link gets in):"
+echo -e "  1) Open this link once (any browser, any network; keep it private):"
+echo -e "       ${c_ok}https://$DOMAIN/?unlock=$(env_get BIFROST_UNLOCK)${c_off}"
+echo "  2) If Bifrost asks for a setup token, paste:"
 echo -e "       ${c_warn}$(env_get BIFROST_SETUP_TOKEN)${c_off}"
 echo "  3) Workspace → Config → Security: turn on 'Password protect the dashboard',"
-echo "     username + strong password (12+ chars, upper, lower, digit, symbol). Keep 'Enforce Virtual Keys' on."
-echo "  4) Back here run:  bash $0 --open   (removes the IP lock; refuses if the password isn't on)"
-echo "  Then follow Lesson 05 to add your free providers and connect n8n."
-echo "  Undo: bash $0 --off"
+echo "     username + strong password (12+ chars, upper, lower, digit, symbol)."
+echo "  4) Back here run:  bash $0 --open   (opens the page for good; refuses if the password isn't on)"
+echo "  Lost the link? bash $0 --unlock      Undo: bash $0 --off"

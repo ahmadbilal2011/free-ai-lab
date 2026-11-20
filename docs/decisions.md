@@ -186,3 +186,9 @@ Single node, no public HTTPS needed (Tailscale gives certificates), and RAM goes
   saved in `~/lab/live/data/settings.json`. Jarvis tries them in order and moves on when one is busy, out of quota or failing.
 - Bifrost page "Forbidden": the setup lock used the SSH client's IP (Cloud Shell ≠ browser). New `05-install-gateway.sh --allow [IP]`
   reads the last blocked IP from Apache's log (with confirmation) and unlocks it.
+
+## 2026-11-20 — Bifrost page: unlock link instead of an IP lock
+
+- The IP lock (and `--allow`) still failed for the user: IPs differ between Cloud Shell, laptop and phone and change over
+  time. Replaced with: **admin login exists → page fully open, Bifrost's login protects it**; **no admin yet → private
+  unlock link** (`?unlock=<token>` sets a 24 h cookie via Apache mod_rewrite; any IP). The installer detects which case applies.

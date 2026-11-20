@@ -34,7 +34,7 @@ included) may use prompts to improve their products, so **SAR customer data neve
 - The **web page** is public over HTTPS with Bifrost's own login, and fail2ban bans password guessers.
 - The **AI endpoints** (`/v1`, …) are blocked from the internet. Only n8n inside the server can use them,
   so nobody can spend your free quotas.
-- Until you create the admin login, the page is **locked to your own IP** (the one you SSH from).
+- Until you create the admin login, the page opens **only through your private unlock link** (any network). After that, Bifrost's own login protects it and you can log in from anywhere.
 - Keys are typed into Bifrost's web page and stored on the server. Never paste them in chats or on GitHub.
 
 ## Step 1: Install (on the VM, as `ubuntu`)
@@ -47,18 +47,20 @@ bash 05-install-gateway.sh
 It starts Bifrost, publishes its web page through Apache and prints a **setup token**. (On servers from an
 older version of this course it also stops the old LiteLLM gateway; its folder is renamed, nothing deleted.)
 
-## Step 2: Create your admin login (from the same network you SSH from)
+## Step 2: Create your admin login
 
-1. Open `https://ai-<your-ip-with-dashes>.sslip.io`
-2. Paste the **setup token** when asked.
+1. The installer ends with an **unlock link**: `https://ai-<your-ip-with-dashes>.sslip.io/?unlock=…`. Open it once in your
+   browser, on your laptop or phone and on any network. That browser can enter for 24 hours. Keep the link private.
+2. Paste the **setup token** when Bifrost asks (also printed by the installer).
 3. **Workspace → Config → Security** → turn on **Password protect the dashboard**. Enter a username and a strong
    password (12+ characters with upper and lower case, a digit and a symbol). Keep **Enforce Virtual Keys on Inference** on.
-4. Back on the server: `bash 05-install-gateway.sh --open` removes the IP lock. It refuses if the password isn't on yet.
+4. Back on the server: `bash 05-install-gateway.sh --open`. The page then opens from anywhere, protected by your Bifrost
+   login. It refuses if the password isn't on yet.
 
-> **"Forbidden" in your browser?** The page only opens for the IP you ran the installer from. If you used
-> **Oracle Cloud Shell** or another network, that isn't your browser's IP. Open the page once (you'll see Forbidden), then on
-> the server run `bash 05-install-gateway.sh --allow`. It finds the IP that was just blocked, asks you to confirm, and lets it in.
-> You can also give it yourself: `bash 05-install-gateway.sh --allow <your-ip>`. Create the admin login, then run `--open`.
+> **Lost the link, or it expired?** Run `bash 05-install-gateway.sh --unlock` for it again.
+> **Re-running the installer** does the right thing by itself: if the admin login exists, the page is simply open with your
+> login; if not, you get a fresh unlock link. (Older versions locked the page to one IP address. That broke with Cloud Shell
+> and changing networks, so it was replaced.)
 
 ## Step 3: Add free providers (all in the web page: Models → Model Providers → Add New Provider)
 
